@@ -1,0 +1,174 @@
+{
+  "customNodes": {
+    "bytes": 3,
+    "fileCount": 1,
+    "records": [
+      {
+        "bytes": 3,
+        "fileCount": 1,
+        "findings": [
+          "custom_node_unversioned"
+        ],
+        "id": "example-node",
+        "logicalPath": "custom_nodes/example-node",
+        "nativeBinaryCount": 0,
+        "versionState": "unversioned"
+      }
+    ]
+  },
+  "exclusions": [],
+  "hashMode": "none",
+  "models": {
+    "bytes": 20,
+    "categories": [
+      {
+        "bytes": 20,
+        "category": "checkpoints",
+        "fileCount": 1
+      }
+    ],
+    "fileCount": 1,
+    "incompleteBlocked": 0,
+    "records": [
+      {
+        "bytes": 20,
+        "category": "checkpoints",
+        "hash": {
+          "algorithm": "sha256",
+          "state": "not_computed",
+          "value": null
+        },
+        "logicalPath": "checkpoints/example.safetensors",
+        "sourceId": "models-01"
+      }
+    ]
+  },
+  "payloadFiles": [
+    {
+      "bytes": 3,
+      "category": "custom_node",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "not_computed",
+        "value": null
+      },
+      "logicalPath": "custom_nodes/example-node/node.py",
+      "sourceId": "comfy",
+      "targetPath": "extensions/custom-nodes/example-node/node.py"
+    },
+    {
+      "bytes": 10,
+      "category": "runtime",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "not_computed",
+        "value": null
+      },
+      "logicalPath": "main.py",
+      "sourceId": "comfy",
+      "targetPath": "runtime/comfyui/main.py"
+    },
+    {
+      "bytes": 20,
+      "category": "model",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "not_computed",
+        "value": null
+      },
+      "logicalPath": "checkpoints/example.safetensors",
+      "sourceId": "models-01",
+      "targetPath": "models/checkpoints/example.safetensors"
+    },
+    {
+      "bytes": 5,
+      "category": "workflow",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "not_computed",
+        "value": null
+      },
+      "logicalPath": "image.json",
+      "sourceId": "workflows-01",
+      "targetPath": "workflows/workflows-01/image.json"
+    }
+  ],
+  "portability": {
+    "blockers": [
+      {
+        "code": "python_runtime_missing",
+        "count": 1
+      }
+    ],
+    "status": "blocked",
+    "warnings": [
+      {
+        "code": "custom_node_unversioned",
+        "count": 1
+      },
+      {
+        "code": "model_license_metadata_missing",
+        "count": 1
+      }
+    ]
+  },
+  "runtime": {
+    "bytes": 10,
+    "fileCount": 1,
+    "nativeBinaryCount": 0,
+    "python": {
+      "configPresent": false,
+      "findings": [
+        "python_runtime_missing"
+      ],
+      "state": "missing"
+    }
+  },
+  "schemaVersion": "inventory-report/v1",
+  "sources": [
+    {
+      "id": "comfy",
+      "kind": "comfy"
+    },
+    {
+      "id": "models-01",
+      "kind": "models"
+    },
+    {
+      "id": "workflows-01",
+      "kind": "workflows"
+    }
+  ],
+  "summary": {
+    "discovered": {
+      "bytes": 38,
+      "files": 4,
+      "records": 4
+    },
+    "excluded": {
+      "bytes": 0,
+      "files": 0
+    }
+  },
+  "workflows": {
+    "blocked": 0,
+    "bytes": 5,
+    "fileCount": 1,
+    "parsed": 1,
+    "records": [
+      {
+        "bytes": 5,
+        "linkCount": 0,
+        "logicalPath": "image.json",
+        "nodeCount": 1,
+        "nodeTypeMultiset": {
+          "KSampler": 1
+        },
+        "parseStatus": "parsed",
+        "sanitizerFindings": [
+          "prompt_text_redacted"
+        ]
+      }
+    ]
+  }
+}

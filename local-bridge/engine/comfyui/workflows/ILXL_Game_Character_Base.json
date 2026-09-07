@@ -1,0 +1,197 @@
+{
+  "id": "44bc2b39-f1c2-4fd8-9de9-6c5d8e49f01b",
+  "revision": 0,
+  "last_node_id": 8,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "CheckpointLoaderSimple",
+      "pos": [-760, -60],
+      "size": [420, 100],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [1]},
+        {"name": "CLIP", "type": "CLIP", "links": [2, 3]},
+        {"name": "VAE", "type": "VAE", "links": [8]}
+      ],
+      "title": "ILXL v2.0 STABLE",
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple",
+        "models": [
+          {
+            "name": "Illustrious-XL-v2.0.safetensors",
+            "url": "https://huggingface.co/OnomaAIResearch/Illustrious-XL-v2.0/resolve/main/Illustrious-XL-v2.0.safetensors",
+            "directory": "checkpoints"
+          }
+        ]
+      },
+      "widgets_values": ["Illustrious-XL-v2.0.safetensors"]
+    },
+    {
+      "id": 2,
+      "type": "CLIPTextEncode",
+      "pos": [-280, -250],
+      "size": [520, 260],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 2}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [4]}
+      ],
+      "title": "正向提示词｜角色设定",
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": [
+        "masterpiece, best quality, amazing quality, game character illustration, full body, solo, standing, centered composition, readable silhouette, dark fantasy warrior, 3 heads tall chibi proportions, oversized sword, layered leather armor, muted dark colors, red accent, thick clean outline, 3-step cel shading, weak perspective, plain light gray background, character design sheet quality"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPTextEncode",
+      "pos": [-280, 70],
+      "size": [520, 240],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 3}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [5]}
+      ],
+      "title": "负向提示词｜排除缺陷",
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": [
+        "worst quality, low quality, lowres, blurry, jpeg artifacts, bad anatomy, bad hands, extra fingers, missing fingers, fused fingers, extra arms, extra legs, multiple views, multiple characters, cropped, out of frame, text, logo, watermark, signature, busy background, photorealistic, 3d render"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "EmptyLatentImage",
+      "pos": [-250, 390],
+      "size": [300, 110],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "links": [6]}
+      ],
+      "title": "竖版立绘画布",
+      "properties": {"Node name for S&R": "EmptyLatentImage"},
+      "widgets_values": [832, 1216, 1]
+    },
+    {
+      "id": 5,
+      "type": "KSampler",
+      "pos": [350, -40],
+      "size": [360, 300],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 1},
+        {"name": "positive", "type": "CONDITIONING", "link": 4},
+        {"name": "negative", "type": "CONDITIONING", "link": 5},
+        {"name": "latent_image", "type": "LATENT", "link": 6}
+      ],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "links": [7]}
+      ],
+      "title": "ILXL 采样",
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [812739451, "randomize", 28, 5.5, "dpmpp_2m_sde", "karras", 1]
+    },
+    {
+      "id": 6,
+      "type": "VAEDecode",
+      "pos": [800, -20],
+      "size": [220, 80],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 7},
+        {"name": "vae", "type": "VAE", "link": 8}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [9]}
+      ],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "SaveImage",
+      "pos": [1110, -40],
+      "size": [420, 430],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 9}
+      ],
+      "outputs": [],
+      "title": "保存游戏立绘候选图",
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["game_character/ILXL"]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "pos": [-760, 120],
+      "size": [420, 420],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "使用说明",
+      "properties": {},
+      "widgets_values": [
+        "## ILXL 游戏立绘基础工作流\n\n- 默认画布：832 x 1216，适合单人竖版立绘。\n- 先改正向提示词里的职业、武器、服装和配色。\n- 同一角色做职业或动作变体时，固定 seed，再逐项修改。\n- 生成结果是普通 RGB 图；正式进游戏前需抠图，并检查导出文件具有真实 Alpha 通道。\n- 模型许可证：CreativeML Open RAIL-M。项目商用前仍应核对所用 LoRA 与训练素材授权。"
+      ],
+      "color": "#2b2b2b",
+      "bgcolor": "#111111"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 5, 0, "MODEL"],
+    [2, 1, 1, 2, 0, "CLIP"],
+    [3, 1, 1, 3, 0, "CLIP"],
+    [4, 2, 0, 5, 1, "CONDITIONING"],
+    [5, 3, 0, 5, 2, "CONDITIONING"],
+    [6, 4, 0, 5, 3, "LATENT"],
+    [7, 5, 0, 6, 0, "LATENT"],
+    [8, 1, 2, 6, 1, "VAE"],
+    [9, 6, 0, 7, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "1. 模型与提示词",
+      "bounding": [-800, -300, 1080, 880],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "2. 生成与保存",
+      "bounding": [310, -100, 1260, 560],
+      "color": "#8e6d3f",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "frontendVersion": "1.48.7",
+    "ds": {"scale": 0.78, "offset": [830, 390]}
+  },
+  "version": 0.4
+}

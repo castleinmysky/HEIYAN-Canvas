@@ -1,0 +1,11 @@
+export type ConnectionProtocol = 'openai-image' | 'gemini-image' | 'seedance-video' | 'minimax-h3-video' | 'tripo3d-model';
+export type ConnectionSettings = { adapter: ConnectionProtocol; mode: 'official' | 'relay'; baseUrl: string; model: string; endpoint?: string; editEndpoint?: string; validationEndpoint?: string; queryEndpoint?: string };
+export const connectionProtocols: Readonly<Record<string, readonly ConnectionProtocol[]>>;
+export function advancedConnectionEligible(model: { adapter?: string; capability?: string } | null | undefined): boolean;
+export function connectionDefaults(adapter: string, model?: string): ConnectionSettings;
+export function canonicalConnection(capability: string, connection: unknown): ConnectionSettings;
+export function connectionError(code: string, status?: number): Error & { code: string; status: number };
+export function publicConnectionBase(value: unknown): string;
+export function connectionEndpoint(value: unknown): string;
+export function connectionBinding(model: { adapter?: string; config?: { baseUrl?: string } }): string;
+export function sanitizeConnectionConfig<T>(value: T, secrets?: string[]): T;

@@ -1,0 +1,17 @@
+{
+  "name": "黑岩 HEIYAN 画布",
+  "short_name": "黑岩画布",
+  "description": "本地优先的可视化 AI 创作画布",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#171a21",
+  "theme_color": "#171a21",
+  "icons": [
+    {
+      "src": "/echo-ai-canvas.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

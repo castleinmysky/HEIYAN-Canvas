@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "digest": "013af77bdb4a307ec3ff7e8e2c846d5eaef89dde0130a39ae39eab8ae83620a9",
+    "id": "owner-dedicated-comfy",
+    "version": "1.0.0"
+  },
+  "capabilityIds": ["illustrious-character-v1", "minimax-h3-video-v1"],
+  "installationId": "local-installation-01",
+  "schemaVersion": "echo-canvas-managed-health/v1"
+}

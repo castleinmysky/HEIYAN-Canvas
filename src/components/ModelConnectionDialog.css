@@ -1,0 +1,22 @@
+.model-connection-dialog { color: var(--canvas-text); background: var(--canvas-plane-raised, var(--canvas-surface)); border: 1px solid var(--canvas-border); border-radius: 18px; width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 0; box-shadow: var(--canvas-shadow-float); font-family: var(--canvas-font-ui); }
+.model-connection-dialog::backdrop { background: color-mix(in oklab, var(--canvas-plane-base, var(--canvas-bg)) 72%, transparent); }
+.model-connection-dialog form { margin: 0; display: flex; flex-direction: column; max-height: calc(100dvh - 44px); }
+.model-connection-dialog header, .model-connection-dialog footer { padding: 18px 22px; flex: 0 0 auto; }
+.model-connection-dialog header h2 { font-size: 16px; margin: 0 0 6px; }
+.model-connection-dialog header strong { font-size: 12px; color: var(--canvas-text-soft); }
+.model-connection-fields { padding: 0 22px; display: grid; gap: 12px; overflow-y: auto; }
+.model-connection-fields label { display: grid; gap: 6px; color: var(--canvas-text); font-size: 12px; }
+.model-connection-fields :is(input,select) { box-sizing: border-box; min-height: 36px; width: 100%; padding: 8px 10px; color: var(--canvas-text); background: var(--canvas-control); border: 1px solid var(--canvas-border); border-radius: 8px; font: inherit; }
+.model-connection-fields input[readonly] { color: var(--canvas-text-soft); }
+.model-connection-fields p, .model-connection-fields small { margin: 0; font-size: 12px; line-height: 1.55; color: var(--canvas-text-soft); }
+.model-connection-dialog footer { display: flex; gap: 8px; justify-content: flex-end; }
+.model-connection-dialog button, .model-settings .model-connection-advanced { padding: 8px 12px; color: var(--canvas-text); background: var(--canvas-control); border: 1px solid var(--canvas-border); border-radius: 8px; cursor: pointer; font: inherit; }
+.model-settings .model-connection-advanced { padding: 6px 9px; font-size: 11px; }
+.model-connection-dialog button[type='submit'] { background: var(--canvas-primary); color: var(--canvas-primary-ink); }
+.model-connection-dialog :is(button,input,select):focus-visible, .model-settings .model-connection-advanced:focus-visible { outline: 2px solid var(--canvas-primary); outline-offset: 3px; }
+.model-connection-dialog :disabled { opacity: .55; cursor: not-allowed; }
+.model-connection-fields .model-connection-error { color: var(--canvas-danger); }
+@media (max-width: 600px) { .model-connection-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); } .model-connection-dialog form { max-height: calc(100dvh - 24px); } }
+.model-provider-guide { display: grid; gap: 8px; padding: 14px; margin: 4px 0; border: 1px solid var(--canvas-border); border-radius: 10px; }
+.model-provider-guide p { margin: 0; font-size: 12px; line-height: 1.7; }
+.model-provider-guide a { width: fit-content; color: var(--canvas-text); font-size: 12px; text-underline-offset: 3px; }

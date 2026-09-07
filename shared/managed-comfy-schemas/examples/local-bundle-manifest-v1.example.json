@@ -1,0 +1,91 @@
+{
+  "buildState": "build_ready",
+  "bundle": {
+    "digest": "013af77bdb4a307ec3ff7e8e2c846d5eaef89dde0130a39ae39eab8ae83620a9",
+    "id": "owner-dedicated-comfy",
+    "version": "1.0.0"
+  },
+  "capabilities": [
+    {
+      "id": "example-image",
+      "requiredCustomNodes": [],
+      "requiredModels": [
+        "example-checkpoint"
+      ],
+      "workflowId": "example-workflow"
+    }
+  ],
+  "customNodes": [],
+  "exclusions": [
+    "credentials",
+    "generated-media",
+    "incomplete-downloads",
+    "mutable-state"
+  ],
+  "localOnly": {
+    "repositoryPayloadForbidden": true,
+    "uploadForbidden": true
+  },
+  "models": [
+    {
+      "bytes": 0,
+      "category": "checkpoints",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "computed",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "id": "example-checkpoint",
+      "logicalPath": "models/checkpoints/example.safetensors"
+    }
+  ],
+  "payloadFiles": [
+    {
+      "bytes": 0,
+      "category": "runtime",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "computed",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "logicalPath": "main.py",
+      "sourceId": "comfy",
+      "targetPath": "runtime/comfyui/main.py"
+    },
+    {
+      "bytes": 0,
+      "category": "model",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "computed",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "logicalPath": "checkpoints/example.safetensors",
+      "sourceId": "models-01",
+      "targetPath": "models/checkpoints/example.safetensors"
+    },
+    {
+      "bytes": 0,
+      "category": "workflow",
+      "hash": {
+        "algorithm": "sha256",
+        "state": "computed",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "logicalPath": "example.json",
+      "sourceId": "workflows-01",
+      "targetPath": "workflows/workflows-01/example.json"
+    }
+  ],
+  "runtime": {
+    "entrypoint": "runtime/comfyui/main.py",
+    "pythonPortability": "portable"
+  },
+  "schemaVersion": "local-bundle-manifest/v1",
+  "workflows": [
+    {
+      "id": "example-workflow",
+      "logicalPath": "workflows/workflows-01/example.json"
+    }
+  ]
+}

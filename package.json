@@ -1,0 +1,40 @@
+{
+  "name": "heiyan-canvas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "黑岩画布：连接自己的模型、素材与 Codex 的节点创作空间",
+  "engines": { "node": ">=22.13.0" },
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env server/index.js --dev",
+    "agent:connector": "node scripts/start-agent-connector.mjs",
+    "comfy:connector": "node --env-file-if-exists=.env local-bridge/start.mjs",
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "check": "node --check server/index.js && node --check server/http-app.js && tsc -b --pretty false",
+    "test": "npm run test:server && npm run test:ui",
+    "test:server": "node --test --test-concurrency=4 tests/*.test.mjs",
+    "test:ui": "vitest run",
+    "check:release": "node scripts/check-release.mjs",
+    "build": "tsc -b && vite build"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.8.5",
+    "buffer": "6.0.3",
+    "express": "^5.1.0",
+    "multer": "^2.3.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.2",
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "^5.9.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.10"
+  }
+}

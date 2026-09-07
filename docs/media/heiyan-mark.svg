@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 64 64" role="img" aria-labelledby="title description">
+  <title id="title">HEIYAN · 黑岩画布</title>
+  <desc id="description">黑岩画布现有的切面岩块标志</desc>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="#202124" />
+  <path d="M18 18.5 31.5 11l15.8 7.4L54 32.2 46.2 48 31 54 15.7 47.2 10 32.1Z" fill="#F2F2EF" stroke="#F2F2EF" stroke-width="2" stroke-linejoin="round" />
+  <path d="M18 18.5 31.5 11 34 27.5 10 32.1Z" fill="#D5D6D2" />
+  <path d="m31.5 11 15.8 7.4L54 32.2l-20-4.7Z" fill="#B9BBB8" />
+  <path d="M10 32.1 34 27.5 31 54l-15.3-6.8Z" fill="#E4E5E1" />
+  <path d="M34 27.5 54 32.2 46.2 48 31 54Z" fill="#C8CAC6" />
+  <path d="M31.5 11 34 27.5 54 32.2M34 27.5 31 54M34 27.5 10 32.1" fill="none" stroke="#202124" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity=".82" />
+</svg>

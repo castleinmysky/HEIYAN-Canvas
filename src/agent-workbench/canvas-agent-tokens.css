@@ -1,0 +1,22 @@
+.app-shell {
+  --canvas-agent-width: clamp(360px, 32vw, 480px);
+  --cad-slide-duration: 280ms;
+  --cad-slide-ease: cubic-bezier(.22, 1, .36, 1);
+  --cad-space-xs: 8px;
+  --cad-space-sm: 12px;
+  --cad-space-md: 16px;
+  --cad-space-lg: 24px;
+  --cad-radius-sm: 8px;
+  --cad-radius-md: 12px;
+  --cad-radius-lg: 20px;
+  --cad-rail: var(--canvas-plane-raised);
+  --cad-composer: var(--canvas-plane-raised);
+  --cad-control: color-mix(in oklch, var(--canvas-text) 4%, var(--cad-composer));
+  --cad-rule: color-mix(in oklch, var(--canvas-text) 12%, transparent);
+  --cad-shadow: color-mix(in oklch, var(--canvas-text) 6%, transparent);
+  --cad-z-dock: 44;
+  --cad-z-resizer: 5;
+  --cad-z-popover: 120;
+  --cad-chrome-size: 2.75rem;
+  --cad-chrome-icon: 1.125rem;
+}

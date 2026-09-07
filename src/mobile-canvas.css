@@ -1,0 +1,147 @@
+/* Screen-space mobile chrome only. Never alter desktop node geometry or media. */
+.mobile-canvas-tools, .mobile-editor-head, .mobile-menu-dismiss { display: none; }
+.app-shell[data-mobile='true'] {
+  --mobile-edge: max(8px, env(safe-area-inset-left));
+}
+.app-shell[data-mobile='true'] > .topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  top: max(8px, env(safe-area-inset-top));
+  left: var(--mobile-edge);
+  right: max(8px, env(safe-area-inset-right));
+  width: auto;
+}
+.app-shell[data-mobile='true'] > .topbar .canvas-top-left-controls { width: 100%; gap: 6px; }
+.app-shell[data-mobile='true'] .canvas-board-switcher { flex: 1; min-width: 0; }
+.app-shell[data-mobile='true'] .canvas-board-trigger { width: 100%; min-width: 0; }
+.app-shell[data-mobile='true'] > .topbar .task-context { display: none; }
+.app-shell[data-mobile='true'] .top-actions { margin-left: auto; max-width: 100%; flex-wrap: wrap; }
+.app-shell[data-mobile='true'] .top-actions :is(.canvas-app-version, .canvas-app-github) { display: none; }
+.app-shell[data-mobile='true'] .topbar :is(button, a.ui-icon-button) { min-height: 44px; }
+.app-shell[data-mobile='true'] .topbar .ui-icon-button { min-width: 44px; }
+.app-shell[data-mobile='true'] .canvas-board-menu {
+  position: fixed; left: var(--mobile-edge); right: 8px; top: calc(60px + env(safe-area-inset-top));
+  width: auto; max-width: none; max-height: calc(var(--mobile-visible-height) - 135px); overflow-y: auto;
+}
+.app-shell[data-mobile='true'] .canvas-shortcut-guide,
+.app-shell[data-mobile='true'] .view-controls { display: none; }
+.app-shell[data-mobile='true'] .mobile-canvas-tools {
+  position: fixed; z-index: 35; left: var(--mobile-edge); right: max(8px, env(safe-area-inset-right));
+  bottom: calc(var(--mobile-bottom-inset) + max(8px, env(safe-area-inset-bottom)));
+  display: flex; justify-content: space-around; gap: 2px; padding: 5px;
+  color: var(--canvas-text); background: var(--canvas-plane-raised, var(--canvas-surface));
+  border: 1px solid var(--canvas-border); border-radius: 18px; box-shadow: var(--canvas-shadow-float);
+}
+.app-shell[data-mobile='true'] .mobile-canvas-tools button {
+  display: flex; min-width: 44px; min-height: 52px; flex: 1; align-items: center; justify-content: center;
+  flex-direction: column; gap: 4px; padding: 5px 3px; border: 0; border-radius: 12px;
+  color: inherit; background: transparent; font: 600 14px/1.1 var(--canvas-font-ui); touch-action: manipulation;
+}
+.app-shell[data-mobile='true'] .mobile-canvas-tools button[aria-pressed='true'] { background: var(--canvas-state-selected); color: var(--canvas-state-selected-ink); }
+.app-shell[data-mobile='true'] .mobile-canvas-tools button:disabled { opacity: .35; }
+.app-shell[data-mobile='true'] .mobile-canvas-tools .ui-icon { width: 20px; height: 20px; }
+.app-shell[data-mobile='true'] .generator-panel-layer {
+  position: fixed !important; z-index: 42; left: var(--mobile-edge) !important; top: auto !important;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: calc(var(--mobile-bottom-inset) + max(6px, env(safe-area-inset-bottom)));
+  width: auto !important; max-width: none !important; height: var(--mobile-sheet-height) !important;
+  max-height: var(--mobile-sheet-height) !important;
+  display: flex; flex-direction: column; transform: none !important; transition: none; will-change: auto;
+  border: 1px solid var(--canvas-border); border-radius: 20px;
+  background: var(--canvas-plane-raised, var(--canvas-surface)); color: var(--canvas-text);
+  box-shadow: var(--canvas-shadow-float);
+}
+.app-shell[data-mobile='true'] .mobile-editor-head {
+  display: flex; flex: 0 0 44px; pointer-events: auto; justify-content: space-between; align-items: center; padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--canvas-border); font: 600 14px/1.3 var(--canvas-font-ui);
+}
+.app-shell[data-mobile='true'] .mobile-editor-head button {
+  min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 0;
+  background: transparent; color: inherit;
+}
+.app-shell[data-mobile='true'] .mobile-editor-head strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell[data-mobile='true'] .mobile-editor-head .mobile-presets-toggle { width: auto; padding-inline: 10px; font-size: 14px; }
+.app-shell[data-mobile='true'] .mobile-presets-toggle[aria-expanded='true'] { color: var(--canvas-primary); }
+.app-shell[data-mobile='true'] .generator-editor-panel .generator-panel-scroll-body { flex: 1 1 auto; overflow: auto; min-height: 48px; overscroll-behavior: contain; }
+.app-shell[data-mobile='true'] .generator-editor-panel .generator-panel-footer { flex: 0 0 auto; }
+.app-shell[data-mobile='true'] .generator-panel-layer .generator-editor-panel {
+  min-height: 0; width: 100%; max-width: 100%; max-height: calc(var(--mobile-sheet-height) - 44px);
+  flex: 1; overflow: hidden; padding: 8px 10px;
+  border: 0; border-radius: 0 0 20px 20px; box-shadow: none;
+}
+.app-shell[data-mobile='true'] :is(.generator-panel-layer, .generator-editor-panel, .generator-run-controls, .generator-popover-anchor) { transform: none; filter: none; backdrop-filter: none; -webkit-backdrop-filter: none; will-change: auto; }
+.app-shell[data-mobile='true'] .generator-panel-drag-handle { display: none; }
+.app-shell[data-mobile='true'][data-mobile-keyboard='true'] > .topbar { display: none; }
+.app-shell[data-mobile='true'][data-mobile-keyboard='true'] .generator-panel-footer { grid-template-columns: minmax(0, 1fr) minmax(88px, auto); }
+.app-shell[data-mobile='true'][data-mobile-keyboard='true'] .generator-panel-footer .run-actions { flex-wrap: nowrap; }
+.app-shell[data-mobile='true'][data-mobile-keyboard='true'] .generator-panel-footer .run-actions button { max-width: 100px; padding-inline: 6px !important; }
+.app-shell[data-mobile='true'][data-mobile-keyboard='true'] .generator-run-button small { display: none; }
+.app-shell[data-mobile='true'][data-mobile-keyboard='true'] .generator-panel-quickbar { display: none; }
+.app-shell[data-mobile='true'] .generator-panel-layer[data-mobile-presets='false'] :is(.prompt-token-composer, .prompt-cascade-modebar.is-bookmarkbar) { display: none; }
+.app-shell[data-mobile='true'] .generator-panel-connector { display: none; }
+.app-shell[data-mobile='true'] .generator-editor-panel .prompt-inline-shell { min-height: 72px; }
+.app-shell[data-mobile='true'] .generator-editor-panel :is(.prompt-input, .prompt-inline-editor) {
+  min-height: 72px !important; max-height: 160px; font-size: 16px !important; resize: none !important;
+}
+.app-shell[data-mobile='true'] .generator-panel-footer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 6px 0 0; border-top: 1px solid var(--canvas-border); }
+.app-shell[data-mobile='true'] .generator-panel-footer .run-actions { display: flex; flex-wrap: wrap; min-width: 0; gap: 6px; width: 100%; }
+.app-shell[data-mobile='true'] .generator-panel-footer .run-actions button { flex: 1; min-width: 0; width: auto; font-size: 14px; }
+.app-shell[data-mobile='true'] .generator-run-controls { width: 100%; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+.app-shell[data-mobile='true'] .generator-run-controls > * { flex: 0 0 clamp(128px, 40vw, 180px); min-width: 0; }
+.app-shell[data-mobile='true'] .generator-control-card { height: auto; min-height: 48px; padding: 6px 8px; }
+.app-shell[data-mobile='true'] .generator-control-card strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; }
+.app-shell[data-mobile='true'] .generator-control-card small { font-size: 12px; }
+.app-shell[data-mobile='true'] .generator-panel-quickbar { min-height: 0; padding: 0 0 4px; gap: 4px; flex-wrap: wrap; }
+.app-shell[data-mobile='true'] .generator-panel-head-status { font-size: 12px; }
+.app-shell[data-mobile='true'] .generator-popover button { min-height: 44px; font-size: 14px; }
+.app-shell[data-mobile='true'] .generator-popover :is(section, .generator-ratio-grid) { max-width: 100%; flex-wrap: wrap; }
+.app-shell[data-mobile='true'] .prompt-cascade-tokens { max-height: 160px; overflow-y: auto; }
+.app-shell[data-mobile='true'] .comfyui-plan-menu > .comfyui-plan-model-list { max-height: 220px; }
+.app-shell[data-mobile='true'] .comfyui-plan-method-flyout {
+  position: static; width: 100%; max-width: 100%; margin-top: 10px; transform: none;
+}
+.app-shell[data-mobile='true'] .generator-panel-footer > button { width: 100%; }
+.app-shell[data-mobile='true'] .generator-editor-panel button { min-height: 44px; }
+/* The desktop's left-side bookmarks become a horizontal rail on a phone. */
+.app-shell[data-mobile='true'] .prompt-cascade-modebar.is-bookmarkbar {
+  position: relative; top: auto; left: auto; width: 100%; order: -1; transform: none;
+  padding: 0 0 8px; background: transparent; border: 0; border-radius: 0; box-shadow: none;
+}
+.app-shell[data-mobile='true'] .prompt-cascade-modebar.is-bookmarkbar::after { display: none; }
+.app-shell[data-mobile='true'] .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs { display: flex; gap: 6px; }
+.app-shell[data-mobile='true'] .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button { flex: 1; width: auto; transform: none; border-radius: 10px; }
+.app-shell[data-mobile='true'] :is(.node-search, .context-menu, .generator-popover) {
+  position: fixed !important; z-index: 65; left: var(--mobile-edge) !important; right: 8px;
+  top: auto !important; bottom: calc(var(--mobile-bottom-inset) + max(78px, env(safe-area-inset-bottom)));
+  width: auto !important; min-width: 0; max-width: none !important;
+  max-height: calc(var(--mobile-visible-height) - 160px); overflow-y: auto; transform: none !important;
+  overscroll-behavior: contain;
+}
+.app-shell[data-mobile='true'] :is(.node-search, .context-menu) button { min-height: 44px; font-size: 14px; }
+.app-shell[data-mobile='true'] .context-submenu-panel {
+  position: static; width: 100%; min-width: 0; max-height: none; box-shadow: none; transform: none;
+}
+.app-shell[data-mobile='true'] .mobile-menu-dismiss {
+  display: grid; place-items: center; position: fixed; z-index: 66;
+  right: 14px; bottom: calc(var(--mobile-bottom-inset) + 16px + env(safe-area-inset-bottom));
+  width: 48px; height: 48px; color: var(--canvas-text); background: var(--canvas-plane-raised, var(--canvas-surface));
+  border: 1px solid var(--canvas-border); border-radius: 50%; box-shadow: var(--canvas-shadow-float);
+}
+.app-shell[data-mobile='true'] :is(.settings-center, .model-connection-dialog, .generated-asset-history) :is(input:not([type='checkbox']):not([type='radio']), textarea, select),
+.app-shell[data-mobile='true'] :is(.node-search, .canvas-board-menu, .generator-editor-panel) :is(input, textarea, select) { font-size: 16px; }
+.app-shell[data-mobile='true'] :is(.settings-center, .model-connection-dialog, .generated-asset-history) button { min-height: 44px; font-size: 14px; }
+.app-shell[data-mobile='true'] .settings-center { max-height: calc(var(--mobile-visible-height) - 12px); }
+.app-shell[data-mobile='true'] .model-connection-dialog { max-height: calc(var(--mobile-visible-height) - 16px); }
+.app-shell[data-mobile='true'] .model-connection-dialog form { max-height: calc(var(--mobile-visible-height) - 20px); }
+.app-shell[data-mobile='true'] .generated-asset-card-actions { opacity: 1; visibility: visible; }
+.app-shell[data-mobile='true'] .empty-canvas { width: calc(100% - 32px); max-width: 420px; }
+.app-shell[data-mobile='true'] .empty-canvas-actions { flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) {
+  .app-shell[data-mobile='true'] .mobile-canvas-tools button { transition: none; }
+}
+@media (orientation: landscape) {
+  .app-shell[data-mobile='true'] > .topbar { flex-wrap: nowrap; }
+  .app-shell[data-mobile='true'] > .topbar .canvas-top-left-controls { width: min(48%, 380px); }
+}

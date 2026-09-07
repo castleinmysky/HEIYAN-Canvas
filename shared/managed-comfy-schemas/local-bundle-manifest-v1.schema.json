@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:heiyan:managed-comfy:local-bundle-manifest:v1",
+  "title": "LocalBundleManifestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "bundle", "buildState", "runtime", "payloadFiles", "customNodes", "workflows", "models", "capabilities", "exclusions", "localOnly"],
+  "properties": {
+    "schemaVersion": { "const": "local-bundle-manifest/v1" },
+    "bundle": { "$ref": "#/$defs/bundleIdentity" },
+    "buildState": { "enum": ["draft", "build_ready"] },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entrypoint", "pythonPortability"],
+      "properties": {
+        "entrypoint": { "type": "string", "pattern": "^runtime/comfyui/[^/]+(?:/[^/]+)*$" },
+        "pythonPortability": { "enum": ["portable", "rebuild_required"] }
+      }
+    },
+    "payloadFiles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/payloadFile" } },
+    "customNodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "versionState"],
+        "properties": { "id": { "type": "string", "minLength": 1 }, "versionState": { "enum": ["pinned", "unverified"] } }
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "logicalPath"],
+        "properties": { "id": { "type": "string", "minLength": 1 }, "logicalPath": { "$ref": "#/$defs/logicalPath" } }
+      }
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "logicalPath", "bytes", "hash"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "category": { "type": "string", "minLength": 1 },
+          "logicalPath": { "$ref": "#/$defs/logicalPath" },
+          "bytes": { "$ref": "#/$defs/count" },
+          "hash": { "$ref": "#/$defs/hash" }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "workflowId", "requiredModels", "requiredCustomNodes"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "workflowId": { "type": "string", "minLength": 1 },
+          "requiredModels": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "requiredCustomNodes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "exclusions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "localOnly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uploadForbidden", "repositoryPayloadForbidden"],
+      "properties": { "uploadForbidden": { "const": true }, "repositoryPayloadForbidden": { "const": true } }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "buildState": { "const": "build_ready" } }, "required": ["buildState"] },
+      "then": {
+        "properties": {
+          "payloadFiles": { "items": { "$ref": "#/$defs/computedPayloadFile" } },
+          "models": {
+            "items": {
+              "type": "object",
+              "properties": { "hash": { "$ref": "#/$defs/computedHash" } },
+              "required": ["hash"]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0 },
+    "logicalPath": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[^/]+(?:/[^/]+)*$" },
+    "targetPath": { "type": "string", "pattern": "^(?:runtime/(?:comfyui|python)|extensions/custom-nodes|workflows|models)/[^/]+(?:/[^/]+)*$" },
+    "hash": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["algorithm", "state", "value"], "properties": { "algorithm": { "const": "sha256" }, "state": { "const": "not_computed" }, "value": { "type": "null" } } },
+        { "$ref": "#/$defs/computedHash" }
+      ]
+    },
+    "computedHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "state", "value"],
+      "properties": { "algorithm": { "const": "sha256" }, "state": { "const": "computed" }, "value": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+    },
+    "payloadFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "category", "logicalPath", "targetPath", "bytes", "hash"],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["runtime", "python_runtime", "custom_node", "workflow", "model"] },
+        "logicalPath": { "$ref": "#/$defs/logicalPath" },
+        "targetPath": { "$ref": "#/$defs/targetPath" },
+        "bytes": { "$ref": "#/$defs/count" },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "computedPayloadFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "category", "logicalPath", "targetPath", "bytes", "hash"],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["runtime", "python_runtime", "custom_node", "workflow", "model"] },
+        "logicalPath": { "$ref": "#/$defs/logicalPath" },
+        "targetPath": { "$ref": "#/$defs/targetPath" },
+        "bytes": { "$ref": "#/$defs/count" },
+        "hash": { "$ref": "#/$defs/computedHash" }
+      }
+    },
+    "bundleIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "SHA-256 of canonical manifest JSON after removing only bundle.digest." }
+      }
+    }
+  }
+}

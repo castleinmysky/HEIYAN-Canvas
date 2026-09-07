@@ -1,0 +1,6 @@
+.trial-notice { position: fixed; bottom: 14px; left: 18px; z-index: 50; max-width: min(460px, 55vw); padding: 8px 12px; border: 1px solid var(--canvas-border-strong); border-radius: 10px; background: var(--canvas-surface); color: var(--canvas-text-soft); font-size: 12px; line-height: 1.5; pointer-events: none; }
+.trial-start-error { max-width: 38rem; margin: 20vh auto; padding: 2rem; line-height: 1.6; }
+.trial-settings-message { padding: 32px; max-width: 680px; line-height: 1.7; }
+.trial-settings-message h2 { font-size: 20px; margin: 0 0 12px; }
+.trial-settings-message p { color: var(--canvas-text-soft); font-size: 16px; }
+@media (max-width: 600px) { .trial-notice { left: 8px; bottom: 64px; max-width: calc(100vw - 16px); font-size: 12px; } }

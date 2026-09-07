@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:heiyan:managed-comfy:runtime-health:v1",
+  "title": "RuntimeHealthV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "bundle", "installationId", "capabilityIds"],
+  "properties": {
+    "schemaVersion": { "const": "echo-canvas-managed-health/v1" },
+    "bundle": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+        "version": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+        "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "installationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "capabilityIds": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" } }
+  }
+}

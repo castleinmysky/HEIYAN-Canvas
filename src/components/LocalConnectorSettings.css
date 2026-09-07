@@ -1,0 +1,31 @@
+.local-connector-card { margin:24px; max-width:850px; padding:28px; border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:18px; font-size:14px; line-height:1.65; }
+.local-connector-card header { display:flex; gap:16px; align-items:flex-start; }
+.local-connector-symbol { display:grid; place-items:center; flex:none; width:44px; height:44px; border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:12px; }
+.local-connector-card h2 { margin:0 0 4px; font-size:18px; line-height:1.4; }
+.local-connector-card p { margin:0; opacity:.7; }
+.local-connector-card ol { padding:20px 0 20px 20px; margin:16px 0; border-block:1px solid color-mix(in srgb,currentColor 9%,transparent); }
+.local-connector-card li { padding:5px 0 5px 5px; }
+.local-connector-card a { color:inherit; text-underline-offset:4px; white-space:nowrap; }
+.local-connector-card label { display:block; margin-bottom:8px; font-weight:600; }
+.local-connector-pair { display:flex; gap:10px; }
+.connector-location { display:flex; gap:6px; flex-wrap:wrap; margin-top:24px; }
+.local-connector-card .connector-location button { display:inline-flex; gap:8px; align-items:center; background:transparent; font-size:14px; }
+.local-connector-card .connector-location button[aria-pressed="true"] { color:var(--canvas-primary-ink); background:var(--canvas-primary); }
+.connector-location .ui-icon { width:16px; height:16px; }
+.connector-address { margin-bottom:16px; }
+.connector-address input { box-sizing:border-box; width:100%; min-height:44px; padding:10px 14px; border:1px solid color-mix(in srgb,currentColor 16%,transparent); background:transparent; color:inherit; border-radius:10px; font:inherit; }
+.local-connector-card footer p { margin:0 0 12px; opacity:1; }
+.local-connector-pair input { flex:1; min-width:0; min-height:44px; padding:10px 14px; border:1px solid color-mix(in srgb,currentColor 16%,transparent); background:transparent; color:inherit; border-radius:10px; font:inherit; }
+.local-connector-card button { border:1px solid color-mix(in srgb,currentColor 16%,transparent); border-radius:10px; min-height:42px; padding:9px 18px; background:color-mix(in srgb,currentColor 8%,transparent); color:inherit; font:inherit; font-weight:600; cursor:pointer; }
+.local-connector-card button:hover { background:color-mix(in srgb,currentColor 14%,transparent); }
+.local-connector-card button:disabled { opacity:.45; cursor:default; }
+.local-connector-card :is(a,button,input):focus-visible { outline:2px solid #299bc0; outline-offset:3px; }
+.local-connector-status { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:60px; }
+.local-connector-status > span::before { content:''; display:inline-block; margin-right:8px; width:6px; height:6px; border-radius:50%; background:#8b9094; }
+.local-connector-status > .is-paired::before { background:#33b879; }
+.local-connector-status button { min-height:30px; padding:3px 8px; border:0; background:none; font-weight:400; }
+.local-connector-card .local-connector-error { opacity:1; padding:12px; margin:8px 0; border-radius:8px; background:#ad42421c; color:inherit; }
+.connector-keep-tasks { display:grid; gap:12px; justify-items:start; padding:4px 0 20px; }
+.local-connector-card .connector-retained-notice { opacity:1; padding:12px; margin:8px 0 16px; border:1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius:8px; }
+.local-connector-card footer { opacity:.64; padding-top:16px; border-top:1px solid color-mix(in srgb,currentColor 9%,transparent); }
+@media(max-width:600px) { .local-connector-card { margin:14px; padding:18px; } .local-connector-pair { flex-direction:column; } }

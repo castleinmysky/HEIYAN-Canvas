@@ -1,0 +1,26 @@
+.generated-asset-history .generated-asset-preview-layer > section { height: min(780px, 100%); min-height: 0; grid-template-rows: 58px minmax(0, 1fr) auto; }
+.generated-asset-history .generated-asset-preview-media { height: 100%; min-height: 0; min-width: 0; }
+.generation-history-head-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.generated-asset-history .generation-history-head-actions button,
+.generation-history-confirm button { min-height: 34px; padding: 0 11px; color: var(--canvas-text-soft); background: var(--canvas-control); border: 0; border-radius: 9px; cursor: pointer; font: 650 10px/1 var(--canvas-font-ui); }
+.generated-asset-history .history-danger, .settings-center .settings-generated-block .danger { color: var(--canvas-danger); }
+.generated-asset-history .history-danger:hover:not(:disabled), .settings-center .settings-generated-block .danger:hover:not(:disabled) { background: color-mix(in oklab, var(--canvas-danger) 12%, var(--canvas-control)); }
+.generation-history-head-actions button:disabled, .generation-history-confirm button:disabled { opacity: .4; cursor: not-allowed; }
+.generated-asset-history .generated-asset-card-actions { max-width: calc(100% - 16px); flex-wrap: wrap; }
+.generation-history-confirm-layer { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; padding: 20px; background: color-mix(in oklab, var(--canvas-plane-base) 68%, transparent); }
+.generation-history-confirm { width: min(460px, 100%); padding: 24px; color: var(--canvas-text); background: var(--canvas-plane-raised); border: 1px solid var(--canvas-border); border-radius: 16px; box-shadow: 0 16px 48px color-mix(in oklab, var(--canvas-plane-base) 65%, transparent); }
+.generation-history-confirm strong { font-size: 15px; }
+.generation-history-confirm p, .settings-generated-confirm p { color: var(--canvas-text-soft); font-size: 12px; line-height: 1.65; }
+.generation-history-confirm > div, .settings-generated-confirm > div { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.generation-history-error { padding: 12px; margin-bottom: 12px; color: var(--canvas-danger); background: color-mix(in oklab, var(--canvas-danger) 8%, var(--canvas-control)); border-radius: 10px; font-size: 12px; }
+.settings-generated-confirm { padding: 16px; margin-top: 12px; background: color-mix(in oklab, var(--canvas-danger) 5%, var(--canvas-plane)); border: 1px solid color-mix(in oklab, var(--canvas-danger) 30%, var(--settings-edge)); border-radius: 12px; }
+.settings-generated-confirm > label { display: flex; align-items: flex-start; gap: 8px; color: var(--canvas-text); font-size: 12px; line-height: 1.5; }
+.settings-generated-confirm input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 16px; margin: 1px 0 0; accent-color: var(--canvas-primary); }
+@media (max-width: 650px) {
+  .generated-asset-history .generated-asset-history-head { grid-template-columns: minmax(0, 1fr) auto 34px; gap: 6px; }
+  .generated-asset-history .generated-asset-history-mark { display: none; }
+  .generation-history-head-actions { max-width: 200px; }
+  .generated-asset-history .generated-asset-history-batch { flex-wrap: wrap; }
+  .generated-asset-history .generated-asset-history-batch button { padding-inline: 8px; }
+  .settings-generated-confirm > div { flex-wrap: wrap; }
+}

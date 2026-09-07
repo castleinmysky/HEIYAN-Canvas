@@ -1,0 +1,29 @@
+{
+  "bundle": {
+    "digest": "013af77bdb4a307ec3ff7e8e2c846d5eaef89dde0130a39ae39eab8ae83620a9",
+    "id": "owner-dedicated-comfy",
+    "version": "1.0.0"
+  },
+  "capabilities": [
+    {
+      "findings": [],
+      "id": "example-image",
+      "state": "ready"
+    }
+  ],
+  "installation": {
+    "endpoint": "http://127.0.0.1:8288",
+    "id": "local-installation-01",
+    "installRoot": "C:\\ManagedComfy\\owner-dedicated-comfy",
+    "modelRoots": [
+      "C:\\ManagedComfy\\owner-dedicated-comfy\\models"
+    ],
+    "state": "installed",
+    "verifiedAt": "2026-09-04T00:00:00.000Z"
+  },
+  "schemaVersion": "installation-receipt/v1",
+  "storage": {
+    "logicalPath": "state/private/installation-receipt-v1.json",
+    "private": true
+  }
+}

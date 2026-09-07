@@ -1,0 +1,359 @@
+/* Hallmark · component: prompt token navigator · genre: modern-minimal · theme: existing AI Canvas tokens
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * hierarchy: integrated assistant rail · intent bookmarks · always-visible primary dimension · on-demand detail field
+ * pre-emit critique: P5 H5 E5 S5 R5 V5
+ */
+.prompt-token-composer {
+  --prompt-cascade-accent: var(--canvas-progress-core);
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  color: var(--canvas-text);
+  background: var(--canvas-surface);
+  border: 1px solid var(--canvas-border);
+  border-radius: var(--canvas-radius-control);
+  box-sizing: border-box;
+  font: 600 var(--font-meta)/1.3 var(--canvas-font-ui);
+}
+.prompt-token-composer.is-inline { margin-top: var(--canvas-space-2); overflow: hidden; }
+.prompt-token-composer.is-embedded { overflow: hidden; background: transparent; border: 0; border-radius: 0; }
+.prompt-token-composer.is-toolcard { overflow: hidden; background: color-mix(in oklab, var(--canvas-surface) 96%, var(--canvas-field)); border-color: var(--canvas-border-strong); border-radius: var(--canvas-radius-control); box-shadow: var(--canvas-shadow-control); }
+.prompt-token-composer button,
+.prompt-token-composer input { font: inherit; }
+.prompt-token-composer button:focus-visible,
+.prompt-token-composer input:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 1px; }
+
+.prompt-cascade-trigger { display: flex; width: 100%; min-height: 36px; align-items: center; justify-content: space-between; gap: var(--canvas-space-3); padding: 0 var(--canvas-space-3); color: var(--canvas-text-soft); text-align: left; background: var(--canvas-control); border: 0; cursor: pointer; }
+.prompt-cascade-trigger:hover,
+.prompt-cascade-trigger[aria-expanded='true'] { color: var(--canvas-text); background: var(--canvas-control-hover); }
+.prompt-cascade-trigger > span { display: inline-flex; min-width: 0; align-items: baseline; gap: var(--canvas-space-2); }
+.prompt-cascade-trigger small,
+.prompt-cascade-trigger b { overflow: hidden; color: var(--canvas-text-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-cascade-trigger i { font-style: normal; transition: transform var(--canvas-duration-short) var(--canvas-ease-out); }
+.prompt-token-composer.is-expanded .prompt-cascade-trigger i { transform: rotate(180deg); }
+
+.prompt-cascade-body { width: 100%; min-width: 0; box-sizing: border-box; }
+.prompt-token-composer.is-embedded .prompt-cascade-body { max-height: 320px; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--canvas-border); }
+.prompt-token-composer.is-toolcard .prompt-cascade-body { max-height: 224px; overflow: hidden; }
+.prompt-cascade-modebar { display: flex; min-height: 40px; align-items: center; gap: var(--canvas-space-2); padding: 5px var(--canvas-space-3); background: var(--canvas-surface-raised); border-bottom: 1px solid var(--canvas-border-strong); }
+.prompt-cascade-scope-tabs { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+.prompt-cascade-scope-tabs > button { position: relative; display: inline-flex; min-height: 30px; align-items: center; gap: 7px; padding: 0 10px; color: var(--canvas-text-muted); white-space: nowrap; background: transparent; border: 1px solid transparent; border-radius: var(--canvas-radius-sm); cursor: pointer; font-size: 11px; font-weight: 720; }
+.prompt-cascade-scope-tabs > button > .ui-icon { width: 14px; height: 14px; }
+.prompt-cascade-scope-tabs > button > span { display: inline-flex; align-items: baseline; gap: 3px; }
+.prompt-cascade-scope-tabs > button > span :is(strong, small) { color: inherit; font: inherit; }
+.prompt-cascade-scope-tabs > button:hover { color: var(--canvas-text-soft); background: var(--canvas-control); }
+.prompt-cascade-scope-tabs > button.active { color: var(--canvas-text); background: var(--canvas-control-hover); border-color: var(--canvas-border-strong); box-shadow: inset 0 -2px 0 var(--prompt-cascade-accent); }
+.prompt-cascade-scope-tabs > button b { display: grid; min-width: 17px; height: 17px; place-items: center; color: var(--canvas-text-muted); background: var(--canvas-field); border-radius: 999px; font-size: 8px; font-variant-numeric: tabular-nums; }
+.prompt-cascade-modebar > small { min-width: 0; margin-left: auto; overflow: hidden; color: var(--canvas-text-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-cascade-recipes { --prompt-recipe-accent: var(--image); display: flex; min-width: 0; align-items: center; gap: 4px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+.prompt-cascade-recipes.is-negative { --prompt-recipe-accent: var(--canvas-danger); }
+.prompt-cascade-recipes.is-collapsed { max-width: none !important; flex: 0 0 auto !important; overflow: visible; }
+.prompt-cascade-recipes::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.prompt-cascade-recipes__toggle { display: inline-flex; min-height: 26px; flex: 0 0 auto; align-items: center; gap: 5px; padding: 0 7px; color: var(--canvas-text-muted); background: color-mix(in oklab, var(--prompt-recipe-accent) 7%, var(--canvas-control)); border: 0; border-radius: var(--canvas-radius-sm); cursor: pointer; font-size: var(--font-meta); white-space: nowrap; }
+.prompt-cascade-recipes__toggle .ui-icon { width: 12px; height: 12px; color: var(--prompt-recipe-accent); }
+.prompt-cascade-recipes__toggle i { color: var(--prompt-recipe-accent); font-size: 13px; font-style: normal; transition: transform var(--canvas-duration-short) var(--canvas-ease-out); }
+.prompt-cascade-recipes__toggle[aria-expanded='true'] i { transform: rotate(90deg); }
+.prompt-cascade-recipes > button:not(.prompt-cascade-recipes__toggle) { display: inline-flex; min-height: 26px; flex: 0 0 auto; align-items: center; gap: 5px; padding: 0 7px; color: color-mix(in oklab, var(--prompt-recipe-accent) 26%, var(--canvas-text-soft)); background: color-mix(in oklab, var(--prompt-recipe-accent) 7%, var(--canvas-control)); border: 1px solid color-mix(in oklab, var(--prompt-recipe-accent) 34%, var(--canvas-border)); border-radius: var(--canvas-radius-sm); cursor: pointer; white-space: nowrap; }
+.prompt-cascade-recipes > button:not(.prompt-cascade-recipes__toggle) strong { max-width: 108px; overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; }
+.prompt-cascade-recipes > button:not(.prompt-cascade-recipes__toggle) small { color: var(--canvas-text-muted); font-size: 10px; font-weight: 600; }
+.prompt-cascade-recipes > button:not(.prompt-cascade-recipes__toggle) > span { color: var(--prompt-recipe-accent); font-size: 11px; }
+.prompt-cascade-recipes > button:not(.prompt-cascade-recipes__toggle).active { color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-recipe-accent) 17%, var(--canvas-control)); border-color: color-mix(in oklab, var(--prompt-recipe-accent) 62%, var(--canvas-border)); }
+
+.prompt-cascade-section { display: grid; min-width: 0; }
+.prompt-cascade-section.is-negative { --prompt-cascade-accent: var(--canvas-danger); }
+.prompt-cascade-section__head { display: grid; min-height: 34px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 6px; padding: 0 var(--canvas-space-3); border-bottom: 1px solid var(--canvas-border); }
+.prompt-cascade-section__head > span { color: var(--prompt-cascade-accent); }
+.prompt-cascade-section__head > small { overflow: hidden; color: var(--canvas-text-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-cascade-selected { display: flex; min-height: 36px; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px var(--canvas-space-3); border-bottom: 1px solid var(--canvas-border); }
+.prompt-cascade-selected__label,
+.prompt-cascade-selected__empty { color: var(--canvas-text-muted); font-size: 9px; }
+.prompt-cascade-selected > button:not(.prompt-cascade-clear) { display: inline-flex; max-width: 220px; min-height: 24px; align-items: center; gap: 5px; padding: 0 6px 0 8px; color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-cascade-accent) 12%, var(--canvas-control)); border: 1px solid color-mix(in oklab, var(--prompt-cascade-accent) 32%, var(--canvas-border)); border-radius: var(--canvas-radius-sm); cursor: pointer; }
+.prompt-cascade-selected > button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-cascade-clear { min-height: 24px; margin-left: auto; color: var(--canvas-text-muted); background: transparent; border: 0; cursor: pointer; }
+.prompt-token-composer.is-embedded .prompt-cascade-selected { flex-wrap: nowrap; overflow-x: auto; }
+
+.prompt-cascade-sections { display: flex; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.prompt-cascade-sections::-webkit-scrollbar { display: none; }
+.prompt-cascade-sections { min-height: 36px; align-items: end; gap: 3px; padding: 4px var(--canvas-space-3) 2px; background: var(--canvas-surface); border-bottom: 1px solid var(--canvas-border); }
+.prompt-cascade-sections button { position: relative; display: inline-flex; min-height: 32px; flex: 0 0 auto; align-items: center; gap: 6px; padding: 0 10px; color: var(--canvas-text-muted); white-space: nowrap; background: transparent; border: 0; border-radius: var(--canvas-radius-sm); cursor: pointer; font-size: var(--font-meta); font-weight: 650; }
+.prompt-cascade-sections button .ui-icon { width: 14px; height: 14px; color: color-mix(in oklab, var(--prompt-token-accent) 68%, var(--canvas-text-muted)); }
+.prompt-cascade-disclosure { display: inline-grid; width: 12px; height: 12px; place-items: center; margin-left: 1px; color: currentColor; font-size: 13px; font-style: normal; line-height: 1; transform: rotate(0); transition: transform var(--canvas-duration-short) var(--canvas-ease-out); }
+.prompt-cascade-sections button[aria-expanded='true'] .prompt-cascade-disclosure { transform: rotate(90deg); }
+.prompt-cascade-sections button.active { color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-token-accent) 7%, var(--canvas-control)); font-weight: 780; }
+.prompt-cascade-sections button.active::after { position: absolute; right: 8px; bottom: -2px; left: 8px; height: 2px; content: ''; background: var(--prompt-token-accent); border-radius: 999px; }
+.prompt-cascade-sections button.active .ui-icon { color: var(--prompt-token-accent); }
+.prompt-cascade-sections button[data-tone='subject'], .prompt-cascade-groups > button[data-tone='subject'], .prompt-cascade-tokens > button[data-tone='subject'] { --prompt-token-accent: var(--prompt-tone-subject); }
+.prompt-cascade-sections button[data-tone='wardrobe'], .prompt-cascade-groups > button[data-tone='wardrobe'], .prompt-cascade-tokens > button[data-tone='wardrobe'] { --prompt-token-accent: var(--prompt-tone-wardrobe); }
+.prompt-cascade-sections button[data-tone='action'], .prompt-cascade-groups > button[data-tone='action'], .prompt-cascade-tokens > button[data-tone='action'] { --prompt-token-accent: var(--prompt-tone-action); }
+.prompt-cascade-sections button[data-tone='camera'], .prompt-cascade-groups > button[data-tone='camera'], .prompt-cascade-tokens > button[data-tone='camera'] { --prompt-token-accent: var(--prompt-tone-camera); }
+.prompt-cascade-sections button[data-tone='environment'], .prompt-cascade-groups > button[data-tone='environment'], .prompt-cascade-tokens > button[data-tone='environment'] { --prompt-token-accent: var(--prompt-tone-environment); }
+.prompt-cascade-sections button[data-tone='elements'], .prompt-cascade-groups > button[data-tone='elements'], .prompt-cascade-tokens > button[data-tone='elements'] { --prompt-token-accent: var(--prompt-tone-elements); }
+.prompt-cascade-sections button[data-tone='finish'], .prompt-cascade-groups > button[data-tone='finish'], .prompt-cascade-tokens > button[data-tone='finish'] { --prompt-token-accent: var(--prompt-tone-finish); }
+.prompt-cascade-sections button[data-tone='quality'], .prompt-cascade-groups > button[data-tone='quality'], .prompt-cascade-tokens > button[data-tone='quality'] { --prompt-token-accent: var(--prompt-tone-quality); }
+.prompt-cascade-sections button[data-tone='anatomy'], .prompt-cascade-tokens > button[data-tone='anatomy'],
+.prompt-cascade-groups > button[data-tone='anatomy'],
+.prompt-cascade-sections button[data-tone='content'], .prompt-cascade-groups > button[data-tone='content'], .prompt-cascade-tokens > button[data-tone='content'] { --prompt-token-accent: var(--prompt-tone-danger); }
+.prompt-cascade-sections button[data-tone='frame'], .prompt-cascade-groups > button[data-tone='frame'], .prompt-cascade-tokens > button[data-tone='frame'] { --prompt-token-accent: var(--prompt-tone-frame); }
+.prompt-cascade-groups { display: flex; min-width: 0; min-height: 36px; align-items: center; gap: 2px; padding: 3px var(--canvas-space-4); overflow-x: auto; overscroll-behavior-inline: contain; color: var(--canvas-text-muted); background: color-mix(in oklab, var(--canvas-field) 24%, transparent); border-bottom: 1px solid color-mix(in oklab, var(--canvas-border) 72%, transparent); cursor: grab; scrollbar-width: none; user-select: none; }
+.prompt-cascade-groups::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.prompt-cascade-groups.is-dragging, .prompt-cascade-groups.is-dragging > button { cursor: grabbing; }
+.prompt-cascade-group-divider { width: 1px; height: 18px; flex: 0 0 1px; margin: 0 var(--canvas-space-2); background: color-mix(in oklab, var(--canvas-border-strong) 68%, transparent); }
+.prompt-cascade-groups > button { --prompt-token-accent: var(--canvas-focus); position: relative; display: inline-flex; min-height: 30px; flex: 0 0 auto; align-items: center; padding: 0 var(--canvas-space-2); color: var(--canvas-text-muted); white-space: nowrap; background: transparent; border: 0; border-radius: var(--canvas-radius-sm); cursor: grab; font-size: var(--font-meta); font-weight: 600; }
+.prompt-cascade-groups > button.active { color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-token-accent) 14%, var(--canvas-control)); font-weight: 720; }
+.prompt-cascade-groups > button.active::after { position: absolute; right: 7px; bottom: 1px; left: 7px; height: 1px; content: ''; background: var(--prompt-token-accent); }
+.prompt-cascade-groups > button:active { transform: translateY(1px); }
+.prompt-cascade-groups > button:disabled { opacity: .55; cursor: not-allowed; }
+.prompt-cascade-groups > button[data-state='loading'] { cursor: wait; }
+.prompt-cascade-groups > button[data-state='error'] { border-color: var(--canvas-danger); }
+.prompt-cascade-groups > button[data-state='success'] { border-color: var(--canvas-success); }
+.prompt-cascade-search-result { display: flex; min-height: 32px; min-width: 0; align-items: center; justify-content: space-between; gap: var(--canvas-space-2); padding: 2px var(--canvas-space-3); color: var(--canvas-text-muted); border-top: 1px solid var(--canvas-border); font-size: var(--font-meta); }
+.prompt-cascade-search-result b { flex: 0 0 auto; color: var(--canvas-text-muted); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prompt-cascade-hierarchy { display: grid; min-width: 0; transform-origin: top center; animation: prompt-cascade-reveal 140ms var(--canvas-ease-out); }
+@keyframes prompt-cascade-reveal { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.prompt-cascade-tokens { display: flex; max-height: 120px; min-height: 42px; flex-wrap: wrap; align-content: flex-start; gap: 6px; padding: var(--canvas-space-2) var(--canvas-space-4); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; background: color-mix(in oklab, var(--canvas-field) 38%, transparent); scrollbar-width: none; }
+.prompt-cascade-tokens::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.prompt-cascade-tokens > button { --prompt-token-accent: var(--canvas-focus); position: relative; display: inline-flex; max-width: 220px; min-height: 30px; flex: 0 0 auto; align-items: center; gap: 6px; padding: 0 10px; color: var(--canvas-text-soft); background: color-mix(in oklab, var(--prompt-token-accent) 12%, var(--canvas-control)); border: 1px solid color-mix(in oklab, var(--prompt-token-accent) 23%, var(--canvas-border)); border-radius: var(--canvas-radius-sm); cursor: pointer; }
+.prompt-cascade-tokens > button::before { display: none; content: ''; }
+.prompt-cascade-tokens > button strong { overflow: hidden; font-size: var(--font-meta); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-cascade-tokens > button.active { color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-token-accent) 18%, var(--canvas-control)); border-color: color-mix(in oklab, var(--prompt-token-accent) 64%, var(--canvas-border)); }
+.prompt-cascade-tokens .prompt-cascade-token-check { color: var(--prompt-token-accent); font-size: 11px; font-weight: 850; line-height: 1; }
+.prompt-cascade-tokens > button.prompt-cascade-more { color: var(--canvas-text-muted); background: color-mix(in oklab, var(--canvas-text) 5%, transparent); border-color: transparent; }
+.prompt-cascade-tokens > button.prompt-cascade-more::before { display: none; }
+.prompt-cascade-tokens > button.prompt-cascade-more > span { display: inline-grid; width: 14px; height: 14px; place-items: center; font-size: 14px; line-height: 1; transition: transform var(--canvas-duration-short) var(--canvas-ease-out); }
+.prompt-cascade-tokens > button.prompt-cascade-more[aria-expanded='true'] > span { transform: rotate(90deg); }
+.prompt-cascade-tokens > button:active { background: color-mix(in oklab, var(--prompt-token-accent) 22%, var(--canvas-control-active)); }
+.prompt-cascade-tokens > button:disabled { opacity: .55; cursor: not-allowed; }
+.prompt-cascade-tokens > button[data-state='loading'] { cursor: wait; }
+.prompt-cascade-tokens > button[data-state='error'] { border-color: var(--canvas-danger); }
+.prompt-cascade-tokens > button[data-state='success'] { border-color: var(--canvas-success); }
+.prompt-cascade-tokens > p { margin: auto; color: var(--canvas-text-muted); font-size: var(--font-meta); }
+@media (hover: hover) {
+  .prompt-cascade-sections button:hover { color: var(--canvas-text-soft); background: var(--canvas-control); }
+  .prompt-cascade-groups > button:hover { color: var(--canvas-text-soft); background: color-mix(in oklab, var(--prompt-token-accent) 12%, var(--canvas-control)); }
+  .prompt-cascade-tokens > button:hover { color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-token-accent) 20%, var(--canvas-control-hover)); border-color: color-mix(in oklab, var(--prompt-token-accent) 48%, var(--canvas-border-strong)); }
+  .prompt-cascade-recipes > button:hover { color: var(--canvas-text); background: color-mix(in oklab, var(--prompt-recipe-accent) 13%, var(--canvas-control-hover)); }
+}
+@media (pointer: coarse) {
+  .prompt-cascade-sections button,
+  .prompt-cascade-groups > button,
+  .prompt-cascade-tokens > button,
+  .prompt-cascade-scope-tabs > button { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt-cascade-hierarchy { animation: none; }
+  .prompt-cascade-disclosure { transition: none; }
+}
+@media (max-width: 680px) {
+  .prompt-cascade-section__head > small,
+  .prompt-cascade-modebar > small { display: none; }
+}
+
+/* Surface-only hierarchy: every level is a plane, not a nested frame. */
+.prompt-token-composer,
+.prompt-token-composer.is-toolcard {
+  background: var(--canvas-plane, var(--canvas-surface));
+  border: 0;
+  box-shadow: none;
+}
+.prompt-token-composer.is-toolcard { position: static; width: 100%; margin-left: 0; padding: var(--canvas-space-1); overflow: visible; border-radius: var(--canvas-radius-panel); }
+.generator-editor-panel .prompt-control.has-preset-toolcard,
+.generator-editor-panel .prompt-preset-toolcard,
+.generator-editor-panel .prompt-token-composer.is-toolcard { position: static !important; }
+.prompt-token-composer.is-toolcard :is(
+  .prompt-cascade-modebar,
+  .prompt-cascade-section__head,
+  .prompt-cascade-selected,
+  .prompt-cascade-sections,
+  .prompt-cascade-groups,
+  .prompt-cascade-search-result
+) { border: 0; }
+.prompt-token-composer.is-toolcard .prompt-cascade-modebar { background: var(--canvas-plane, var(--canvas-surface)); }
+.prompt-token-composer.is-toolcard .prompt-cascade-sections { background: color-mix(in oklab, var(--canvas-plane, var(--canvas-surface)) 90%, var(--canvas-plane-raised, var(--canvas-surface-raised))); }
+.prompt-token-composer.is-toolcard .prompt-cascade-groups { background: color-mix(in oklab, var(--canvas-plane-sunken, var(--canvas-field)) 55%, transparent); }
+.prompt-token-composer.is-toolcard .prompt-cascade-tokens { background: color-mix(in oklab, var(--canvas-plane-sunken, var(--canvas-field)) 78%, transparent); }
+.prompt-token-composer.is-toolcard :is(
+  .prompt-cascade-scope-tabs > button,
+  .prompt-cascade-recipes > button:not(.prompt-cascade-recipes__toggle),
+  .prompt-cascade-selected > button:not(.prompt-cascade-clear),
+  .prompt-cascade-tokens > button
+) { border: 0; box-shadow: none; }
+.prompt-token-composer.is-toolcard .prompt-cascade-scope-tabs > button.active { color: var(--canvas-state-selected-ink); background: var(--canvas-state-selected); }
+.prompt-token-composer.is-toolcard .prompt-cascade-scope-tabs > button.active::after,
+.prompt-token-composer.is-toolcard .prompt-cascade-sections button.active::after,
+.prompt-token-composer.is-toolcard .prompt-cascade-groups > button.active::after { display: none; }
+.prompt-token-composer.is-toolcard .prompt-cascade-sections button.active { color: var(--canvas-state-selected-ink); background: color-mix(in oklab, var(--canvas-state-selected) 92%, var(--prompt-token-accent)); }
+.prompt-token-composer.is-toolcard .prompt-cascade-groups > button.active { color: var(--canvas-state-selected-ink); background: color-mix(in oklab, var(--canvas-state-selected) 94%, var(--prompt-token-accent)); }
+.prompt-token-composer.is-toolcard .prompt-cascade-tokens > button { background: color-mix(in oklab, var(--prompt-token-accent) 12%, var(--canvas-control)); }
+.prompt-token-composer.is-toolcard .prompt-cascade-tokens > button.active { color: var(--canvas-state-selected-ink); background: color-mix(in oklab, var(--canvas-state-selected) 90%, var(--prompt-token-accent)); }
+.prompt-cascade-section-rail { display: flex; min-width: 0; align-items: center; background: color-mix(in oklab, var(--canvas-plane, var(--canvas-surface)) 90%, var(--canvas-plane-raised, var(--canvas-surface-raised))); }
+.prompt-cascade-section-rail .prompt-cascade-sections { min-width: 0; flex: 1 1 auto; background: transparent !important; }
+.prompt-cascade-section-rail .prompt-cascade-recipes { max-width: min(46%, 420px); flex: 0 1 auto; margin: 0; padding: 3px var(--canvas-space-3) 3px var(--canvas-space-2); }
+@media (hover: hover) {
+  .prompt-token-composer.is-toolcard .prompt-cascade-sections button:hover,
+  .prompt-token-composer.is-toolcard .prompt-cascade-groups > button:hover,
+  .prompt-token-composer.is-toolcard .prompt-cascade-tokens > button:hover { color: var(--canvas-text); background: var(--canvas-state-hover); border: 0; }
+  .prompt-token-composer.is-toolcard .prompt-cascade-recipes > button:hover { background: var(--canvas-state-hover); border: 0; }
+}
+
+/* Keep polarity controls outside the editor as real bookmarks. The shared spine,
+ * small overlap and opaque canvas surfaces make them read as part of the panel. */
+.generator-editor-panel .prompt-token-composer.is-toolcard {
+  position: relative !important;
+  display: block;
+  width: 100%;
+  padding: 4px;
+  overflow: visible;
+  background: color-mix(in oklab, var(--canvas-plane, var(--canvas-surface)) 97%, var(--canvas-plane-raised, var(--canvas-surface-raised)));
+  border: 1px solid color-mix(in oklab, var(--canvas-text) 7%, transparent);
+  border-radius: var(--canvas-radius-panel);
+  box-shadow: inset 0 1px color-mix(in oklab, var(--canvas-text) 3.5%, transparent);
+}
+.prompt-cascade-modebar.is-bookmarkbar {
+  position: absolute;
+  z-index: 4;
+  top: 96px;
+  left: 0;
+  width: 112px;
+  padding: 4px 8px 4px 4px;
+  pointer-events: auto;
+  transform: translateX(calc(-100% + 1px));
+  background: var(--canvas-plane-raised, var(--canvas-surface-raised));
+  border: 1px solid color-mix(in oklab, var(--canvas-text) 10%, transparent);
+  border-right: 0;
+  border-radius: 12px 0 0 12px;
+  box-shadow: -8px 10px 24px color-mix(in oklab, var(--canvas-shadow-color, #000) 14%, transparent), inset 0 1px color-mix(in oklab, var(--canvas-text) 4%, transparent);
+}
+.prompt-cascade-modebar.is-bookmarkbar::after {
+  position: absolute;
+  top: 7px;
+  right: 0;
+  bottom: 7px;
+  width: 1px;
+  content: '';
+  background: color-mix(in oklab, var(--canvas-text) 8%, transparent);
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs {
+  display: grid;
+  width: 100%;
+  align-items: stretch;
+  gap: 3px;
+  transform: none;
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button {
+  --prompt-bookmark-accent: var(--image);
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 5px 6px 7px;
+  overflow: hidden;
+  color: var(--canvas-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px 2px 2px 8px;
+  box-shadow: none;
+  transition: color 150ms var(--canvas-ease-out), background-color 150ms var(--canvas-ease-out), transform 160ms var(--canvas-ease-out);
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button:last-child { --prompt-bookmark-accent: var(--canvas-danger); }
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button::after {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  bottom: 8px;
+  width: 2px;
+  content: '';
+  background: var(--prompt-bookmark-accent);
+  border-radius: 2px 0 0 2px;
+  opacity: 0;
+  transform: scaleY(.45);
+  transition: opacity 150ms var(--canvas-ease-out), transform 180ms var(--canvas-ease-out);
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button > .ui-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  color: color-mix(in oklab, var(--prompt-bookmark-accent) 64%, var(--canvas-text-muted));
+  transition: color 150ms var(--canvas-ease-out);
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button > span { display: grid; min-width: 0; gap: 2px; text-align: left; }
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button > span strong { overflow: hidden; font-size: 9px; font-weight: 720; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button > span small { display: none; }
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button b {
+  display: grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  margin: 0;
+  color: var(--canvas-text-muted);
+  background: color-mix(in oklab, var(--canvas-text) 5%, transparent);
+  border: 1px solid color-mix(in oklab, var(--canvas-text) 6%, transparent);
+  border-radius: 5px;
+  font-size: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button.active {
+  color: var(--canvas-state-selected-ink);
+  background: color-mix(in oklab, var(--canvas-state-selected) 92%, var(--prompt-bookmark-accent));
+  transform: translateX(3px);
+}
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button.active::after { opacity: .9; transform: scaleY(1); }
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button.active > .ui-icon { color: var(--prompt-bookmark-accent); }
+.prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button.active b { color: var(--canvas-state-selected-ink); background: color-mix(in oklab, var(--prompt-bookmark-accent) 18%, transparent); border-color: color-mix(in oklab, var(--prompt-bookmark-accent) 24%, transparent); }
+.prompt-token-composer.is-toolcard .prompt-cascade-body {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--canvas-plane, var(--canvas-surface));
+  border-radius: calc(var(--canvas-radius-control) - 1px);
+}
+.prompt-token-composer.is-toolcard .prompt-cascade-section.is-hierarchy-collapsed .prompt-cascade-section-rail { border-radius: var(--canvas-radius-control); }
+@media (hover: hover) {
+  .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button:hover {
+    color: var(--canvas-text);
+    background: color-mix(in oklab, var(--prompt-bookmark-accent) 8%, var(--canvas-control-hover));
+    transform: translateX(1px);
+  }
+  .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button.active:hover { transform: translateX(3px); }
+}
+@media (max-width: 680px) {
+  .prompt-token-composer.is-toolcard { position: relative; }
+  .generator-editor-panel .prompt-control.has-preset-toolcard,
+  .generator-editor-panel .prompt-preset-toolcard,
+  .generator-editor-panel .prompt-token-composer.is-toolcard { position: relative !important; }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar {
+    position: static;
+    width: 100%;
+    padding: 4px;
+    pointer-events: auto;
+    transform: none;
+    border: 0;
+    border-bottom: 1px solid color-mix(in oklab, var(--canvas-text) 7%, transparent);
+    border-radius: calc(var(--canvas-radius-control) - 1px) calc(var(--canvas-radius-control) - 1px) 3px 3px;
+    box-shadow: none;
+  }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar::after { display: none; }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs {
+    display: flex;
+    transform: none;
+  }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button {
+    width: auto;
+    min-height: 34px;
+    flex: 1 1 0;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 0 9px;
+    border-radius: var(--canvas-radius-sm);
+  }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button > span { display: inline-flex; gap: 4px; }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button > span small { display: inline; }
+  .prompt-token-composer.is-toolcard .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button.active { transform: none; }
+  .prompt-token-composer.is-toolcard .prompt-cascade-body { border-radius: 3px 3px calc(var(--canvas-radius-control) - 1px) calc(var(--canvas-radius-control) - 1px); }
+  .prompt-cascade-section-rail .prompt-cascade-recipes { max-width: 52%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt-cascade-modebar.is-bookmarkbar .prompt-cascade-scope-tabs > button { transition: none; }
+}

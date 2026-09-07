@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:heiyan:managed-comfy:capability-plan:v1",
+  "title": "ManagedComfyCapabilityPlanV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "bundle", "runtime", "python", "capabilities", "workflows", "models", "customNodes"],
+  "properties": {
+    "schemaVersion": { "const": "managed-comfy-capability-plan/v1" },
+    "bundle": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "version": { "$ref": "#/$defs/id" } }
+    },
+    "runtime": { "$ref": "#/$defs/runtimeSelection" },
+    "python": { "$ref": "#/$defs/runtimeSelection" },
+    "capabilities": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "oneOf": [{ "$ref": "#/$defs/illustriousCapability" }, { "$ref": "#/$defs/h3Capability" }] },
+      "allOf": [
+        { "contains": { "$ref": "#/$defs/illustriousCapability" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/h3Capability" }, "minContains": 1, "maxContains": 1 }
+      ]
+    },
+    "workflows": { "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/workflow" } },
+    "models": { "type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/model" } },
+    "customNodes": { "type": "array", "items": { "$ref": "#/$defs/customNode" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "logicalPath": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[^/]+(?:/[^/]+)*$" },
+    "include": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "logicalPath"],
+      "properties": { "kind": { "enum": ["file", "tree"] }, "logicalPath": { "$ref": "#/$defs/logicalPath" } }
+    },
+    "runtimeSelection": {
+      "type": "object", "additionalProperties": false, "required": ["sourceId", "executableOrEntrypoint", "includes"],
+      "properties": { "sourceId": { "$ref": "#/$defs/id" }, "executableOrEntrypoint": { "$ref": "#/$defs/logicalPath" }, "includes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/include" } } }
+    },
+    "illustriousCapability": {
+      "type": "object", "additionalProperties": false, "required": ["id", "workflowId", "modelRoles", "requiredCustomNodes"],
+      "properties": {
+        "id": { "const": "illustrious-character-v1" },
+        "workflowId": { "const": "illustrious-character-v1" },
+        "modelRoles": {
+          "type": "object", "additionalProperties": false, "required": ["checkpoint", "upscaleModel"],
+          "properties": { "checkpoint": { "const": "illustrious-checkpoint" }, "upscaleModel": { "const": "illustrious-upscale-model" } }
+        },
+        "requiredCustomNodes": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "h3Capability": {
+      "type": "object", "additionalProperties": false, "required": ["id", "workflowId", "modelRoles", "requiredCustomNodes"],
+      "properties": {
+        "id": { "const": "minimax-h3-video-v1" },
+        "workflowId": { "const": "minimax-h3-video-v1" },
+        "modelRoles": {
+          "type": "object", "additionalProperties": false,
+          "required": ["diffusion", "referenceDiffusion", "textEncoder", "videoVae", "audioVae", "turboDiffusionLora", "turboReferenceLora", "communityReferenceLora"],
+          "properties": {
+            "diffusion": { "const": "minimax-h3-diffusion" },
+            "referenceDiffusion": { "const": "minimax-h3-reference-diffusion" },
+            "textEncoder": { "const": "minimax-h3-text-encoder" },
+            "videoVae": { "const": "minimax-h3-video-vae" },
+            "audioVae": { "const": "minimax-h3-audio-vae" },
+            "turboDiffusionLora": { "const": "minimax-h3-turbo-diffusion-lora" },
+            "turboReferenceLora": { "const": "minimax-h3-turbo-reference-lora" },
+            "communityReferenceLora": { "const": "minimax-h3-community-reference-lora" }
+          }
+        },
+        "requiredCustomNodes": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "workflow": {
+      "type": "object", "additionalProperties": false, "required": ["id", "sourceId", "logicalPath"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "sourceId": { "$ref": "#/$defs/id" }, "logicalPath": { "$ref": "#/$defs/logicalPath" } }
+    },
+    "model": {
+      "type": "object", "additionalProperties": false, "required": ["id", "sourceId", "logicalPath", "category"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "sourceId": { "$ref": "#/$defs/id" }, "logicalPath": { "$ref": "#/$defs/logicalPath" }, "category": { "enum": ["checkpoints", "upscale_models", "diffusion_models", "text_encoders", "vae", "loras"] } }
+    },
+    "customNode": {
+      "type": "object", "additionalProperties": false, "required": ["id", "sourceId", "logicalPath", "versionState"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "sourceId": { "$ref": "#/$defs/id" }, "logicalPath": { "$ref": "#/$defs/logicalPath" }, "versionState": { "enum": ["pinned", "unverified"] } }
+    }
+  }
+}

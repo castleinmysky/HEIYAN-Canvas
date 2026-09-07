@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:heiyan:managed-comfy:inventory-report:v1",
+  "title": "InventoryReportV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "hashMode", "sources", "payloadFiles", "runtime", "customNodes", "workflows", "models", "exclusions", "portability", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "inventory-report/v1" },
+    "hashMode": { "enum": ["none", "all"] },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["comfy", "models", "workflows"] }
+        }
+      }
+    },
+    "payloadFiles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/payloadFile" } },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileCount", "bytes", "nativeBinaryCount", "python"],
+      "properties": {
+        "fileCount": { "$ref": "#/$defs/count" },
+        "bytes": { "$ref": "#/$defs/count" },
+        "nativeBinaryCount": { "$ref": "#/$defs/count" },
+        "python": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "configPresent", "findings"],
+          "properties": {
+            "state": { "enum": ["portable", "machine_bound", "missing"] },
+            "configPresent": { "type": "boolean" },
+            "findings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          }
+        }
+      }
+    },
+    "customNodes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "fileCount", "bytes"],
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "logicalPath", "fileCount", "bytes", "versionState", "nativeBinaryCount", "findings"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "logicalPath": { "$ref": "#/$defs/logicalPath" },
+              "fileCount": { "$ref": "#/$defs/count" },
+              "bytes": { "$ref": "#/$defs/count" },
+              "versionState": { "enum": ["versioned_unverified", "unversioned"] },
+              "nativeBinaryCount": { "$ref": "#/$defs/count" },
+              "findings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            }
+          }
+        },
+        "fileCount": { "$ref": "#/$defs/count" },
+        "bytes": { "$ref": "#/$defs/count" }
+      }
+    },
+    "workflows": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "fileCount", "bytes", "parsed", "blocked"],
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["logicalPath", "bytes", "parseStatus", "nodeTypeMultiset", "nodeCount", "linkCount", "sanitizerFindings"],
+            "properties": {
+              "logicalPath": { "$ref": "#/$defs/logicalPath" },
+              "bytes": { "$ref": "#/$defs/count" },
+              "parseStatus": { "enum": ["parsed", "invalid_json", "unsupported_shape"] },
+              "nodeTypeMultiset": { "type": "object", "additionalProperties": { "$ref": "#/$defs/count" } },
+              "nodeCount": { "$ref": "#/$defs/count" },
+              "linkCount": { "$ref": "#/$defs/count" },
+              "sanitizerFindings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            }
+          }
+        },
+        "fileCount": { "$ref": "#/$defs/count" },
+        "bytes": { "$ref": "#/$defs/count" },
+        "parsed": { "$ref": "#/$defs/count" },
+        "blocked": { "$ref": "#/$defs/count" }
+      }
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "categories", "fileCount", "bytes", "incompleteBlocked"],
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sourceId", "logicalPath", "category", "bytes", "hash"],
+            "properties": {
+              "sourceId": { "type": "string", "minLength": 1 },
+              "logicalPath": { "$ref": "#/$defs/logicalPath" },
+              "category": { "type": "string", "minLength": 1 },
+              "bytes": { "$ref": "#/$defs/count" },
+              "hash": { "$ref": "#/$defs/hash" }
+            }
+          }
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["category", "fileCount", "bytes"],
+            "properties": {
+              "category": { "type": "string", "minLength": 1 },
+              "fileCount": { "$ref": "#/$defs/count" },
+              "bytes": { "$ref": "#/$defs/count" }
+            }
+          }
+        },
+        "fileCount": { "$ref": "#/$defs/count" },
+        "bytes": { "$ref": "#/$defs/count" },
+        "incompleteBlocked": { "$ref": "#/$defs/count" }
+      }
+    },
+    "exclusions": { "type": "array", "items": { "$ref": "#/$defs/exclusion" } },
+    "portability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "blockers", "warnings"],
+      "properties": {
+        "status": { "enum": ["ready", "blocked"] },
+        "blockers": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "warnings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discovered", "excluded"],
+      "properties": {
+        "discovered": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["records", "files", "bytes"],
+          "properties": {
+            "records": { "$ref": "#/$defs/count" },
+            "files": { "$ref": "#/$defs/count" },
+            "bytes": { "$ref": "#/$defs/count" }
+          }
+        },
+        "excluded": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["files", "bytes"],
+          "properties": {
+            "files": { "$ref": "#/$defs/count" },
+            "bytes": { "$ref": "#/$defs/count" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0 },
+    "logicalPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[^/]+(?:/[^/]+)*$"
+    },
+    "hash": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "state", "value"],
+          "properties": { "algorithm": { "const": "sha256" }, "state": { "const": "not_computed" }, "value": { "type": "null" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "state", "value"],
+          "properties": { "algorithm": { "const": "sha256" }, "state": { "const": "computed" }, "value": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+        }
+      ]
+    },
+    "payloadFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "category", "logicalPath", "targetPath", "bytes", "hash"],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["runtime", "python_runtime", "custom_node", "workflow", "model"] },
+        "logicalPath": { "$ref": "#/$defs/logicalPath" },
+        "targetPath": { "$ref": "#/$defs/logicalPath" },
+        "bytes": { "$ref": "#/$defs/count" },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "count"],
+      "properties": { "code": { "type": "string", "minLength": 1 }, "count": { "type": "integer", "minimum": 1 } }
+    },
+    "exclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "fileCount", "bytes"],
+      "properties": {
+        "reason": { "type": "string", "minLength": 1 },
+        "fileCount": { "$ref": "#/$defs/count" },
+        "bytes": { "$ref": "#/$defs/count" }
+      }
+    }
+  }
+}

@@ -1,0 +1,263 @@
+/* Hallmark · macrostructure: Workbench conversation rail · genre: modern-minimal
+ * theme: studied-DNA (source: user canvas.best screenshots), HEIYAN 260deg neutral tokens.
+ * Variation: independent Agent entry, push-aside conversation, plain reading surface.
+ * Hallmark pre-emit critique: P4 H4 E4 S4 R5 V4 (source review; viewport QA separate). */
+@import './canvas-agent-tokens.css';
+
+html:has(.canvas-agent-dock), body:has(.canvas-agent-dock) { overflow-x: clip; }
+/* A real viewport resize is intentional here: the user asked for a pushing
+ * split, not an overlay or a scaled canvas. Never transform node coordinates. */
+.app-shell > .studio-layout { margin-right: 0; transition: margin-right var(--cad-slide-duration) var(--cad-slide-ease); }
+.app-shell[data-agent-open] > .studio-layout { margin-right: var(--canvas-agent-width); }
+.app-shell > .topbar { transition: right var(--cad-slide-duration) var(--cad-slide-ease); }
+.app-shell[data-agent-open] > .topbar { right: calc(var(--canvas-agent-width) + var(--canvas-top-chrome-inset, 12px)); grid-template-columns: minmax(0, 1fr) auto; }
+.app-shell[data-agent-open] > .topbar .task-context { display: none; }
+.app-shell > .topbar .canvas-top-right-controls { display: flex; align-items: center; justify-self: end; grid-column: -2 / -1; gap: 12px; min-width: 0; pointer-events: none; }
+.app-shell > .topbar .canvas-top-right-controls > * { pointer-events: auto; }
+.app-shell > .topbar .canvas-save-alert { display: flex; align-items: center; justify-self: end; justify-content: flex-end; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; min-width: 0; max-width: 100%; padding: 8px; color: var(--canvas-text); background: var(--cad-rail); border: 1px solid var(--cad-rule); border-radius: var(--cad-radius-md); }
+.canvas-save-alert .conflict-label { flex: 1 1 100%; white-space: normal; overflow-wrap: anywhere; }
+.app-shell > .topbar .canvas-save-alert .reload-button { display: inline-flex; align-items: center; min-height: 36px; padding-inline: 10px; }
+.app-shell > .topbar .top-actions.heiyan-utility-cluster { position: static; flex: 0 0 auto; gap: 4px; }
+.canvas-utility-divider { width: 1px; height: 20px; margin-inline: 4px; background: var(--cad-rule); }
+.app-shell > .topbar .canvas-agent-toggle { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; min-width: 92px; height: 44px; gap: 8px; padding: 0 16px; color: var(--canvas-primary-ink); background: var(--canvas-primary); border: 1px solid var(--cad-rule); border-radius: var(--canvas-top-chrome-radius); box-shadow: none; font: 650 14px/1 var(--canvas-font-ui); white-space: nowrap; cursor: pointer; }
+.app-shell > .topbar .canvas-agent-toggle > span { display: inline; }
+.app-shell > .topbar .canvas-agent-toggle > svg { width: 18px; height: 18px; color: inherit; }
+.app-shell > .topbar .canvas-agent-toggle[aria-pressed=true] { color: var(--canvas-text); background: var(--cad-rail); border-color: var(--canvas-border-strong); }
+.app-shell > .topbar .canvas-agent-toggle:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 3px; }
+.app-shell > .topbar .canvas-agent-toggle:active { transform: translateY(1px); }
+/* One CSS-pixel rhythm: browser/OS scaling already maps these vector controls
+ * to device pixels. Never multiply UI geometry by devicePixelRatio. */
+.app-shell > .topbar .canvas-top-left-controls { align-items: center; }
+.app-shell > .topbar :is(.canvas-app-menu-trigger,.canvas-board-trigger,.canvas-agent-toggle) { box-sizing: border-box; height: var(--cad-chrome-size); min-height: var(--cad-chrome-size); }
+.app-shell > .topbar .canvas-app-menu-trigger { width: var(--cad-chrome-size); min-width: var(--cad-chrome-size); }
+.app-shell > .topbar .top-actions.heiyan-utility-cluster { height: var(--cad-chrome-size); min-height: var(--cad-chrome-size); padding: 0; gap: 0; align-items: center; }
+.app-shell > .topbar .top-actions.heiyan-utility-cluster > .ui-icon-button { width: var(--cad-chrome-size) !important; min-width: var(--cad-chrome-size) !important; height: var(--cad-chrome-size) !important; min-height: var(--cad-chrome-size) !important; flex-basis: var(--cad-chrome-size); display: grid; place-items: center; padding: 0; }
+.app-shell > .topbar .top-actions.heiyan-utility-cluster > button.canvas-theme-toggle { width: 58px !important; min-width: 58px !important; height: 36px !important; min-height: 36px !important; flex-basis: 58px; margin: 0 3px; transform: none; }
+.app-shell > .topbar .canvas-theme-toggle::after { content: ''; position: absolute; inset: -4px 0; border-radius: inherit; }
+.app-shell > .topbar .canvas-theme-toggle .theme-toggle-orb { width: 26px; height: 26px; top: 4px; left: 3px; }
+.app-shell > .topbar .canvas-theme-toggle.is-day .theme-toggle-orb { transform: translateX(24px) rotate(180deg); }
+.app-shell > .topbar :is(.canvas-app-menu-trigger,.canvas-agent-toggle) > .ui-icon,
+.app-shell > .topbar .top-actions.heiyan-utility-cluster > .ui-icon-button .ui-icon { width: var(--cad-chrome-icon); height: var(--cad-chrome-icon); }
+
+/* Conversation owns its draft and references. Node editor styles do not belong here. */
+.canvas-agent-dock {
+  box-sizing: border-box;
+  position: fixed; z-index: var(--cad-z-dock); inset: 0 0 0 auto; width: var(--canvas-agent-width);
+  display: flex; flex-direction: column; min-width: 0;
+  color: var(--canvas-text); background: var(--cad-rail);
+  border-left: 1px solid var(--cad-rule);
+  font: 14px/1.5 var(--canvas-font-ui);
+  transform: translateX(100%); visibility: hidden; pointer-events: none;
+  transition: transform var(--cad-slide-duration) var(--cad-slide-ease), visibility 0s var(--cad-slide-duration);
+}
+.canvas-agent-dock[data-open=true] { transform: translateX(0); visibility: visible; pointer-events: auto; transition-delay: 0s; }
+.app-shell[data-agent-resizing] > :is(.studio-layout,.topbar) { transition: none; }
+.canvas-agent-dock * { box-sizing: border-box; }
+.canvas-agent-dock :is(button,input,textarea) { font: inherit; }
+.canvas-agent-dock button { color: var(--canvas-text); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease; }
+.canvas-agent-dock button:disabled { cursor: not-allowed; opacity: .45; }
+.canvas-agent-dock :is(button,input,textarea,[role=separator]):focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock svg { width: 18px; height: 18px; flex-shrink: 0; }
+.canvas-agent-head { display: flex; flex: 0 0 64px; align-items: center; gap: 8px; padding-inline: 24px 12px; border-bottom: 1px solid var(--cad-rule); }
+.canvas-agent-title { font-weight: 650; font-size: 14px; }
+.canvas-agent-head > .canvas-agent-connection { display: flex; align-items: center; min-height: 36px; margin-left: auto; padding: 4px 8px; gap: 6px; border: 0; border-radius: 8px; background: transparent; font-size: 12px; color: var(--canvas-text-soft); }
+.canvas-agent-connection i { width: 5px; height: 5px; border-radius: 50%; background: var(--canvas-text-muted); }
+.canvas-agent-connection > svg { width: 12px; height: 12px; }
+.canvas-agent-connection[aria-expanded=true] { background: var(--cad-control); color: var(--canvas-text); }
+.canvas-agent-connection[aria-expanded=true] > svg { transform: rotate(180deg); }
+.canvas-agent-dock .canvas-agent-icon { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--canvas-text-soft); font-size: 20px; }
+.canvas-agent-views { display: none; }
+.canvas-agent-resizer { position: absolute; z-index: var(--cad-z-resizer); left: -6px; top: 0; bottom: 0; width: 12px; cursor: ew-resize; touch-action: none; user-select: none; }
+.canvas-agent-resizer::after { content: ''; position: absolute; width: 1px; top: 0; bottom: 0; left: 5px; background: var(--canvas-border-strong); opacity: 0; transition: opacity 140ms ease; }
+.canvas-agent-resizer::before { content: ''; position: absolute; z-index: 1; width: 3px; height: 40px; left: 4px; top: calc(50% - 20px); border-radius: 3px; background: var(--canvas-text-soft); opacity: 0; transition: opacity 140ms ease; }
+.canvas-agent-resizer:is(:focus-visible,[data-dragging])::before, .canvas-agent-resizer:is(:focus-visible,[data-dragging])::after { opacity: 1; }
+.canvas-agent-resizer[data-dragging]::before { background: var(--canvas-focus); }
+body:has(.canvas-agent-resizer[data-dragging]) * { cursor: ew-resize !important; user-select: none !important; }
+body:has(.canvas-agent-composer[data-resizing]) * { cursor: ns-resize !important; user-select: none !important; }
+.canvas-agent-conversation {
+  display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 24px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+  background: var(--cad-rail); color: var(--canvas-text);
+}
+.canvas-agent-quiet-state { display: flex; flex-direction: column; align-items: flex-start; width: 100%; max-width: 320px; margin: auto; padding-block: 32px 64px; }
+.canvas-agent-emblem { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 20px; color: var(--canvas-text-soft); }
+.canvas-agent-emblem > svg { width: 30px; height: 30px; }
+.canvas-agent-quiet-state h2 { min-width: 0; overflow-wrap: anywhere; margin: 0 0 12px; color: var(--canvas-text); font-size: clamp(20px, 1.5vw, 24px); line-height: 1.4; letter-spacing: -.04em; font-weight: 600; }
+.canvas-agent-quiet-state p { margin: 0; font-size: 14px; line-height: 1.9; color: var(--canvas-text-soft); }
+.canvas-agent-scope { margin-top: 24px; font-size: 11px; color: var(--canvas-text-muted); letter-spacing: .02em; }
+.canvas-agent-composer {
+  position: relative; flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px;
+  margin: 16px 16px 0; padding: 14px 12px 10px; height: var(--agent-resized-height, auto);
+  max-height: min(calc(var(--mobile-visible-height, 100dvh) * .65), calc(var(--mobile-visible-height, 100dvh) - 160px));
+  border: 1px solid var(--cad-rule); border-radius: 20px; background: var(--cad-composer); box-shadow: 0 2px 8px var(--cad-shadow);
+}
+.canvas-agent-composer:focus-within { border-color: var(--canvas-border-strong); }
+.canvas-agent-composer[data-collapsed=true] { height: auto; padding-block: 8px; }
+.canvas-agent-grip { position: absolute; z-index: var(--cad-z-resizer); top: -30px; left: calc(50% - 40px); width: 80px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; background: transparent; touch-action: none; user-select: none; cursor: ns-resize !important; }
+.canvas-agent-grip i { width: 32px; height: 4px; border-radius: 4px; background: var(--canvas-text-muted); opacity: .65; pointer-events: none; transition: background-color 140ms ease, opacity 140ms ease, transform 140ms ease; }
+.canvas-agent-composer[data-resizing] { border-color: var(--canvas-border-strong); }
+.canvas-agent-composer[data-resizing] .canvas-agent-grip i { background: var(--canvas-focus); opacity: 1; transform: scaleX(1.15); }
+.canvas-agent-reopen { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 36px; padding: 4px 8px; border: 0; border-radius: 8px; background: transparent; }
+.canvas-agent-reopen span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: left; font-size: 13px; color: var(--canvas-text-soft); }
+.app-shell .canvas-agent-dock textarea.canvas-agent-input {
+  display: block; flex: 1 1 auto; width: 100%; height: 92px; min-height: 52px; max-height: none; margin: 0; padding: 6px 8px;
+  resize: none; border: 0; border-radius: 8px; outline: none; background: transparent; box-shadow: none; color: var(--canvas-text); font: 15px/1.65 var(--canvas-font-ui); overscroll-behavior: contain;
+}
+.app-shell .canvas-agent-dock textarea.canvas-agent-input::placeholder { color: var(--canvas-text-muted); opacity: 1; }
+.app-shell .canvas-agent-dock textarea.canvas-agent-input:focus-visible { outline: 1px solid var(--canvas-focus); outline-offset: -1px; }
+.canvas-agent-composer-footer { display: flex; flex: 0 0 36px; align-items: center; justify-content: space-between; gap: 8px; }
+.canvas-agent-tools { display: flex; align-items: center; min-width: 0; gap: 2px; }
+.canvas-agent-quote-selected { display: flex; align-items: center; gap: 4px; max-width: 132px; min-height: 36px; padding: 4px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--canvas-text-soft) !important; font-size: 11px !important; }
+.canvas-agent-quote-selected span { overflow: hidden; text-overflow: ellipsis; }
+.canvas-agent-quote-selected > svg { width: 14px; height: 14px; }
+.canvas-agent-send { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; padding: 0; border: 1px solid var(--cad-rule); border-radius: 50%; background: var(--cad-control); color: var(--canvas-text-muted) !important; }
+.canvas-agent-send > svg { width: 20px; height: 20px; }
+.canvas-agent-dock .canvas-agent-send:disabled { opacity: .65; }
+.canvas-agent-footnote { flex: 0 0 auto; margin: 9px 16px 14px; text-align: center; font-size: 10px; line-height: 1.5; color: var(--canvas-text-muted); }
+.canvas-agent-footnote[role=alert] { color: var(--canvas-danger); }
+.canvas-agent-context-references { display: flex; flex: 0 0 auto; gap: 8px; max-width: 100%; max-height: 76px; padding: 2px; overflow-x: auto; scrollbar-width: thin; }
+.canvas-agent-context-chip { display: flex; align-items: center; min-width: 0; flex: 0 0 auto; max-width: 220px; padding: 3px; border: 1px solid var(--cad-rule); border-radius: 10px; background: var(--cad-control); }
+.canvas-agent-reference-locate { display: flex; align-items: center; min-width: 0; gap: 8px; padding: 0; border: 0; background: transparent; }
+.canvas-agent-reference-locate > span:last-child { max-width: 128px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.canvas-agent-reference-remove { display: grid; place-items: center; width: 28px; height: 32px; flex-shrink: 0; margin-left: 4px; padding: 0; border: 0; border-radius: 6px; background: transparent; }
+.canvas-agent-reference-remove > svg { width: 12px; height: 12px; }
+.canvas-agent-context-chip[data-missing] { border-color: var(--canvas-danger); }
+.canvas-agent-thumb { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; border-radius: 6px; background: var(--cad-control); overflow: hidden; }
+.canvas-agent-thumb :is(img,video) { width: 100%; height: 100%; object-fit: cover; }
+.canvas-agent-popup {
+  position: absolute; z-index: var(--cad-z-popover); bottom: calc(var(--agent-composer-height, 174px) + 48px); left: 16px; right: 16px;
+  display: flex; flex-direction: column; min-height: 0; max-height: min(420px, calc(var(--mobile-visible-height, 100dvh) - var(--agent-composer-height, 174px) - 180px));
+  padding: 12px; background: var(--canvas-surface); color: var(--canvas-text); border: 1px solid var(--cad-rule); border-radius: 14px; box-shadow: 0 8px 24px var(--cad-shadow);
+}
+.canvas-agent-popup header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 36px; margin-bottom: 8px; }
+.canvas-agent-popup header strong { font-weight: 600; font-size: 13px; }
+.canvas-agent-popup input { width: 100%; height: 40px; flex-shrink: 0; padding: 8px 10px; color: var(--canvas-text); background: var(--cad-control); border: 1px solid var(--cad-rule); border-radius: 8px; }
+.canvas-agent-reference-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-block: 8px; }
+.canvas-agent-reference-list > button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 54px; padding: 6px; text-align: left; border: 0; border-radius: 8px; background: transparent; }
+.canvas-agent-reference-list > button[aria-pressed=true] { background: var(--cad-control); }
+.canvas-agent-reference-list > button > span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.canvas-agent-reference-list small { display: block; margin-top: 3px; color: var(--canvas-text-muted); font-size: 11px; }
+.canvas-agent-popup > p { font-size: 13px; color: var(--canvas-text-soft); }
+.canvas-agent-popup footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--cad-rule); }
+.canvas-agent-popup footer > span { font-size: 10px; color: var(--canvas-text-muted); }
+.canvas-agent-popup footer > button { min-height: 36px; padding: 4px 12px; border: 0; border-radius: 8px; background: var(--canvas-primary); color: var(--canvas-primary-ink); font-size: 12px; }
+.canvas-agent-connection-panel { padding: 36px 24px; overflow-y: auto; }
+.canvas-agent-connection-panel > svg { width: 24px; height: 24px; color: var(--canvas-text-soft); }
+.canvas-agent-connection-panel h2 { margin: 24px 0 12px; font-size: 20px; font-weight: 600; }
+.canvas-agent-connection-panel p { margin: 0 0 24px; font-size: 14px; line-height: 1.8; color: var(--canvas-text-soft); }
+.canvas-agent-boundary { margin: 24px 0; padding-left: 16px; border-left: 2px solid var(--cad-rule); }
+.canvas-agent-boundary strong { font-weight: 500; font-size: 13px; }
+.canvas-agent-boundary p { margin: 8px 0 0; font-size: 12px; }
+.canvas-agent-connection-panel > button { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--cad-rule); border-radius: 8px; background: var(--cad-composer); font-size: 13px; }
+.canvas-agent-dock[data-connection-open] :is(.canvas-agent-conversation,.canvas-agent-composer,.canvas-agent-footnote) { display: none; }
+body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
+
+@media (max-width: 59.999rem) {
+  .app-shell > .topbar .canvas-top-right-controls { gap: 8px; }
+  .app-shell > .topbar .top-actions.heiyan-utility-cluster { gap: 2px; }
+  .canvas-utility-divider { display: none; }
+  .app-shell > .topbar .top-actions.heiyan-utility-cluster > :is(.canvas-app-version,.canvas-app-github,.canvas-language-toggle) { display: none !important; }
+  .app-shell > .topbar .canvas-agent-toggle { min-width: 76px; gap: 4px; padding-inline: 10px; }
+  .app-shell > .topbar .canvas-top-left-controls { min-width: 0; max-width: none; }
+}
+@media (max-width: 79.999rem) {
+  .app-shell[data-agent-open] .canvas-shortcut-guide { bottom: 68px; }
+  .app-shell[data-agent-open] > .topbar .generated-asset-history-trigger,
+  .app-shell[data-agent-open] > .topbar .top-actions.heiyan-utility-cluster > :is(.canvas-app-version,.canvas-app-github,.canvas-language-toggle),
+  .app-shell[data-agent-open] > .topbar .canvas-utility-divider { display: none !important; }
+  .app-shell[data-agent-open] > .topbar .canvas-board-trigger { min-width: 0; width: 100%; }
+  .app-shell[data-agent-open] > .topbar .canvas-top-left-controls { min-width: 0; }
+  .app-shell[data-agent-open] > .topbar .canvas-board-switcher { min-width: 0; flex: 1; }
+}
+@media (max-width: 47.999rem), (pointer: coarse) and (max-width: 59.999rem) {
+  .app-shell[data-agent-open] > .studio-layout { margin-right: 0; transition: none; }
+  .app-shell[data-agent-open] > .topbar { right: 8px; transition: none; }
+  .app-shell > .topbar .canvas-agent-toggle { min-height: 44px; }
+  .canvas-agent-dock { inset: var(--mobile-visible-top, 0px) 0 auto; width: 100%; max-height: var(--mobile-visible-height, 100dvh); border-left: 0; padding-top: env(safe-area-inset-top); }
+  .canvas-agent-dock { transform: translateY(16px); opacity: 0; border-top: 0; transition: transform var(--cad-slide-duration) var(--cad-slide-ease), opacity var(--cad-slide-duration) var(--cad-slide-ease), visibility 0s var(--cad-slide-duration); }
+  .canvas-agent-dock[data-open=true] { transform: none; opacity: 1; }
+  .canvas-agent-dock:not([data-canvas-view=true]), .canvas-agent-dock[data-connection-open] { height: var(--mobile-visible-height, 100dvh); }
+  .canvas-agent-dock[data-canvas-view=true]:not([data-connection-open]) { top: calc(var(--mobile-visible-top, 0px) + max(8px, env(safe-area-inset-top)) + var(--cad-chrome-size) + 10px); bottom: auto; max-height: 48px; padding-top: 0; border-top: 1px solid var(--cad-rule); }
+  .app-shell[data-agent-open]:has(.canvas-agent-dock:not([data-canvas-view=true])), .app-shell[data-agent-open]:has(.canvas-agent-dock[data-connection-open]) { isolation: isolate; }
+  .app-shell[data-agent-open]:has(.canvas-agent-dock:not([data-canvas-view=true])) > .topbar,
+  .app-shell[data-agent-open]:has(.canvas-agent-dock[data-connection-open]) > .topbar { visibility: hidden; pointer-events: none; }
+  .canvas-agent-head { flex-basis: 48px; min-height: 48px; padding-inline: 8px; gap: 4px; }
+  .canvas-agent-title, .canvas-agent-resizer { display: none; }
+  .canvas-agent-views { display: flex; align-items: center; gap: 0; }
+  .canvas-agent-views > button { min-height: 44px; padding: 4px 12px; background: transparent; border: 0; border-bottom: 2px solid transparent; font-size: 13px; }
+  .canvas-agent-views > button[aria-pressed=true] { border-bottom-color: var(--canvas-text); }
+  .canvas-agent-dock .canvas-agent-icon { width: 44px; height: 44px; }
+  .canvas-agent-conversation { padding: 24px; }
+  .canvas-agent-quiet-state { padding-block: 24px; }
+  .canvas-agent-quiet-state h2 { font-size: 24px; }
+  .canvas-agent-dock[data-canvas-view=true]:not([data-connection-open]) :is(.canvas-agent-conversation,.canvas-agent-composer,.canvas-agent-footnote) { display: none; }
+  .app-shell[data-agent-open]:not([data-agent-canvas=true]) .mobile-canvas-tools { display: none; }
+  .canvas-agent-composer { margin: 16px 8px 0; padding: 12px 8px 8px; border-radius: 18px; }
+  .app-shell .canvas-agent-dock textarea.canvas-agent-input { height: 76px; min-height: 48px; font-size: 16px; }
+  .canvas-agent-composer-footer { flex-basis: 44px; }
+  .canvas-agent-send { width: 44px; height: 44px; }
+  .canvas-agent-grip { height: 44px; top: -32px; }
+  .canvas-agent-head > .canvas-agent-connection { min-height: 44px; }
+  .canvas-agent-quote-selected { min-height: 44px; }
+  .canvas-agent-footnote { margin: 8px 12px max(10px, env(safe-area-inset-bottom)); }
+  .canvas-agent-popup { left: 8px; right: 8px; bottom: calc(var(--agent-composer-height, 164px) + 44px); max-height: max(100px, min(420px, calc(var(--mobile-visible-height, 100dvh) - var(--agent-composer-height, 164px) - 180px))); }
+  .canvas-agent-popup footer > button { min-height: 44px; }
+  .canvas-agent-reference-remove { min-width: 36px; min-height: 36px; }
+  .app-shell[data-mobile-keyboard] .canvas-agent-quiet-state { padding-block: 8px; }
+  .app-shell[data-mobile-keyboard] :is(.canvas-agent-emblem,.canvas-agent-scope) { display: none; }
+  .app-shell[data-mobile-keyboard] .canvas-agent-composer { margin-top: 8px; }
+  .app-shell[data-mobile-keyboard] .canvas-agent-dock textarea.canvas-agent-input { height: 52px; }
+}
+@media (max-height: 600px) {
+  .canvas-agent-popup { top: 60px; bottom: 12px; max-height: none; overflow: hidden; }
+}
+@media (max-height: 540px) {
+  .canvas-agent-quiet-state { padding-block: 12px; }
+  .canvas-agent-scope, .canvas-agent-emblem { display: none; }
+}
+@media (max-width: 359px) {
+  .app-shell > .topbar .canvas-agent-toggle { width: 44px; min-width: 44px; padding: 0; }
+  .app-shell > .topbar .canvas-agent-toggle > span { display: none; }
+  .canvas-agent-head > .canvas-agent-connection { gap: 4px; padding-inline: 4px; font-size: 11px; }
+  .canvas-agent-views > button { padding-inline: 10px; }
+  .canvas-agent-quote-selected { padding-inline: 4px; }
+  .canvas-agent-popup footer > span { max-width: 116px; }
+}
+@media (hover:hover) {
+  .app-shell > .topbar .canvas-agent-toggle:hover { border-color: var(--canvas-focus); }
+  .canvas-agent-dock button:hover:not(:disabled) { background-color: var(--canvas-control-hover); }
+  .canvas-agent-resizer:hover::before, .canvas-agent-resizer:hover::after { opacity: 1; }
+  .canvas-agent-dock .canvas-agent-grip:hover i { background: var(--canvas-text-soft); opacity: 1; }
+}
+.canvas-agent-dock button:active:not(:disabled) { background-color: var(--canvas-control-hover); }
+/* The invisible grab target must never become a rectangular hover button. */
+.canvas-agent-dock .canvas-agent-grip:is(:hover,:active,:focus-visible) { background: transparent; box-shadow: none; }
+.canvas-agent-connection[data-connected] i { background: var(--canvas-focus); }
+.canvas-agent-connection-panel label { display: grid; gap: 8px; margin-bottom: 16px; font-size: 14px; }
+.canvas-agent-download { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; margin-bottom: 16px; color: var(--canvas-text); text-decoration: none; border: 1px solid var(--cad-rule); border-radius: 8px; background: var(--cad-control); }
+.canvas-agent-download:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-install-help { font-size: 14px; line-height: 1.8; }
+.canvas-agent-advanced-install { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--cad-rule); font-size: 13px; }
+.canvas-agent-advanced-install summary { cursor: pointer; padding-block: 8px; }
+.canvas-agent-advanced-install a { color: var(--canvas-text); }
+.canvas-agent-connection-panel input { width: 100%; min-height: 42px; padding: 10px; background: var(--cad-composer); color: var(--canvas-text); border: 1px solid var(--cad-rule); border-radius: 8px; }
+.canvas-agent-start-command code { display: block; margin-top: 8px; padding: 12px; background: var(--cad-control); font-size: 12px; overflow-wrap: anywhere; user-select: all; }
+.canvas-agent-message { flex-shrink: 0; min-width: 0; margin: 0 0 24px; font-size: 14px; line-height: 1.8; }
+.canvas-agent-message > small { display: block; margin-bottom: 6px; color: var(--canvas-text-muted); font-size: 12px; }
+.canvas-agent-message > div { white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.canvas-agent-message[data-role=user] { align-self: flex-end; max-width: 92%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: var(--cad-control); }
+.canvas-agent-message[data-role=notice] { font-size: 12px; color: var(--canvas-text-soft); padding-left: 12px; border-left: 2px solid var(--cad-rule); }
+.canvas-agent-proposal { flex-shrink: 0; padding: 16px; margin-bottom: 16px; border: 1px solid var(--cad-rule); border-radius: 12px; background: var(--cad-composer); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.canvas-agent-proposal ol { padding-left: 20px; }
+.canvas-agent-proposal details p { max-height: 240px; overflow: auto; white-space: pre-wrap; }
+.canvas-agent-proposal footer { display: flex; justify-content: flex-end; gap: 8px; }
+.canvas-agent-proposal button { min-height: 40px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--cad-rule); background: var(--cad-control); }
+.canvas-agent-proposal button:last-child, .canvas-agent-send:not(:disabled) { background: var(--canvas-primary); color: var(--canvas-primary-ink) !important; }
+.canvas-agent-progress { font-size: 12px; color: var(--canvas-text-muted); }
+.canvas-agent-error { font-size: 13px; color: var(--canvas-danger); overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .canvas-agent-dock button, .canvas-agent-grip i, .canvas-agent-resizer::before, .canvas-agent-resizer::after { transition: none; }
+  .app-shell > :is(.studio-layout,.topbar) { transition: none; }
+  .canvas-agent-dock, .canvas-agent-dock[data-open=true] { transform: none; transition: opacity 120ms linear, visibility 0s 120ms; }
+  .canvas-agent-dock { opacity: 0; }
+  .canvas-agent-dock[data-open=true] { opacity: 1; transition-delay: 0s; }
+}

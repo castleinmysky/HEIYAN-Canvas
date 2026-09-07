@@ -1,0 +1,157 @@
+.react-flow .react-flow__node.react-flow__node-collection { pointer-events: none; }
+.react-flow__node-collection :is(.collection-node, .react-flow__resize-control) { pointer-events: auto; }
+.react-flow:has(.react-flow__node-collection.selected) .react-flow__nodesselection-rect { pointer-events: none !important; }
+.collection-node {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  color: var(--node-text-soft);
+  background: var(--node-surface);
+  border: 1px solid var(--node-border);
+  border-radius: var(--canvas-node-radius, var(--canvas-radius-node));
+  cursor: grab;
+  box-shadow: var(--node-shadow-rest);
+}
+.collection-node:active { cursor: grabbing; }
+.react-flow__node-collection.selected .collection-node { border-color: var(--node-border-selected); box-shadow: var(--node-shadow-selected); }
+.collection-node-heading {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  cursor: inherit;
+  color: var(--node-text-soft);
+  background: var(--node-surface-raised);
+  border-bottom: 1px solid var(--node-border);
+  border-radius: var(--canvas-node-radius, var(--canvas-radius-node)) var(--canvas-node-radius, var(--canvas-radius-node)) 0 0;
+  box-shadow: 0 5px 14px rgba(0,0,0,.16);
+}
+.collection-drag-handle { cursor: grab; }
+.collection-drag-handle:active { cursor: grabbing; }
+.collection-node-heading > .collection-drag-handle { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
+.collection-node-heading strong { overflow: hidden; color: var(--node-text); font-size: var(--font-body); text-overflow: ellipsis; white-space: nowrap; }
+.collection-node-heading .node-inline-title-input { flex: 1 1 auto; width: 0; height: 28px; font-size: var(--font-body); }
+.collection-node-heading span, .collection-node-heading em { color: var(--node-text-muted); font-size: var(--font-meta); font-style: normal; white-space: nowrap; }
+.collection-collapse, .collection-run-actions button {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  color: var(--node-text-soft);
+  background: var(--node-control);
+  border: 1px solid var(--node-border);
+  border-radius: 5px;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-support);
+}
+.collection-run-actions { display: flex; gap: 4px; }
+.collection-running-label { display: inline-flex; height: 24px; align-items: center; padding: 0 7px; color: var(--node-text-muted); font-size: var(--font-support); }
+.collection-run-actions button:hover, .collection-collapse:hover { color: var(--node-text); background: var(--node-control-hover); border-color: var(--node-border-hover); }
+.collection-run-actions button.danger { color: #ef8993; }
+.collection-workflow-status { position: absolute; right: 8px; bottom: 7px; left: 8px; display: grid; gap: 4px; }
+.collection-workflow-status > div { display: flex; justify-content: space-between; gap: 10px; color: var(--node-text-muted); font-size: var(--font-meta); }
+.collection-workflow-status > div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.collection-workflow-status > div strong { color: var(--node-text-soft); font-weight: 600; }
+.collection-workflow-status > i { height: 2px; overflow: hidden; background: #414141; border-radius: 2px; }
+.collection-workflow-status > i > span { display: block; width: 0; height: 100%; background: #d3d3d3; transition: width 180ms ease; }
+.collection-workflow-status.is-failed > div span { color: #ef8993; }
+.collection-workflow-status.is-failed > i > span { background: #ef8993; }
+.collection-node.is-collapsed { min-width: 200px; min-height: 124px; background: var(--node-surface); box-shadow: var(--node-shadow-rest); }
+.collection-node.is-collapsed .collection-node-heading { grid-template-columns: minmax(0, 1fr) auto; border-radius: var(--canvas-node-radius, var(--canvas-radius-node)) var(--canvas-node-radius, var(--canvas-radius-node)) 0 0; }
+.collection-node.is-collapsed .collection-node-heading > em { display: none; }
+.collection-collapsed-body { position: absolute; inset: 43px 0 0; display: grid; align-content: center; gap: 6px; padding: 7px 9px; color: var(--node-text-soft); font-size: var(--font-support); cursor: inherit; }
+.collection-collapsed-body span { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.collection-collapsed-body b { color: var(--node-text-muted); font-size: var(--font-meta); font-weight: 500; }
+.collection-collapsed-body i { width: 6px; height: 6px; background: #bcbcbc; border: 1px solid #222; border-radius: 50%; box-shadow: 0 0 0 2px rgba(220,220,220,.12); }
+.collection-input-port-rail { position: absolute; z-index: 12; top: 50%; left: -1px; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; transform: translate(-50%, -50%); }
+.collection-input-port-rail.is-dense { gap: 2px; }
+.collection-input-port-rail .react-flow__handle.collection-input-port { position: relative; top: auto; left: auto; width: 10px; min-width: 10px; height: 10px; min-height: 10px; pointer-events: auto; cursor: crosshair; background: #cfd1d4; border: 2px solid #252629; border-radius: 50%; box-shadow: 0 0 0 1px rgba(220,220,220,.2); transform: none; transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
+.collection-input-port-rail.is-dense .react-flow__handle.collection-input-port { width: 8px; min-width: 8px; height: 8px; min-height: 8px; }
+.collection-input-port-rail .react-flow__handle.collection-input-port:hover { border-color: #f3f3f3; box-shadow: 0 0 0 3px rgba(230,230,230,.16); transform: scale(1.15); }
+.collection-collapsed-summary { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 6px; }
+.collection-collapsed-summary > b { min-width: 0; overflow: hidden; color: var(--node-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.collection-node .collection-proxy-handle { z-index: 5; width: 10px; height: 10px; pointer-events: none; background: #c8c8c8; border: 2px solid #292929; box-shadow: 0 0 0 2px rgba(220,220,220,.16); }
+.collection-node .collection-proxy-input { left: 0; }
+.collection-node .collection-proxy-output { right: 0; }
+.collection-proxy-edge .react-flow__edge-path { stroke-width: 1.2; }
+.workflow-toolbox-trigger { position: absolute; z-index: 35; bottom: 14px; left: 14px; display: inline-flex; height: 38px; align-items: center; gap: 7px; padding: 0 12px; color: var(--node-text-soft); background: var(--node-surface-raised); border: 1px solid var(--node-border); border-radius: 9px; box-shadow: var(--node-shadow-rest); cursor: pointer; font-size: var(--font-support); font-weight: 700; }
+.workflow-toolbox-trigger .ui-icon { width: 16px; height: 16px; color: var(--node-text-muted); }
+.workflow-toolbox-trigger:hover, .workflow-toolbox-trigger.active { color: var(--node-text); background: var(--node-control-hover); border-color: var(--node-border-hover); }
+.workflow-toolbox-drawer { position: absolute; z-index: 45; bottom: 62px; left: 14px; display: grid; width: min(330px, calc(100vw - 28px)); max-height: min(560px, calc(100vh - 120px)); grid-template-rows: auto minmax(0, 1fr); overflow: hidden; color: #d7d7d7; background: #292929; border: 1px solid #4a4a4a; border-radius: 10px; box-shadow: 0 18px 44px rgba(0,0,0,.42); }
+.workflow-toolbox-drawer > header { display: flex; align-items: center; justify-content: space-between; padding: 11px 12px; border-bottom: 1px solid #444; }
+.workflow-toolbox-drawer > header div { display: grid; gap: 2px; }
+.workflow-toolbox-drawer > header strong { color: var(--node-text); font-size: var(--font-body); }
+.workflow-toolbox-drawer > header span { color: var(--node-text-muted); font-size: var(--font-meta); }
+.workflow-toolbox-drawer > header button { width: 28px; height: 28px; color: #bbb; background: #303030; border: 1px solid #4c4c4c; border-radius: 7px; cursor: pointer; }
+.workflow-toolbox-list { display: grid; gap: 7px; overflow: auto; padding: 9px; }
+.workflow-toolbox-card { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px; color: #d7d7d7; text-align: left; background: #232323; border: 1px solid #484848; border-radius: 7px; cursor: pointer; }
+.workflow-toolbox-card:hover { background: #333; border-color: #777; }
+.workflow-toolbox-card-preview { display: grid; height: 42px; grid-template-columns: auto auto; place-content: center; align-items: center; gap: 5px; color: #aaa; background: radial-gradient(circle at 30% 50%, #555 0 2px, transparent 3px), linear-gradient(90deg, #292929, #1d1d1d); border: 1px solid #444; border-radius: 7px; font-size: 9px; }
+.workflow-toolbox-card-preview .ui-icon { width: 15px; height: 15px; }
+.workflow-toolbox-card-preview i { font-style: normal; font-variant-numeric: tabular-nums; }
+.workflow-toolbox-card > span { display: grid; min-width: 0; gap: 3px; }
+.workflow-toolbox-card strong { overflow: hidden; color: var(--node-text); font-size: var(--font-support); text-overflow: ellipsis; white-space: nowrap; }
+.workflow-toolbox-card small { color: var(--node-text-muted); font-size: var(--font-meta); }
+.workflow-toolbox-card > b { display: grid; width: 28px; height: 28px; place-items: center; color: #aaa; border-radius: 7px; font-size: 14px; font-weight: 400; }
+.workflow-toolbox-card > b:hover { color: #ef8993; background: rgba(239, 137, 147, .08); }
+.workflow-toolbox-card > b .ui-icon { width: 14px; height: 14px; }
+.workflow-toolbox-empty { padding: 28px 18px; color: var(--node-text-muted); font-size: var(--font-support); line-height: 1.6; text-align: center; }
+.app-shell[data-theme="day"] .collection-node { color: var(--node-text-soft); background: var(--node-surface); border-color: var(--node-border); }
+.app-shell[data-theme="day"] .collection-node-heading { color: var(--node-text-soft); background: var(--node-surface-raised); border-color: var(--node-border); }
+.app-shell[data-theme="day"] .collection-node-heading strong { color: var(--node-text); }
+.app-shell[data-theme="day"] .collection-node.is-collapsed { background: var(--node-surface); }
+.app-shell[data-theme="day"] .collection-node .collection-proxy-handle { background: #62666d; border-color: #f6f6f3; box-shadow: 0 0 0 2px rgba(70,74,82,.14); }
+.app-shell[data-theme="day"] .collection-input-port-rail .react-flow__handle.collection-input-port { background: #5d626a; border-color: #f6f6f3; box-shadow: 0 0 0 1px rgba(70,74,82,.18); }
+.app-shell[data-theme="day"] :is(.workflow-toolbox-trigger, .workflow-toolbox-drawer) { color: #333; background: #f6f6f3; border-color: #c5c7ca; }
+.app-shell[data-theme="day"] .workflow-toolbox-card { color: #333; background: #fff; border-color: #d0d2d5; }
+.app-shell[data-theme="day"] .workflow-toolbox-card strong, .app-shell[data-theme="day"] .workflow-toolbox-drawer > header strong { color: #222; }
+
+/* Collections are opaque canvas surfaces in both themes. The group remains a
+ * visible object instead of allowing the dot field and wires to muddy its content. */
+.app-shell .react-flow__node-collection .collection-node:not(.is-collapsed) {
+  background: var(--canvas-plane-raised);
+  border: 1px solid color-mix(in oklab, var(--canvas-text) 9%, var(--canvas-plane-raised));
+  box-shadow: var(--canvas-shadow-node);
+}
+.app-shell .react-flow__node-collection .collection-node:not(.is-collapsed) .collection-node-heading {
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  min-height: 38px;
+  padding-inline: 10px;
+  background: color-mix(in oklab, var(--canvas-plane-raised) 92%, var(--canvas-text) 8%);
+  border: 0;
+  border-radius: var(--canvas-radius-control);
+  box-shadow: var(--canvas-shadow-control);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.app-shell .react-flow__node-collection .collection-node.is-collapsed {
+  color: var(--canvas-text-soft);
+  background: var(--canvas-plane-raised);
+  border: 0;
+  border-radius: var(--canvas-radius-node);
+  box-shadow: var(--canvas-shadow-node);
+}
+.app-shell .react-flow__node-collection .collection-node.is-collapsed .collection-node-heading {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.app-shell .react-flow__node-collection .collection-node.is-collapsed .collection-collapsed-body { border-top: 1px solid color-mix(in oklab, var(--canvas-text) 8%, transparent); }
+.app-shell .react-flow__node-collection.selected .collection-node { outline: 2px solid var(--node-border-selected); outline-offset: 2px; }
+.app-shell[data-theme="day"] .react-flow__node-collection .collection-node:not(.is-collapsed) {
+  background: var(--canvas-plane-raised);
+  border-color: color-mix(in oklab, var(--canvas-text) 10%, var(--canvas-plane-raised));
+}
+
+@media (prefers-reduced-transparency: reduce), (update: slow) {
+  .app-shell .react-flow__node-collection .collection-node:not(.is-collapsed) .collection-node-heading { background: var(--canvas-plane-raised); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

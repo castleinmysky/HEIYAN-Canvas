@@ -1,0 +1,11 @@
+.model-settings .model-generation-group { min-width: 0; margin-block: 16px 24px; }
+.model-settings .model-generation-heading { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 4px 8px; border-bottom: 1px solid var(--canvas-border); color: var(--canvas-text-soft); }
+.model-settings .model-generation-heading .ui-icon { width: 16px; height: 16px; }
+.model-settings .model-generation-heading h3 { margin: 0; font-size: 13px; font-weight: 650; }
+.model-settings .model-generation-heading > span { margin-left: auto; font-size: 11px; }
+.model-settings .model-provider-group > h4 { margin: 16px 4px 4px; color: var(--canvas-text-soft); font-size: 12px; font-weight: 500; }
+.model-settings .model-tier-label { display: inline-block; margin-left: 8px; padding: 2px 6px; border: 1px solid var(--canvas-border); border-radius: 5px; color: var(--canvas-text-soft); font-size: 10px; font-style: normal; font-weight: 450; vertical-align: middle; }
+.model-settings .model-provider-mark img { display: block; width: 32px; height: 32px; object-fit: contain; }
+.model-settings .model-key-identity code { color: var(--canvas-text-soft); font: 10px/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
+.model-settings .model-key-identity .model-connection-destination { font-size: 10px; white-space: normal; overflow-wrap: anywhere; opacity: .75; }
+@media (max-width: 720px) { .model-settings .model-key-identity small { white-space: normal; line-height: 1.5; } }

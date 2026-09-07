@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "id": "comfyui-basic-image-v1",
+      "name": "基础文生图",
+      "description": "使用本机 Checkpoint 生成一张图片。仓库只提供工作流，不包含模型。",
+      "file": "basic-image-api.json",
+      "capability": "image",
+      "modelFamily": "checkpoint",
+      "requiredNodes": ["CheckpointLoaderSimple", "CLIPTextEncode", "EmptyLatentImage", "KSampler", "VAEDecode", "SaveImage"],
+      "modelSlots": [{ "nodeId": "1", "input": "ckpt_name", "kind": "checkpoint", "placeholder": "__MODEL__" }],
+      "ports": {
+        "text": { "nodeId": "2", "input": "text" },
+        "negativeText": { "nodeId": "3", "input": "text" },
+        "width": { "nodeId": "4", "input": "width" },
+        "height": { "nodeId": "4", "input": "height" },
+        "seed": { "nodeId": "5", "input": "seed" },
+        "output": { "nodeId": "7" }
+      },
+      "sourceLinks": [
+        { "label": "SDXL Base 1.0（示例 Checkpoint）", "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0" }
+      ],
+      "licenseNote": "工作流采用 Apache-2.0；模型由用户自行选择并遵守其许可证。"
+    }
+  ]
+}

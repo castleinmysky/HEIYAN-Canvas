@@ -1,0 +1,26 @@
+/* Hallmark · responsive shell · approved HEIYAN Workbench · modern-minimal
+ * Existing desktop gestures, graph dimensions, themes and page ownership remain unchanged. */
+html, body { overflow-x: clip; }
+@media (max-width: 59.999rem) {
+  .app-shell .topbar { flex-wrap: nowrap !important; top: calc(var(--mobile-visible-top, 0px) + max(8px, env(safe-area-inset-top))); left: 8px; right: 8px; width: auto; height: 44px; min-height: 44px; gap: 6px; }
+  .app-shell .topbar .canvas-top-left-controls { width: auto !important; flex: 1 1 auto; min-width: 0; gap: 6px; }
+  .app-shell .topbar .canvas-board-switcher { flex: 1 1 auto; min-width: 0; }
+  .app-shell .topbar .canvas-board-trigger { width: 100%; min-width: 0; padding: 5px 10px; height: 44px; }
+  .app-shell .topbar .canvas-board-trigger-copy { min-width: 0; }
+  .app-shell .topbar .canvas-board-trigger-copy strong { font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .app-shell .topbar .task-context, .app-shell .topbar :is(.canvas-board-trigger-label,.canvas-app-version,.canvas-app-github,.canvas-language-toggle) { display: none; }
+  .app-shell .topbar .top-actions { flex: 0 0 auto; flex-wrap: nowrap; gap: 0; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .app-shell .topbar .ui-icon-button { width: 40px; min-width: 40px; height: 44px; padding: 6px; }
+  .app-shell .topbar .canvas-theme-toggle { transform: scale(.82); transform-origin: center; margin-inline: -3px; }
+  .app-shell .topbar .generated-asset-history-trigger { display: none; }
+  .app-shell .topbar .canvas-app-menu-trigger { width: 40px; min-width: 40px; height: 44px; }
+  .app-shell .canvas-board-menu { position: fixed; left: 8px; right: 8px; top: calc(var(--mobile-visible-top, 0px) + 60px); width: auto; max-height: calc(var(--mobile-visible-height, 100dvh) - 80px); overflow-y: auto; }
+  .app-shell .topbar button { white-space: nowrap; }
+  html[data-canvas-mobile=true] .echo-home { height: var(--mobile-visible-height, 100dvh); overflow-x: clip; }
+  html[data-canvas-mobile=true] .echo-home-header { flex-wrap: nowrap; gap: 8px; align-items: center; }
+  html[data-canvas-mobile=true] .echo-home-utilities { flex-wrap: nowrap; gap: 0; padding: 2px; }
+  html[data-canvas-mobile=true] .echo-home-hero { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; padding-block: clamp(24px, 8dvh, 64px); }
+  html[data-canvas-mobile=true] .echo-home-hero h1 { font-size: clamp(42px, 13vw, 76px); }
+  html[data-canvas-mobile=true] :is(.settings-center-nav,.generated-asset-history-tabs) { scrollbar-width: thin; }
+  html[data-canvas-mobile=true] :is(.settings-center-nav,.generated-asset-history-tabs) button { white-space: nowrap; }
+}

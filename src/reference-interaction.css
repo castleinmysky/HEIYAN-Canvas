@@ -1,0 +1,24 @@
+/* Shared reference affordances: larger targets, quiet chrome, no hidden graph edits. */
+.app-shell .collection-input-port-rail { left: 0; gap: 8px; z-index: 15; }
+.app-shell .collection-input-row { position: relative; width: 32px; height: 32px; flex: 0 0 32px; pointer-events: none; }
+.app-shell .collection-input-port-rail .react-flow__handle.collection-input-port { position: absolute; inset: 0; width: 32px; min-width: 32px; height: 32px; min-height: 32px; transform: none; border: 0; background: transparent; box-shadow: none; pointer-events: auto; }
+.app-shell .collection-input-port::after { content: ''; position: absolute; inset: 10px; border: 2px solid var(--node-surface); border-radius: 50%; background: var(--node-text-muted); box-shadow: 0 0 0 1px var(--node-border); transition: background 120ms ease, box-shadow 120ms ease; }
+.app-shell .collection-input-port:hover::after, .app-shell .collection-input-port.valid::after { background: var(--canvas-accent, #43b9e6); box-shadow: 0 0 0 4px color-mix(in srgb,var(--canvas-accent,#43b9e6) 22%,transparent); }
+.app-shell .collection-input-label { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px; width: max-content; max-width: 240px; padding: 6px 10px; border: 1px solid var(--node-border); border-radius: 10px; color: var(--node-text); background: var(--node-surface-raised); box-shadow: var(--node-shadow-rest); opacity: 0; visibility: hidden; transition: opacity 120ms ease; pointer-events: none; }
+.app-shell .collection-input-row:hover .collection-input-label, .app-shell .react-flow__node-collection.selected .collection-input-label { opacity: 1; visibility: visible; }
+.app-shell .collection-input-label > b { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--node-text-muted); }
+.app-shell .collection-input-label > :is(img,svg) { width: 28px; height: 28px; object-fit: cover; border-radius: 6px; flex: 0 0 28px; }
+.app-shell .collection-input-label > span { min-width: 0; display: grid; gap: 2px; }
+.app-shell .collection-input-label strong { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.app-shell .collection-input-label small { color: var(--node-text-muted); font-size: 12px; white-space: nowrap; }
+.app-shell .input-reference-chip-shell > .input-reference-unlink { width: 20px; height: 20px; min-height: 20px; top: -5px; right: -5px; border-radius: 6px; box-shadow: none; color: var(--canvas-text-muted); background: var(--canvas-surface-raised); opacity: .72; }
+.app-shell .input-reference-chip-shell > .input-reference-unlink svg { width: 12px; height: 12px; }
+.app-shell .input-reference-chip-shell > .input-reference-unlink:hover, .app-shell .input-reference-chip-shell > .input-reference-unlink:focus-visible { color: var(--canvas-text); border-color: var(--canvas-border-strong); opacity: 1; }
+.app-shell .input-reference-chips > .input-reference-text-chip { display: inline-flex; align-items: center; min-width: 0; max-width: 230px; padding: 0 4px 0 0; gap: 2px; border: 1px solid var(--canvas-border); border-radius: 8px; background: var(--canvas-surface-raised); }
+.app-shell .input-reference-text-chip > button { display: flex; align-items: center; gap: 6px; min-width: 0; height: 30px; padding: 0 6px; border: 0; background: transparent; color: var(--canvas-text-soft); cursor: pointer; }
+.app-shell .input-reference-text-chip svg { width: 14px; height: 14px; flex-shrink: 0; }
+.app-shell .input-reference-text-chip b { flex-shrink: 0; font-size: 12px; font-weight: 600; }
+.app-shell .input-reference-text-chip button > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--canvas-text-muted); }
+.app-shell .input-reference-text-chip > .input-reference-text-remove { width: 24px; height: 24px; padding: 5px; flex: 0 0 24px; border-radius: 5px; }
+.app-shell .input-reference-text-chip > button:hover { color: var(--canvas-text); background: var(--canvas-control-hover); }
+@media (pointer: coarse) { .app-shell .input-reference-chip-shell > .input-reference-unlink { width: 24px; height: 24px; } }

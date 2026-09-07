@@ -1,0 +1,49 @@
+{
+  "bundle": { "id": "owner-private-comfy", "version": "1.0.0" },
+  "capabilities": [
+    {
+      "id": "illustrious-character-v1",
+      "modelRoles": { "checkpoint": "illustrious-checkpoint", "upscaleModel": "illustrious-upscale-model" },
+      "requiredCustomNodes": ["owner-image-nodes"],
+      "workflowId": "illustrious-character-v1"
+    },
+    {
+      "id": "minimax-h3-video-v1",
+      "modelRoles": {
+        "audioVae": "minimax-h3-audio-vae",
+        "communityReferenceLora": "minimax-h3-community-reference-lora",
+        "diffusion": "minimax-h3-diffusion",
+        "referenceDiffusion": "minimax-h3-reference-diffusion",
+        "textEncoder": "minimax-h3-text-encoder",
+        "turboDiffusionLora": "minimax-h3-turbo-diffusion-lora",
+        "turboReferenceLora": "minimax-h3-turbo-reference-lora",
+        "videoVae": "minimax-h3-video-vae"
+      },
+      "requiredCustomNodes": ["owner-h3-nodes"],
+      "workflowId": "minimax-h3-video-v1"
+    }
+  ],
+  "customNodes": [
+    { "id": "owner-h3-nodes", "logicalPath": "owner-h3-nodes", "sourceId": "custom-nodes", "versionState": "pinned" },
+    { "id": "owner-image-nodes", "logicalPath": "owner-image-nodes", "sourceId": "custom-nodes", "versionState": "pinned" }
+  ],
+  "models": [
+    { "category": "checkpoints", "id": "illustrious-checkpoint", "logicalPath": "checkpoints/illustrious.safetensors", "sourceId": "models" },
+    { "category": "upscale_models", "id": "illustrious-upscale-model", "logicalPath": "upscale_models/illustrious-upscale.pth", "sourceId": "models" },
+    { "category": "vae", "id": "minimax-h3-audio-vae", "logicalPath": "vae/h3-audio.safetensors", "sourceId": "models" },
+    { "category": "loras", "id": "minimax-h3-community-reference-lora", "logicalPath": "loras/h3-community-reference.safetensors", "sourceId": "models" },
+    { "category": "diffusion_models", "id": "minimax-h3-diffusion", "logicalPath": "diffusion_models/h3.safetensors", "sourceId": "models" },
+    { "category": "diffusion_models", "id": "minimax-h3-reference-diffusion", "logicalPath": "diffusion_models/h3-reference.safetensors", "sourceId": "models" },
+    { "category": "text_encoders", "id": "minimax-h3-text-encoder", "logicalPath": "text_encoders/h3-text.safetensors", "sourceId": "models" },
+    { "category": "loras", "id": "minimax-h3-turbo-diffusion-lora", "logicalPath": "loras/h3-turbo.safetensors", "sourceId": "models" },
+    { "category": "loras", "id": "minimax-h3-turbo-reference-lora", "logicalPath": "loras/h3-turbo-reference.safetensors", "sourceId": "models" },
+    { "category": "vae", "id": "minimax-h3-video-vae", "logicalPath": "vae/h3-video.safetensors", "sourceId": "models" }
+  ],
+  "python": { "executableOrEntrypoint": "python.exe", "includes": [{ "kind": "file", "logicalPath": "python.exe" }], "sourceId": "portable-python" },
+  "runtime": { "executableOrEntrypoint": "main.py", "includes": [{ "kind": "tree", "logicalPath": "comfy" }, { "kind": "file", "logicalPath": "main.py" }], "sourceId": "comfy-runtime" },
+  "schemaVersion": "managed-comfy-capability-plan/v1",
+  "workflows": [
+    { "id": "illustrious-character-v1", "logicalPath": "illustrious.json", "sourceId": "workflows" },
+    { "id": "minimax-h3-video-v1", "logicalPath": "minimax-h3.json", "sourceId": "workflows" }
+  ]
+}
