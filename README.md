@@ -4,15 +4,17 @@
 
 一个面向图片、视频、音频和 3D 的节点创作画布。不用注册画布账号，可以接自己的 API、Codex 和 ComfyUI。
 
-**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用](https://heiyan.f2vfhjcckr.chatgpt.site/) · [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
+**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用（ChatGPT 托管）](https://heiyan.f2vfhjcckr.chatgpt.site/) · [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
 
 ## 选一种开始方式
 
 | 你想做什么 | 怎么开始 |
 | --- | --- |
 | 自行部署 | 克隆仓库，安装依赖并启动。[部署步骤](docs/QUICKSTART.md#部署整套画布) |
-| 在线试用 | [打开在线画布](https://heiyan.f2vfhjcckr.chatgpt.site/)，不用安装。接入自己的 API 后再生成。 |
+| 在线试用 | [打开在线画布](https://heiyan.f2vfhjcckr.chatgpt.site/)，由 ChatGPT Sites 托管。部分地区或网络环境需要自备代理工具（梯子），生成需接入自己的 API。 |
 | 接自己的 Codex | Agent → 下载 Windows 免安装包 → 解压双击启动。[连接步骤](docs/QUICKSTART.md#连接自己的-codex) |
+
+在线试用不提供模型账号或生成额度。自行部署不依赖这个试用站；模型 API 和 Codex 仍需满足各自的网络访问条件。
 
 连接器只负责连接你自己的 Codex，不是整套画布的安装包。
 
@@ -62,7 +64,7 @@ npm start
 
 打开 [http://127.0.0.1:8792](http://127.0.0.1:8792)。不启动 ComfyUI 或 Codex，也能使用画布编辑；需要哪项生成能力，再连接自己的服务。
 
-1. 打开 [在线画布](https://heiyan.f2vfhjcckr.chatgpt.site/)，新建节点或放入素材。不接模型，也能先整理画布。
+1. 打开自己部署的画布，或使用 [在线试用站](https://heiyan.f2vfhjcckr.chatgpt.site/)，新建节点或放入素材。不接模型，也能先整理画布。
 2. 连接自己要用的服务。
 3. 选模型和规格，写提示词、引用素材，点击生成。
 
