@@ -15,7 +15,7 @@ $buildRoot = Join-Path $projectRoot '.runtime-portable'
 $stage = Join-Path $buildRoot ('stage-' + [guid]::NewGuid().ToString('N'))
 $packageRoot = Join-Path $stage 'HEIYAN-Connector'
 New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
-$files = @('LICENSE','server/agent-connector.js','server/agent-contract.js','server/codex-runtime.js','scripts/portable-launcher.mjs','scripts/portable/control.js','scripts/portable/setup.html','scripts/portable/setup.js','scripts/portable/setup.css')
+$files = @('LICENSE','scripts/portable-launcher.mjs')
 foreach ($file in $files) {
   $destination = Join-Path $packageRoot $file
   New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
@@ -27,6 +27,13 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts/portable/connector.json'
 Copy-Item -LiteralPath (Join-Path $projectRoot 'server/agent-package.json') -Destination (Join-Path $packageRoot 'package.json')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/codex-connector-windows.md') -Destination (Join-Path $packageRoot '使用说明.md')
 $utf8 = [Text.UTF8Encoding]::new($false)
+& node (Join-Path $PSScriptRoot 'build-connector-update.mjs') $projectRoot '1.3.0'
+if ($LASTEXITCODE -ne 0) { throw 'Connector update manifest generation failed.' }
+$releaseSource = Join-Path $projectRoot 'public/downloads/heiyan-connector-update/1.3.0'
+$releaseTarget = Join-Path $packageRoot 'app/releases/1.3.0'
+New-Item -ItemType Directory -Path (Split-Path $releaseTarget -Parent) -Force | Out-Null
+Copy-Item -LiteralPath $releaseSource -Destination $releaseTarget -Recurse
+[IO.File]::WriteAllText((Join-Path $packageRoot 'app/current.json'), '{"version":"1.3.0"}' + [Environment]::NewLine, $utf8)
 if ($RuntimeRoot) {
   $manifestPath = Join-Path $RuntimeRoot 'runtime-manifest.json'
   $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -55,7 +62,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [IO.Compression.ZipFile]::OpenRead($archive)
 try {
   $names = @($zip.Entries | Where-Object { $_.Name } | ForEach-Object { $_.FullName.Replace('\','/') })
-  foreach ($required in @('启动黑岩连接器.cmd','停止黑岩连接器.cmd','runtime/node/node.exe','runtime/codex/bin/codex.exe','runtime/codex/bin/codex-code-mode-host.exe','runtime-manifest.json')) { if ($names -notcontains ('HEIYAN-Connector/' + $required)) { throw "Missing portable entry: $required" } }
+  foreach ($required in @('启动黑岩连接器.cmd','停止黑岩连接器.cmd','runtime/node/node.exe','runtime/codex/bin/codex.exe','runtime/codex/bin/codex-code-mode-host.exe','runtime-manifest.json','app/current.json','app/releases/1.3.0/manifest.json','app/releases/1.3.0/portable-main.mjs')) { if ($names -notcontains ('HEIYAN-Connector/' + $required)) { throw "Missing portable entry: $required" } }
   if (@($names | Where-Object { $_ -match '(^|/)(auth.json|config.toml|instance.json|private|\.git|node_modules)(/|$)' }).Count) { throw 'Unexpected private files in archive.' }
 } finally { $zip.Dispose() }
 & node (Join-Path $PSScriptRoot 'split-portable-download.mjs') $archive (Join-Path $projectRoot 'public/downloads/heiyan-windows')

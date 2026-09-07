@@ -128,6 +128,16 @@ body:has(.canvas-agent-composer[data-resizing]) * { cursor: ns-resize !important
 .canvas-agent-footnote { flex: 0 0 auto; margin: 9px 16px 14px; text-align: center; font-size: 10px; line-height: 1.5; color: var(--canvas-text-muted); }
 .canvas-agent-footnote[role=alert] { color: var(--canvas-danger); }
 .canvas-agent-context-references { display: flex; flex: 0 0 auto; gap: 8px; max-width: 100%; max-height: 76px; padding: 2px; overflow-x: auto; scrollbar-width: thin; }
+.canvas-agent-image-attachments { display: flex; flex: 0 0 auto; gap: 8px; max-width: 100%; padding: 2px; overflow-x: auto; }
+.canvas-agent-image-attachments figure { position: relative; width: 58px; height: 58px; flex: 0 0 58px; margin: 0; overflow: hidden; border: 1px solid var(--cad-rule); border-radius: 9px; background: var(--cad-control); }
+.canvas-agent-image-attachments img { width: 100%; height: 100%; object-fit: cover; }
+.canvas-agent-image-attachments button { position: absolute; top: 3px; right: 3px; display: grid; width: 20px; height: 20px; place-items: center; padding: 0; border: 1px solid var(--cad-rule); border-radius: 50%; color: #fff; background: rgba(0,0,0,.72); }
+.canvas-agent-image-attachments button svg { width: 11px; height: 11px; }
+.canvas-agent-model-controls { display: flex; min-width: 0; align-items: center; gap: 5px; margin-left: auto; }
+.canvas-agent-model-controls label { display: flex; align-items: center; gap: 3px; color: var(--canvas-text-muted); font-size: 11px; }
+.canvas-agent-model-controls select { width: 88px; height: 28px; padding: 0 20px 0 7px; border: 1px solid var(--cad-rule); border-radius: 7px; color: var(--canvas-text); background: var(--cad-control); font: inherit; }
+.canvas-agent-model-controls label:last-child select { width: 60px; }
+.canvas-agent-attachment-error { margin: 2px 0 0; color: var(--canvas-danger, #ef7777); font-size: 12px; }
 .canvas-agent-context-chip { display: flex; align-items: center; min-width: 0; flex: 0 0 auto; max-width: 220px; padding: 3px; border: 1px solid var(--cad-rule); border-radius: 10px; background: var(--cad-control); }
 .canvas-agent-reference-locate { display: flex; align-items: center; min-width: 0; gap: 8px; padding: 0; border: 0; background: transparent; }
 .canvas-agent-reference-locate > span:last-child { max-width: 128px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
@@ -258,6 +268,7 @@ body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
 .canvas-agent-message { flex-shrink: 0; min-width: 0; margin: 0 0 24px; font-size: 14px; line-height: 1.8; }
 .canvas-agent-message > small { display: block; margin-bottom: 6px; color: var(--canvas-text-muted); font-size: 12px; }
 .canvas-agent-message > div { white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.canvas-agent-message > em { display: block; margin-top: 6px; color: var(--canvas-text-muted); font-size: 11px; font-style: normal; }
 .canvas-agent-message[data-role=user] { align-self: flex-end; max-width: 92%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: var(--cad-control); }
 .canvas-agent-message[data-role=notice] { font-size: 12px; color: var(--canvas-text-soft); padding-left: 12px; border-left: 2px solid var(--cad-rule); }
 .canvas-agent-proposal { flex-shrink: 0; padding: 16px; margin-bottom: 16px; border: 1px solid var(--cad-rule); border-radius: 12px; background: var(--cad-composer); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }

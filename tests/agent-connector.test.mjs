@@ -10,8 +10,9 @@ const context = { revision: 'rev-a', nodes: [], edges: [], referenceIds: [] };
 class FakeRuntime extends EventEmitter {
   constructor() { super(); this.closed = false; this.ready = Promise.resolve({ type: 'chatgpt' }); this.calls = []; this.responses = []; this.serial = 0; }
   account() { return Promise.resolve({ type: 'chatgpt' }); }
+  models() { return Promise.resolve([{ id: 'default', model: 'gpt-test', name: 'GPT Test', description: '', isDefault: true, inputModalities: ['text', 'image'], defaultEffort: 'medium', efforts: [{ value: 'low', description: '' }, { value: 'medium', description: '' }, { value: 'high', description: '' }] }]); }
   async startThread() { return 'thread-' + ++this.serial; }
-  async startTurn(threadId, text) { this.calls.push({ threadId, text }); return { turn: { id: 'turn-' + this.calls.length } }; }
+  async startTurn(threadId, text, options) { this.calls.push({ threadId, text, options }); return { turn: { id: 'turn-' + this.calls.length } }; }
   request(method, params) { this.calls.push({ method, params }); return Promise.resolve({}); }
   respond(id, result) { this.responses.push({ id, result }); }
   deny(id) { this.responses.push({ id, denied: true }); }
@@ -91,7 +92,7 @@ test('stale revisions and rejection return tool failure without applying anythin
 });
 test('generation always pauses for approval and reports a single claimed execution', async t => {
   const f = await fixture(t); const pair = await f.pair(); await f.send();
-  assert.equal(pair.data.protocol, 2);
+  assert.equal(pair.data.protocol, 3);
   assert.ok(pair.data.capabilities.includes('request_generation'));
   f.runtime.tool('heiyan_request_generation', { summary: '生成两个镜头', nodeIds: ['shot-a', 'shot-b'] });
   const { data } = await f.call('/state', { canvasKey: 'task-a:main' });
@@ -102,6 +103,14 @@ test('generation always pauses for approval and reports a single claimed executi
   assert.equal((await f.call('/decision', { canvasKey: 'task-a:main', id: data.pending.id, approved: true, revision: 'rev-a' })).status, 409);
   assert.equal((await f.call('/result', { canvasKey: 'task-a:main', id: data.pending.id, claim: approved.data.claim, success: true, result: 'submitted' })).status, 200);
   assert.equal(f.runtime.responses[0].result.success, true);
+});
+test('model, reasoning effort and pasted images are validated before a multimodal turn', async t => {
+  const f = await fixture(t); const pair = await f.pair();
+  assert.equal(pair.data.models[0].model, 'gpt-test');
+  const sent = await f.call('/send', { canvasKey: 'vision:main', requestId: 'vision-1', text: '分析这张图', model: 'gpt-test', effort: 'high', images: ['data:image/png;base64,YQ=='], context });
+  assert.equal(sent.status, 200);
+  assert.deepEqual(f.runtime.calls[0].options, { model: 'gpt-test', effort: 'high', images: ['data:image/png;base64,YQ=='] });
+  assert.equal((await f.call('/state', { canvasKey: 'vision:main' })).data.messages[0].imageCount, 1);
 });
 test('unsupported tools are refused, stopping cancels a pending edit, disconnect revokes access', async t => {
   const f = await fixture(t); await f.pair(); await f.send();
@@ -116,8 +125,10 @@ test('unsupported tools are refused, stopping cancels a pending edit, disconnect
   assert.equal((await f.call('/state', { canvasKey: 'task-a:main' })).status, 401);
 });
 test('contract strips provider secrets and limits allowed edit fields', () => {
-  const safe = sanitizeAgentContext({ ...context, secret: 'key', nodes: [{ id: 'a', kind: 'imageGenerator', title: 'a', mediaUrl: 'private', apiKey: 'key' }] });
+  const safe = sanitizeAgentContext({ ...context, secret: 'key', nodes: [{ id: 'a', kind: 'imageGenerator', title: 'a', mediaUrl: 'private', apiKey: 'key', outputType: 'image', inputs: [{ id: 'input', label: '输入', accepts: ['text', 'image'], multiple: true, endpoint: 'private' }] }], edges: [{ source: 'ref', sourcePort: 'output', target: 'a', targetPort: 'input', type: 'image', token: 'private' }] });
   assert.equal(safe.nodes[0].mediaUrl, undefined); assert.equal(safe.nodes[0].apiKey, undefined);
+  assert.deepEqual(safe.nodes[0].inputs[0], { id: 'input', label: '输入', accepts: ['text', 'image'], multiple: true });
+  assert.deepEqual(safe.edges[0], { source: 'ref', sourcePort: 'output', target: 'a', targetPort: 'input', type: 'image' });
   for (const patch of [{ modelId: 'other' }, { mediaUrl: 'private' }, { kind: 'imageGenerator' }]) assert.throws(() => validateAgentTool('heiyan_edit_canvas', { summary: '修改', operations: [{ action: 'update', id: 'a', ...patch }] }));
   assert.throws(() => sanitizeAgentContext({ ...context, nodes: [null] }), /有效/);
   assert.throws(() => sanitizeAgentContext({ ...context, edges: [{ source: 'a' }] }), /有效/);

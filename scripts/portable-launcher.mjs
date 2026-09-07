@@ -1,27 +1,39 @@
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
-import net from 'node:net';
 import path from 'node:path';
-import os from 'node:os';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-import { createAgentConnector } from '../server/agent-connector.js';
-import { CodexRuntime } from '../server/codex-runtime.js';
-import { canvasSite, createLocalControl } from './portable/control.js';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
+const BOOTSTRAP_VERSION = '1.0.0';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packageId = crypto.createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0, 20);
-const createHashName = value => crypto.createHash('sha256').update(value).digest('hex').slice(0, 24);
-const stateDir = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'HEIYAN', 'AgentConnector', packageId);
-const stateFile = path.join(stateDir, 'instance.json');
 const codex = path.join(root, 'runtime', 'codex', 'bin', 'codex.exe');
-const alive = pid => { if (!Number.isSafeInteger(pid) || pid < 1) return false; try { process.kill(pid, 0); return true; } catch (error) { return error.code !== 'ESRCH'; } };
-const readJson = async file => JSON.parse(await fs.readFile(file, 'utf8'));
-const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const packageId = crypto.createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0, 20);
 const childEnv = { ...process.env, PATH: [path.dirname(codex), path.join(root, 'runtime/codex/codex-path'), process.env.PATH || ''].join(path.delimiter) };
+const readJson = async file => JSON.parse(await fs.readFile(file, 'utf8'));
+const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
+const validVersion = value => typeof value === 'string' && /^\d+\.\d+\.\d+$/.test(value);
+const compareVersions = (left, right) => left.split('.').map(Number).reduce((result, part, index) => result || part - Number(right.split('.')[index]), 0);
 
-export async function validatePortablePackage() {
+export function validateUpdateManifest(value, siteOrigin) {
+  const origin = new URL(siteOrigin).origin;
+  if (!value || value.schema !== 1 || value.channel !== 'stable' || !validVersion(value.version) || value.minBootstrapVersion !== BOOTSTRAP_VERSION) throw Error('更新清单不受支持');
+  if (value.runtime?.node !== '22.23.2' || value.runtime?.codex !== '0.153.4') throw Error('更新需要新的完整运行包');
+  if (!Array.isArray(value.files) || !value.files.length || value.files.length > 32) throw Error('更新文件清单无效');
+  let total = 0;
+  const paths = new Set();
+  for (const entry of value.files) {
+    if (!/^(portable-main\.mjs|server\/[a-z0-9-]+\.js|portable\/[a-z0-9.-]+)$/.test(entry?.path || '') || !/^\/downloads\/heiyan-connector-update\/\d+\.\d+\.\d+\/[a-z0-9./-]+$/.test(entry?.url || '') || !/^[a-f0-9]{64}$/.test(entry?.sha256 || '') || !Number.isSafeInteger(entry?.bytes) || entry.bytes < 1 || entry.bytes > 1024 * 1024) throw Error('更新文件清单无效');
+    if (new URL(entry.url, origin).origin !== origin) throw Error('更新地址无效');
+    if (!entry.url.startsWith(`/downloads/heiyan-connector-update/${value.version}/`) || paths.has(entry.path)) throw Error('更新文件清单无效');
+    paths.add(entry.path);
+    total += entry.bytes;
+  }
+  if (total > 4 * 1024 * 1024 || !value.files.some(entry => entry.path === 'portable-main.mjs')) throw Error('更新包无效');
+  return value;
+}
+
+async function validateRuntime() {
   if (process.platform !== 'win32' || process.arch !== 'x64') throw Error('此包适用于 Windows x64。请勿在 ZIP 内直接运行，先完整解压。');
   const manifest = await readJson(path.join(root, 'runtime-manifest.json'));
   for (const entry of manifest.files) {
@@ -32,105 +44,77 @@ export async function validatePortablePackage() {
   }
   return manifest;
 }
-function openSetup(url) {
-  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Start-Process -FilePath $env:HEIYAN_LAUNCH_URL -WindowStyle Hidden'], { env: { ...process.env, HEIYAN_LAUNCH_URL: url }, stdio: 'ignore', windowsHide: true });
-  if (result.error || result.status !== 0) throw Error('未能打开浏览器，请检查系统默认浏览器后再次启动。');
-}
-async function management(instance, route) {
-  if (instance.packageId !== packageId || !Number.isInteger(instance.port) || instance.port < 1024 || instance.port > 65535 || !/^[\w-]{32}$/.test(instance.secret)) throw Error('本机状态不匹配，不会停止其他进程');
-  const base = `http://127.0.0.1:${instance.port}`;
-  const response = await fetch(base + '/local/' + route, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(3000), headers: { Origin: base, 'Content-Type': 'application/json', Authorization: 'Bearer ' + instance.secret }, body: '{}' });
-  if (!response.ok) throw Error('本机状态已失效，不会停止其他进程');
-  const result = await response.json();
-  if (route === 'status' && (result.app !== 'heiyan-portable' || result.packageId !== packageId)) throw Error('端口不属于当前连接器');
-  return result;
-}
-async function existing() {
-  let instance; try { instance = await readJson(stateFile); } catch { return null; }
-  try { await management(instance, 'status'); return instance; }
-  catch { if (alive(instance.pid)) throw Error('本包的连接器仍在启动或暂时无响应，请稍后重试；不会强制结束任务。'); return null; }
-}
-async function serve() {
-  await fs.mkdir(stateDir, { recursive: true });
-  // The OS releases this lock even after a crash; no stale-PID delete race.
-  const guard = net.createServer(socket => socket.destroy());
-  const guardName = createHashName(root + os.userInfo().username);
-  try { await new Promise((resolve, reject) => { guard.once('error', reject); guard.listen('\\\\.\\pipe\\heiyan-agent-' + guardName, resolve); }); }
-  catch (error) {
-    if (error.code === 'EADDRINUSE') return;
-    throw error;
+
+async function validateRelease(directory, manifest) {
+  for (const entry of manifest.files) {
+    const file = path.resolve(directory, entry.path);
+    if (!file.startsWith(directory + path.sep)) throw Error('本机连接器版本无效');
+    const data = await fs.readFile(file);
+    if (data.length !== entry.bytes || sha256(data) !== entry.sha256) throw Error('本机连接器文件校验失败');
   }
-  let connector, loginChild, probeChild, closing = false;
-  const cleanup = async () => {
-    if (closing) return; closing = true;
-    loginChild?.kill(); probeChild?.kill(); if (connector) await connector.close();
-    guard.close();
-    for (const file of [stateFile]) {
-      try { if ((await readJson(file)).pid === process.pid) await fs.unlink(file); } catch { /* keep unrelated state */ }
-    }
-  };
-  try {
-    const configuration = await readJson(path.join(root, 'connector.json'));
-    const site = canvasSite(configuration.siteUrl);
-    const port = Number(configuration.port || 17372);
-    if (!Number.isInteger(port) || port < 1024 || port > 65535) throw Error('连接端口配置无效');
-    const secret = crypto.randomBytes(24).toString('base64url');
-    const workspace = await fs.mkdtemp(path.join(stateDir, 'workspace-'));
-    let loggedIn = false, checkedAt = 0, checking, loginError = '';
-    const probe = async () => {
-      if (!loginChild && Date.now() - checkedAt > 10000 && !checking) {
-        checking = new Promise(resolve => {
-          const child = spawn(codex, ['login', 'status'], { cwd: workspace, env: childEnv, windowsHide: true, stdio: 'ignore' });
-          probeChild = child;
-          const timer = setTimeout(() => { child.kill(); }, 8000);
-          const finish = success => { clearTimeout(timer); if (probeChild === child) probeChild = null; loggedIn = success; checkedAt = Date.now(); resolve(); };
-          child.once('error', () => finish(false)); child.once('exit', code => finish(code === 0));
-        }).finally(() => { checking = null; });
-      }
-      if (checking) await checking;
-      return { loggedIn, loggingIn: !!loginChild, error: loginError };
-    };
-    const login = async () => {
-      if (loginChild) return;
-      loginError = '';
-      loginChild = spawn(codex, ['login'], { cwd: workspace, env: childEnv, windowsHide: true, stdio: 'ignore' });
-      loginChild.once('error', () => { loginError = '无法打开官方登录，请检查运行文件与网络后重试。'; loginChild = null; checkedAt = 0; });
-      loginChild.once('exit', code => { if (code !== 0) loginError = '登录未完成。请检查网络后重新点击登录；不会自动重试。'; loginChild = null; checkedAt = 0; });
-    };
-    connector = createAgentConnector({ origin: site.origin,
-      runtimeFactory: () => new CodexRuntime({ executable: codex, cwd: workspace, environment: childEnv }),
-      localHandler: createLocalControl({ secret, packageId, siteUrl: site.href, probe, login, stop: async () => { await cleanup(); process.exit(0); } }),
-    });
-    const listen = requested => new Promise((resolve, reject) => { const failure = error => { connector.server.off('listening', success); reject(error); }; const success = () => { connector.server.off('error', failure); resolve(); }; connector.server.once('error', failure); connector.server.once('listening', success); connector.server.listen(requested, '127.0.0.1'); });
-    try { await listen(port); } catch (error) { if (error.code !== 'EADDRINUSE') throw error; await listen(0); }
-    await fs.writeFile(stateFile, JSON.stringify({ pid: process.pid, packageId, port: connector.server.address().port, secret }), { mode: 0o600 });
-    for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, async () => { await cleanup(); process.exit(0); });
-  } catch (error) { await cleanup(); throw error; }
 }
+
+async function installUpdate(site, currentVersion) {
+  const response = await fetch(new URL('/downloads/heiyan-connector-update/manifest.json', site), { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(6000) });
+  if (!response.ok) throw Error('暂时无法检查更新');
+  const manifest = validateUpdateManifest(await response.json(), site.origin);
+  if (currentVersion && compareVersions(manifest.version, currentVersion) <= 0) return null;
+  const releaseRoot = path.join(root, 'app', 'releases');
+  const finalDir = path.join(releaseRoot, manifest.version);
+  try { await validateRelease(finalDir, manifest); return manifest; } catch { /* download a clean release */ }
+  const stage = path.join(releaseRoot, '.stage-' + crypto.randomUUID());
+  await fs.mkdir(stage, { recursive: true });
+  try {
+    for (const entry of manifest.files) {
+      const download = await fetch(new URL(entry.url, site), { redirect: 'error', signal: AbortSignal.timeout(15000) });
+      if (!download.ok) throw Error('更新文件下载失败');
+      const data = Buffer.from(await download.arrayBuffer());
+      if (data.length !== entry.bytes || sha256(data) !== entry.sha256) throw Error('更新文件校验失败');
+      const target = path.join(stage, entry.path); await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, data);
+    }
+    await fs.writeFile(path.join(stage, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+    await fs.mkdir(releaseRoot, { recursive: true });
+    try { await fs.rename(stage, finalDir); } catch (error) { if (error.code !== 'EEXIST') throw error; }
+    return manifest;
+  } finally { try { await fs.rm(stage, { recursive: true, force: true }); } catch { /* best effort */ } }
+}
+
+async function selectRelease() {
+  const configuration = await readJson(path.join(root, 'connector.json'));
+  const site = new URL(configuration.siteUrl);
+  if (site.username || site.password || site.hash || !(site.protocol === 'https:' || (site.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(site.hostname)))) throw Error('连接器更新地址无效');
+  const pointerFile = path.join(root, 'app', 'current.json');
+  let pointer; try { pointer = await readJson(pointerFile); } catch { pointer = null; }
+  let currentVersion = validVersion(pointer?.version) ? pointer.version : null;
+  if (process.argv[2] !== 'serve') {
+    try {
+      console.log('Checking for HEIYAN connector updates...');
+      const update = await installUpdate(site, currentVersion);
+      if (update) { currentVersion = update.version; await fs.writeFile(pointerFile, JSON.stringify({ version: currentVersion }) + '\n'); console.log(`HEIYAN connector updated to ${currentVersion}.`); }
+    } catch (error) { console.warn('Update skipped:', error.message); }
+  }
+  const requested = process.argv.includes('--release') ? process.argv[process.argv.indexOf('--release') + 1] : null;
+  const version = validVersion(requested) ? requested : currentVersion;
+  if (!version) throw Error('连接器应用文件缺失，请重新下载完整 ZIP');
+  const directory = path.join(root, 'app', 'releases', version);
+  const manifest = validateUpdateManifest(await readJson(path.join(directory, 'manifest.json')), site.origin);
+  if (manifest.version !== version) throw Error('本机连接器版本不匹配');
+  await validateRelease(directory, manifest);
+  process.env.HEIYAN_CONNECTOR_RELEASE = version;
+  return path.join(directory, 'portable-main.mjs');
+}
+
 async function main() {
   const command = process.argv[2] || 'start';
-  if (command === 'serve') return serve();
-  if (command === 'stop') {
-    const instance = await existing(); if (!instance) { console.log('HEIYAN connector is not running.'); return; }
-    await management(instance, 'stop'); console.log('HEIYAN connector stopped. Other Codex processes were not touched.'); return;
+  if (!['start', 'stop', 'serve', 'check'].includes(command)) throw Error('不支持的启动命令');
+  console.log('Checking HEIYAN portable runtime...'); await validateRuntime();
+  if (command === 'check') {
+    await selectRelease();
+    const version = spawnSync(codex, ['--version'], { env: childEnv, encoding: 'utf8', windowsHide: true });
+    if (version.status !== 0) throw Error('Codex 运行检查失败'); console.log(version.stdout.trim()); return;
   }
-  if (!['start', 'check'].includes(command)) throw Error('不支持的启动命令');
-  let instance = await existing();
-  if (!instance) {
-    console.log('Checking HEIYAN portable runtime...'); await validatePortablePackage();
-    if (command === 'check') {
-      const version = spawnSync(codex, ['--version'], { env: childEnv, encoding: 'utf8', windowsHide: true });
-      if (version.status !== 0) throw Error('Codex 运行检查失败'); console.log(version.stdout.trim()); return;
-    }
-    await fs.mkdir(stateDir, { recursive: true });
-    const output = await fs.open(path.join(stateDir, 'startup.log'), 'a');
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), 'serve'], { cwd: root, detached: true, windowsHide: true, stdio: ['ignore', output.fd, output.fd] });
-    child.unref(); await output.close();
-    for (let attempt = 0; attempt < 50; attempt++) {
-      await pause(300); try { instance = await existing(); if (instance) break; } catch { /* startup still pending */ }
-    }
-    if (!instance) throw Error('连接器启动失败，请查看本机 HEIYAN/AgentConnector 目录中的 startup.log。');
-  }
-  if (command !== 'check') { if (!process.argv.includes('--no-open')) openSetup(`http://127.0.0.1:${instance.port}/setup#key=${instance.secret}`); console.log('HEIYAN is running. Follow the instructions in your browser.'); }
+  const entry = await selectRelease();
+  const application = await import(pathToFileURL(entry).href);
+  await application.runPortable({ root, codex, childEnv, packageId });
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => { console.error(error.message || '连接器启动失败'); process.exitCode = 1; });

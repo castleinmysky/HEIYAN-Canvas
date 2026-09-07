@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type ClipboardEvent, type CSSProperties, type PointerEvent } from 'react';
 import { ReferenceMediaThumbnail, type CanvasNodeKind, type InputReference, type PromptClipboardReference } from '../components/CanvasNodes';
 import { UiIcon, type UiIconName } from '../components/UiIcon';
 import { resolveComposerDrag } from './composer-resize';
@@ -44,6 +44,8 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   const [connectionOpen, setConnectionOpen] = useState(() => !agent.connection);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState('');
+  const [images, setImages] = useState<Array<{ id: string; url: string; name: string; bytes: number }>>([]);
+  const [attachmentError, setAttachmentError] = useState('');
   const [pairingPrefilled, setPairingPrefilled] = useState(false);
   useEffect(() => {
     const pair = consumePairingFragment(window.location, window.history);
@@ -94,12 +96,28 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     catch { setSaveFailed(true); }
   };
   const send = async () => {
-    if (!draft.text.trim() || !ready || !agent.state.connected || agent.state.active || agent.busy) return;
+    if ((!draft.text.trim() && !images.length) || !ready || !agent.state.connected || agent.state.active || agent.busy) return;
     const submitted = draft;
-    if (await agent.send(submitted.text, submitted.nodeIds)) {
+    const submittedImages = images;
+    const text = submitted.text.trim() || '请分析这些图片，并结合当前画布说明可执行的下一步。';
+    if (await agent.send(text, submitted.nodeIds, submittedImages.map(image => image.url))) {
       // Never erase the next message typed while the previous one was sending.
       if (draftRef.current.text === submitted.text) updateDraft({ ...draftRef.current, text: '' });
+      setImages(current => current.map(image => image.id).join() === submittedImages.map(image => image.id).join() ? [] : current);
     }
+  };
+  const pasteImages = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = [...event.clipboardData.files].filter(file => file.type.startsWith('image/'));
+    if (!files.length) return;
+    event.preventDefault(); setAttachmentError('');
+    if (!agent.connection?.capabilities?.includes('image_input')) { setAttachmentError(agent.connection ? '当前连接器不支持看图，请更新到 1.3.0 后重新配对' : '请先连接支持图片输入的 Codex 连接器'); return; }
+    const accepted = files.filter(file => ['image/png', 'image/jpeg', 'image/webp'].includes(file.type));
+    if (accepted.length !== files.length) { setAttachmentError('仅支持 PNG、JPEG 或 WebP 图片'); return; }
+    if (images.length + accepted.length > 4 || accepted.some(file => file.size > 5 * 1024 * 1024) || images.reduce((sum, image) => sum + image.bytes, 0) + accepted.reduce((sum, file) => sum + file.size, 0) > 12 * 1024 * 1024) { setAttachmentError('每次最多 4 张，单张不超过 5 MB、合计不超过 12 MB'); return; }
+    const loaded = await Promise.all(accepted.map(file => new Promise<{ id: string; url: string; name: string; bytes: number }>((resolve, reject) => {
+      const reader = new FileReader(); reader.onerror = () => reject(new Error('无法读取剪贴板图片')); reader.onload = () => resolve({ id: crypto.randomUUID(), url: String(reader.result), name: file.name || '剪贴板图片', bytes: file.size }); reader.readAsDataURL(file);
+    })));
+    setImages(current => [...current, ...loaded]);
   };
   useEffect(() => { if (followMessages.current && messageList.current) messageList.current.scrollTop = messageList.current.scrollHeight; }, [agent.state.messages, agent.state.pending]);
   const view = (canvas: boolean) => { input.current?.blur(); setConnectionOpen(false); setPickerOpen(false); onViewChange(canvas); };
@@ -201,14 +219,14 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     </header>
     {connectionOpen && <section className="canvas-agent-connection-panel" aria-label="Agent 连接状态">
       <UiIcon name="link" /><h2>连接你自己的 Codex</h2>
-      <p>无需注册画布账号。Windows 免安装包已包含运行环境，解压后双击启动即可。</p>
+      <p>无需注册画布账号。Windows 免安装包已包含运行环境，解压后双击启动；后续普通更新会在启动时自动完成。</p>
       {agent.connection ? <><p>已配对设备：{agent.connection.device}</p><button type="button" disabled={agent.busy} onClick={() => void agent.disconnect()}>断开连接</button>{!agent.state.connected && <button type="button" disabled={agent.busy} onClick={agent.forget}>移除本页的失效连接</button>}</> : <>
         <button className="canvas-agent-download" type="button" disabled={downloadProgress !== null} onClick={async () => {
           setDownloadError(''); setDownloadProgress(0);
           try { await downloadPortableConnector(setDownloadProgress); } catch (error) { setDownloadError(error instanceof Error ? error.message : '下载失败，请稍后重试'); }
           finally { setDownloadProgress(null); }
         }}><UiIcon name="download" />{downloadProgress === null ? '下载 Windows 免安装包' : `正在下载 · ${downloadProgress}%`}</button>
-        <p className="canvas-agent-install-help">① 完整解压 ZIP　② 双击「启动黑岩连接器.cmd」　③ 按引导登录并打开画布。需要结束时运行停止脚本。</p>
+        <p className="canvas-agent-install-help">① 完整解压 ZIP　② 双击「启动黑岩连接器.cmd」　③ 按引导登录并打开画布。1.3.0 起普通更新无需重下完整包；需要结束时运行停止脚本。</p>
         {downloadError && <p role="alert">{downloadError}</p>}
         {pairingPrefilled && <p className="canvas-agent-install-help">连接器已自动填好地址和一次性配对码。请确认这是你刚启动的本机连接器，再点击“配对并连接”。</p>}
         <label>连接地址<input type="url" value={connectorUrl} onChange={event => setConnectorUrl(event.target.value)} autoComplete="off" /></label>
@@ -217,7 +235,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         <details className="canvas-agent-advanced-install"><summary>其他系统 / 手动启动</summary><a href="/downloads/heiyan-codex-connector.zip" download>下载源码连接器</a><p className="canvas-agent-start-command">需自行安装 Node.js 22+ 与 Codex。在解压目录运行：<code>npm run agent:connector -- --origin {typeof location === 'undefined' ? 'http://127.0.0.1:8792' : location.origin}</code></p></details>
       </>}
       {agent.error && <p role="alert">{agent.error}</p>}
-      <div className="canvas-agent-boundary"><strong>仅授权当前画布</strong><p>描述与画布上下文会发送给你自己的 Codex。Agent 可提议修改画布，也可集中请求生成；真实生成永远需要你明确确认。当前版本仅支持同机连接，手机远程配对尚未开放。</p></div>
+      <div className="canvas-agent-boundary"><strong>仅授权当前画布</strong><p>描述、端口元数据和你明确粘贴的图片会发送给自己的 Codex。Agent 可分析附图、提议修改画布，也可集中请求生成；真实生成永远需要你明确确认。未附加的画布原图不会自动发送。</p></div>
       <button type="button" onClick={() => setConnectionOpen(false)}>返回会话<UiIcon name="right" /></button>
     </section>}
     <section ref={messageList} className="canvas-agent-conversation" aria-label="会话消息" onScroll={event => { const el = event.currentTarget; followMessages.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
@@ -227,7 +245,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         <p>描述你的创作目标，<br />也可以引用画布中的素材与节点。</p>
         <span className="canvas-agent-scope">图像 · 视频 · 声音 · 3D · 短片</span>
       </div>}
-      {agent.state.messages.map(message => <article className="canvas-agent-message" data-role={message.role} key={message.id}><small>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Codex' : '画布'}</small><div>{message.text}</div></article>)}
+      {agent.state.messages.map(message => <article className="canvas-agent-message" data-role={message.role} key={message.id}><small>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Codex' : '画布'}</small><div>{message.text}</div>{message.imageCount ? <em>附图 {message.imageCount} 张 · {message.model}{message.effort ? ` · ${message.effort}` : ''}</em> : null}</article>)}
       {agent.state.pending?.tool === 'heiyan_edit_canvas' && <section className="canvas-agent-proposal" aria-label="待确认的画布修改">
         <strong>确认画布修改</strong><p>{agent.state.pending.input.summary}</p>
         <ol>{agent.state.pending.input.operations?.map((operation, index) => <li key={index}>{operation.action === 'create' ? '创建' : operation.action === 'update' ? '修改' : '连接'} · {operation.title || operation.id || `${operation.source} → ${operation.target}`}{operation.prompt !== undefined && <details><summary>查看完整描述</summary><p>{operation.prompt}</p></details>}</li>)}</ol>
@@ -284,7 +302,9 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
               <button type="button" className="canvas-agent-reference-remove" aria-label={'移除引用 ' + (item?.title || id)} onClick={() => updateDraft({ ...draft, nodeIds: draft.nodeIds.filter(value => value !== id) })}><UiIcon name="close" /></button>
             </div>)}
           </div>}
-          <textarea ref={input} className="canvas-agent-input" aria-label="会话描述" aria-describedby="canvas-agent-send-hint" placeholder="描述你想完成的创作，@ 引用画布" value={draft.text} maxLength={CONVERSATION_LIMIT}
+          {!!images.length && <div className="canvas-agent-image-attachments" aria-label="本轮图片附件">{images.map(image => <figure key={image.id}><img src={image.url} alt={image.name} /><button type="button" aria-label={'移除 ' + image.name} onClick={() => setImages(current => current.filter(item => item.id !== image.id))}><UiIcon name="close" /></button></figure>)}</div>}
+          <textarea ref={input} className="canvas-agent-input" aria-label="会话描述" aria-describedby="canvas-agent-send-hint" placeholder="描述创作需求，@ 引用画布，也可直接粘贴图片" value={draft.text} maxLength={CONVERSATION_LIMIT}
+            onPaste={event => void pasteImages(event)}
             onCompositionStart={() => { composing.current = true; }}
             onCompositionEnd={() => { composing.current = false; }}
             onChange={event => updateDraft({ ...draft, text: event.target.value })}
@@ -298,8 +318,10 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
               <button type="button" className="canvas-agent-icon" aria-label="导入素材到画布" title="导入素材" disabled={!ready} onClick={onUpload}><UiIcon name="upload" /></button>
               {selected && !draft.nodeIds.includes(selected.id) && <button type="button" className="canvas-agent-quote-selected" title={'引用：' + selected.title} onClick={() => addReferences([selected.id])}><UiIcon name="link" /><span>引用选中</span></button>}
             </div>
-            {agent.state.active ? <button type="button" className="canvas-agent-send" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : <button type="submit" className="canvas-agent-send" aria-label={agent.state.connected ? '发送消息' : '发送消息（需先连接 Codex）'} title={agent.state.connected ? '发送 · Enter，换行 · Shift+Enter' : '请先连接自己的 Codex'} disabled={!agent.state.connected || !draft.text.trim() || !ready || agent.busy}><UiIcon name="arrowUp" /></button>}
+            {!!agent.models.length && <div className="canvas-agent-model-controls"><label>模型<select aria-label="Codex 模型" value={agent.model} onChange={event => agent.setModel(event.target.value)}>{agent.models.map(item => <option key={item.id} value={item.model}>{item.name}</option>)}</select></label><label>思考<select aria-label="思考程度" value={agent.effort} onChange={event => agent.setEffort(event.target.value)}>{(agent.models.find(item => item.model === agent.model)?.efforts || []).map(item => <option key={item.value} value={item.value}>{item.value}</option>)}</select></label></div>}
+            {agent.state.active ? <button type="button" className="canvas-agent-send" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : <button type="submit" className="canvas-agent-send" aria-label={agent.state.connected ? '发送消息' : '发送消息（需先连接 Codex）'} title={agent.state.connected ? '发送 · Enter，换行 · Shift+Enter' : '请先连接自己的 Codex'} disabled={!agent.state.connected || (!draft.text.trim() && !images.length) || !ready || agent.busy}><UiIcon name="arrowUp" /></button>}
           </footer>
+          {attachmentError && <p className="canvas-agent-attachment-error" role="alert">{attachmentError}</p>}
         </>}
     </form>
     <p className="canvas-agent-footnote" id="canvas-agent-send-hint" role={saveFailed ? 'alert' : undefined}>{saveFailed ? '无法保存草稿，请勿关闭此页面' : agent.state.connected ? approvalMode === 'assist' ? '使用自己的 Codex · 安全操作自动批准' : '使用自己的 Codex · 修改画布前需确认' : 'Codex 未连接 · 草稿仅保存在此浏览器'}</p>

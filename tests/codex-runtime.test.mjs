@@ -16,6 +16,7 @@ function fixture(t, inventory = { data: [{ runtimeStatus: 'disabled', tools: {} 
       'account/read': { account: { type: 'chatgpt' } },
       'thread/start': { thread: { id: 'test-thread' } },
       'mcpServerStatus/list': inventory,
+      'model/list': { data: [{ id: 'gpt-test', model: 'gpt-test', displayName: 'GPT Test', description: 'Vision model', hidden: false, isDefault: true, inputModalities: ['text', 'image'], defaultReasoningEffort: 'medium', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'medium', description: 'Balanced' }] }], nextCursor: null },
       'turn/start': { turn: { id: 'test-turn' } },
     };
     if (Object.hasOwn(results, message.method)) queueMicrotask(() => emit({ id: message.id, result: results[message.method] }));
@@ -39,7 +40,7 @@ test('Codex wire handshake isolates inherited capabilities without account/confi
   assert.deepEqual(start.environments, []); assert.deepEqual(start.selectedCapabilityRoots, []);
   assert.deepEqual(start.config.mcp_servers, { 'exact.server-name': { enabled: false } });
   assert.ok(!JSON.stringify(start).includes('do-not-forward'));
-  assert.deepEqual(start.dynamicTools.map(t => t.name), ['heiyan_read_canvas', 'heiyan_edit_canvas']);
+  assert.deepEqual(start.dynamicTools.map(t => t.name), ['heiyan_read_canvas', 'heiyan_edit_canvas', 'heiyan_request_generation']);
   assert.ok(start.dynamicTools.every(t => t.type === 'function'));
   assert.equal(f.requests.find(r => r.method === 'mcpServerStatus/list').params.threadId, thread);
   assert.equal(f.launch.options.shell, false); assert.equal(f.launch.options.windowsHide, true);
@@ -59,4 +60,12 @@ test('dynamic tool requests and result responses preserve RPC identity', async t
   assert.equal(events[0].id, 'tool-call-id');
   f.runtime.respond(events[0].id, { success: true, contentItems: [{ type: 'inputText', text: '{}' }] });
   assert.equal(f.requests.at(-1).id, 'tool-call-id'); assert.equal(f.requests.at(-1).result.success, true);
+});
+test('model discovery and multimodal turn options follow the advertised catalog', async t => {
+  const f = fixture(t); const models = await f.runtime.models();
+  assert.deepEqual(models[0].inputModalities, ['text', 'image']);
+  await f.runtime.startTurn('thread', 'look', { model: 'gpt-test', effort: 'medium', images: ['data:image/png;base64,YQ=='] });
+  const turn = f.requests.findLast(request => request.method === 'turn/start').params;
+  assert.equal(turn.model, 'gpt-test'); assert.equal(turn.effort, 'medium');
+  assert.deepEqual(turn.input[1], { type: 'image', url: 'data:image/png;base64,YQ==', detail: 'high' });
 });

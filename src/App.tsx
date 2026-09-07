@@ -2650,6 +2650,18 @@ export function evaluateConnection(connection: Connection, nodes: CanvasNode[], 
   return { error: '', replaceEdgeIds, targetHandle };
 }
 
+export function agentConnectionForNodes(sourceId: string, targetId: string, nodes: CanvasNode[]): Connection {
+  const source = nodes.find((node) => node.id === sourceId);
+  const target = nodes.find((node) => node.id === targetId);
+  if (!source || !target) throw new Error('连接节点不在当前画布中');
+  const sourceHandle = 'output';
+  const sourceType = outputTypeFor(source, sourceHandle);
+  if (!sourceType) throw new Error('来源节点没有可连接的输出');
+  const targetHandle = defaultInputPort(target.data.kind, sourceType, target.data);
+  if (!targetHandle) throw new Error(`目标节点没有兼容 ${sourceType} 的输入端口`);
+  return { source: sourceId, sourceHandle, target: targetId, targetHandle };
+}
+
 export type SelectedCloneMode = 'with-inputs' | 'next-step';
 export type SelectedClonePlan = {
   nodes: CanvasNode[];
@@ -6762,7 +6774,7 @@ function Studio() {
           return attachActions({ id: `${kind}-${crypto.randomUUID()}`, type: kind, position: { x: startX + (index % 3) * 470, y: center.y + Math.floor(index / 3) * 340 }, width: initialNodeWidth(kind), height: initialNodeHeight(kind), data: { ...(kind === 'text' ? {} : generatorDefaults(models, capability)), kind, title: '', outputType: kind === 'text' ? 'text' : capability } as CanvasNodeData });
         },
         connect: (source, target, nodes, edges) => {
-          const connection: Connection = { source, target, sourceHandle: 'output', targetHandle: null };
+          const connection = agentConnectionForNodes(source, target, nodes);
           const decision = evaluateConnection(connection, nodes, edges);
           if (decision.error) throw Error(decision.error);
           if (decision.replaceEdgeIds.length) throw Error('该端口已有连接，请先在画布中确认替换');

@@ -77,6 +77,10 @@ Cloud requests may pass through your canvas server before reaching the provider.
 4. Run `启动黑岩连接器.cmd` (Start HEIYAN Connector). Follow the local setup page to sign in to your own Codex.
 5. Click `打开画布并配对` (Open canvas and pair). Verify that the connector is the one you just started, then click `配对并连接` (Pair and connect) in the canvas.
 
+After connecting, the Agent header lists the models and reasoning efforts actually available to your Codex account. You can also paste PNG, JPEG or WebP images into the composer so the Agent can analyze the image together with your instructions. Use the canvas import action if the image should remain as a persistent canvas asset.
+
+Upgrading from an older connector to 1.3.0 requires one full download and replacement. After that, the launcher verifies and downloads small application updates automatically, falls back to the last working release when an update is unavailable or invalid, and only needs another full package when the bundled runtime or launcher changes.
+
 The Windows x64 package includes Node.js and Codex CLI. It does not require a separate Node installation. Its launcher and setup page currently use Chinese labels, reproduced above so you can identify them.
 
 Closing the setup page does not stop the connector. Use `停止连接器` (Stop connector) on that page or run `停止黑岩连接器.cmd` (Stop HEIYAN Connector). After changing `connector.json`, stop and restart the connector.
@@ -98,7 +102,7 @@ For another canvas address, set `--origin` to its exact origin without a path. I
 ### Scope
 
 - Uses your own Codex login and quota. Do not send login files or pairing codes to the author or other users.
-- Currently reads mainly node information, supports creative discussion and proposes node operations for confirmation.
+- Reads safe node, port and edge metadata, supports creative discussion, analyzes images explicitly pasted into the current turn, and proposes node operations for confirmation. Raw canvas images, video and audio are not sent automatically.
 - Does not automatically submit paid generation or autonomously complete an entire film.
 - Supports a desktop browser and connector on the same computer. Cross-device mobile Codex connections are not available.
 - Keep the connector running. Conversation recovery after shutdown is not guaranteed.

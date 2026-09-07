@@ -59,7 +59,7 @@ export class CodexRuntime extends EventEmitter {
     });
   }
   async initialize() {
-    await this.request('initialize', { clientInfo: { name: 'heiyan_connector', title: 'HEIYAN 画布连接器', version: '1.2.0' }, capabilities: { experimentalApi: true } });
+    await this.request('initialize', { clientInfo: { name: 'heiyan_connector', title: 'HEIYAN 画布连接器', version: '1.3.0' }, capabilities: { experimentalApi: true } });
     this.write({ method: 'initialized', params: {} });
     // Discover ONLY configured server names, then disable each before any thread
     // can start. Do not persist, expose or log the returned configuration.
@@ -76,12 +76,25 @@ export class CodexRuntime extends EventEmitter {
     if (!account) throw new Error('请先在你自己的 Codex 中完成登录，再回来连接');
     return account;
   }
-  async startThread() {
+  async models() {
+    await this.ready;
+    if (this.modelCatalog) return this.modelCatalog;
+    const result = await this.request('model/list', { includeHidden: false, limit: 100 });
+    if (result.nextCursor) throw new Error('Codex 模型列表过长，请更新连接器');
+    this.modelCatalog = (result.data || []).filter(model => !model.hidden && typeof model.model === 'string').slice(0, 32).map(model => ({
+      id: String(model.id || model.model).slice(0, 100), model: model.model.slice(0, 100), name: String(model.displayName || model.model).slice(0, 100), description: String(model.description || '').slice(0, 240), isDefault: !!model.isDefault,
+      inputModalities: Array.isArray(model.inputModalities) ? model.inputModalities.filter(value => ['text', 'image'].includes(value)) : ['text'],
+      defaultEffort: String(model.defaultReasoningEffort || '').slice(0, 40), efforts: (model.supportedReasoningEfforts || []).slice(0, 12).map(option => ({ value: String(option.reasoningEffort || '').slice(0, 40), description: String(option.description || '').slice(0, 160) })).filter(option => option.value),
+    }));
+    if (!this.modelCatalog.length) throw new Error('当前 Codex 账号没有可用模型');
+    return this.modelCatalog;
+  }
+  async startThread({ model } = {}) {
     await this.ready;
     const result = await this.request('thread/start', {
       approvalPolicy: 'never', sandbox: 'read-only', environments: [], selectedCapabilityRoots: [],
       ephemeral: true, config: this.config, developerInstructions: agentInstructions,
-      dynamicTools: agentTools,
+      dynamicTools: agentTools, ...(model ? { model } : {}),
     });
     const inventory = await this.request('mcpServerStatus/list', { threadId: result.thread.id });
     if (inventory.data?.some(server => server.runtimeStatus === 'connected' || Object.keys(server.tools || {}).length) || inventory.nextCursor) {
@@ -89,8 +102,11 @@ export class CodexRuntime extends EventEmitter {
     }
     return result.thread.id;
   }
-  async startTurn(threadId, text) {
-    return this.request('turn/start', { threadId, environments: [], approvalPolicy: 'never', input: [{ type: 'text', text, text_elements: [] }] });
+  async startTurn(threadId, text, { model, effort, images = [] } = {}) {
+    return this.request('turn/start', { threadId, environments: [], approvalPolicy: 'never', ...(model ? { model } : {}), ...(effort ? { effort } : {}), input: [
+      { type: 'text', text, text_elements: [] },
+      ...images.map(url => ({ type: 'image', url, detail: 'high' })),
+    ] });
   }
   respond(id, result) { this.write({ id, result }); }
   deny(id) { this.write({ id, error: { code: -32601, message: 'Only explicitly approved HEIYAN canvas tools are supported.' } }); }

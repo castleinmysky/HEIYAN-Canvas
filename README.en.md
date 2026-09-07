@@ -49,7 +49,7 @@ Configure official APIs and compatible third-party endpoints separately. The Age
 | Generation | Images, video, audio and 3D assets; reuse outputs as inputs for subsequent nodes. |
 | Image tools | Multi-view splitting, mask editing and overlapping, card-style browsing of multiple results. |
 | Generation history | Per-canvas history with deletion and clearing; scroll to zoom and middle-drag to pan previews. |
-| Codex Agent | Connect your own Codex, organize nodes in chat, and submit up to four existing generation nodes after explicit approval. |
+| Codex Agent | Connect your own Codex, choose an available model and reasoning effort, paste images for visual analysis, organize nodes in chat, and submit up to four existing generation nodes after explicit approval. |
 | ComfyUI | Use your own deployment's models and workflows through a connector, with supported local and cross-network connections. |
 
 ## Quick start
@@ -100,7 +100,7 @@ See the [English quick-start guide](docs/QUICKSTART.en.md) for API configuration
 | Privacy | Cloud services receive the prompts, assets and credentials needed for each request. Configured proxies and tunnels also handle the traffic they forward. |
 | Model access | A successful connection does not guarantee access to every model or feature. Provider permissions, quota and deployment configuration still apply. |
 | Local services | Keep the connector and ComfyUI running during generation. Clearing browser history does not delete original files on the generation machine. |
-| Agent | Currently works mainly with node information. It does not fully understand arbitrary image, video or audio content, or autonomously produce an entire short film. |
+| Agent | Can analyze PNG, JPEG and WebP images explicitly pasted into the current turn. Raw canvas images, video and audio are not sent automatically; only safe node, port and edge metadata is read. It does not autonomously produce an entire short film. |
 | Cross-device Codex | Connecting a phone to another computer's Codex, and restoring conversations after the connector shuts down, are not currently supported. |
 | Refresh recovery | Depends on the provider API. Synchronous requests without background execution cannot be guaranteed to survive a refresh. Uncertain generation submissions are not automatically repeated. |
 
