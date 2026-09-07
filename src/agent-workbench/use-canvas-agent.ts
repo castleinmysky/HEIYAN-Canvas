@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { agentConnectionKey, agentRequest, connectorAddress, emptyAgentState, readAgentConnection, type AgentCanvasAccess, type AgentConnection, type AgentState } from './agent-session';
+import { mayAutoApproveAgentProposal, type AgentApprovalMode } from './approval-mode';
 
-export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess) {
+export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, approvalMode: AgentApprovalMode = 'ask') {
   const [connection, setConnection] = useState<AgentConnection | null>(() => { try { return readAgentConnection(sessionStorage); } catch { return null; } });
   const [state, setState] = useState(emptyAgentState);
   const [busy, setBusy] = useState(false);
@@ -42,6 +43,31 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess) {
     try { await action(); return true; } catch (reason) { report(reason); return false; }
     finally { actionLock.current = false; if (mounted.current) setBusy(false); }
   };
+  const decidePending = async (pending: NonNullable<AgentState['pending']>, approved: boolean) => {
+    if (!connection || !accessRef.current) return;
+    const revision = accessRef.current.read(refs.current).revision;
+    const decision = await agentRequest(connection, '/decision', { canvasKey, id: pending.id, approved, revision });
+    if (decision.execute) {
+      let result: string, success = false;
+      // The server atomically grants a single-use claim. A lost acknowledgement
+      // retries ONLY the result, never the canvas mutation.
+      try {
+        if (!mounted.current) throw Error('画布会话已关闭，本次操作未执行');
+        result = pending.tool === 'heiyan_request_generation'
+          ? await accessRef.current.generate(decision.input, revision)
+          : accessRef.current.edit(decision.input, revision);
+        success = true;
+      }
+      catch (reason) { result = reason instanceof Error ? reason.message : '画布未修改'; }
+      pendingDelivery.current = { id: pending.id, claim: decision.claim, success, result };
+    }
+    await refresh();
+  };
+  useEffect(() => {
+    const pending = state.pending;
+    if (!pending || pending.claimed || pending.tool !== 'heiyan_edit_canvas' || !mayAutoApproveAgentProposal(approvalMode, pending.input)) return;
+    void lock(() => decidePending(pending, true));
+  }, [approvalMode, state.pending?.id, state.pending?.claimed]);
   return {
     connection, state, busy, error,
     pair: (url: string, code: string) => lock(async () => {
@@ -74,18 +100,7 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess) {
     stop: () => lock(async () => { if (connection) { await agentRequest(connection, '/stop', { canvasKey }); await refresh(); } }),
     decide: (approved: boolean) => lock(async () => {
       const pending = state.pending;
-      if (!connection || !pending || !accessRef.current) return;
-      const revision = accessRef.current.read(refs.current).revision;
-      const decision = await agentRequest(connection, '/decision', { canvasKey, id: pending.id, approved, revision });
-      if (decision.execute) {
-        let result: string, success = false;
-        // The server atomically grants a single-use claim. A lost acknowledgement
-        // retries ONLY the result, never the canvas mutation.
-        try { if (!mounted.current) throw Error('画布会话已关闭，本次操作未执行'); result = accessRef.current.edit(decision.input, revision); success = true; }
-        catch (reason) { result = reason instanceof Error ? reason.message : '画布未修改'; }
-        pendingDelivery.current = { id: pending.id, claim: decision.claim, success, result };
-      }
-      await refresh();
+      if (pending) await decidePending(pending, approved);
     }),
   };
 }

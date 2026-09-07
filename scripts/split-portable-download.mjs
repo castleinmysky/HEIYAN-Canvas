@@ -12,5 +12,5 @@ for await (const chunk of createReadStream(archive, { highWaterMark: 20 * 1024 *
   const filename = `part-${String(index++).padStart(3, '0')}.bin`; await fs.writeFile(path.join(directory, filename), chunk);
   parts.push({ path: `/downloads/heiyan-windows/${id}/${filename}`, bytes: chunk.length, sha256: crypto.createHash('sha256').update(chunk).digest('hex') }); bytes += chunk.length;
 }
-await fs.writeFile(path.join(destination, 'manifest.json'), JSON.stringify({ filename: 'HEIYAN-Connector-Windows-x64.zip', platform: 'win32-x64', version: '1.1.0', bytes, sha256, parts }, null, 2) + '\n');
+await fs.writeFile(path.join(destination, 'manifest.json'), JSON.stringify({ filename: 'HEIYAN-Connector-Windows-x64.zip', platform: 'win32-x64', version: '1.2.0', bytes, sha256, parts }, null, 2) + '\n');
 console.log(JSON.stringify({ bytes, sha256, parts: parts.length }));

@@ -59,7 +59,7 @@ export class CodexRuntime extends EventEmitter {
     });
   }
   async initialize() {
-    await this.request('initialize', { clientInfo: { name: 'heiyan_connector', title: 'HEIYAN 画布连接器', version: '0.1.0' }, capabilities: { experimentalApi: true } });
+    await this.request('initialize', { clientInfo: { name: 'heiyan_connector', title: 'HEIYAN 画布连接器', version: '1.2.0' }, capabilities: { experimentalApi: true } });
     this.write({ method: 'initialized', params: {} });
     // Discover ONLY configured server names, then disable each before any thread
     // can start. Do not persist, expose or log the returned configuration.
@@ -81,7 +81,7 @@ export class CodexRuntime extends EventEmitter {
     const result = await this.request('thread/start', {
       approvalPolicy: 'never', sandbox: 'read-only', environments: [], selectedCapabilityRoots: [],
       ephemeral: true, config: this.config, developerInstructions: agentInstructions,
-      dynamicTools: agentTools.filter(tool => tool.name !== 'heiyan_request_generation'),
+      dynamicTools: agentTools,
     });
     const inventory = await this.request('mcpServerStatus/list', { threadId: result.thread.id });
     if (inventory.data?.some(server => server.runtimeStatus === 'connected' || Object.keys(server.tools || {}).length) || inventory.nextCursor) {

@@ -65,6 +65,19 @@ html:has(.canvas-agent-dock), body:has(.canvas-agent-dock) { overflow-x: clip; }
 .canvas-agent-connection > svg { width: 12px; height: 12px; }
 .canvas-agent-connection[aria-expanded=true] { background: var(--cad-control); color: var(--canvas-text); }
 .canvas-agent-connection[aria-expanded=true] > svg { transform: rotate(180deg); }
+.canvas-agent-approval-menu { position: relative; flex: 0 0 auto; }
+.canvas-agent-approval-menu > summary { display: flex; align-items: center; gap: 5px; min-height: 36px; padding: 4px 8px; list-style: none; border-radius: 8px; color: var(--canvas-text-soft); font-size: 12px; cursor: pointer; user-select: none; }
+.canvas-agent-approval-menu > summary::-webkit-details-marker { display: none; }
+.canvas-agent-approval-menu > summary > svg { width: 12px; height: 12px; }
+.canvas-agent-approval-menu[open] > summary { background: var(--cad-control); color: var(--canvas-text); }
+.canvas-agent-approval-menu[open] > summary > svg { transform: rotate(180deg); }
+.canvas-agent-approval-options { position: absolute; z-index: var(--cad-z-popover); top: calc(100% + 10px); right: 0; width: min(292px, calc(100vw - 24px)); padding: 8px; border: 1px solid var(--cad-rule); border-radius: 12px; background: var(--canvas-surface); box-shadow: 0 10px 30px var(--cad-shadow); }
+.canvas-agent-approval-options label { display: flex; align-items: flex-start; gap: 10px; min-height: 58px; padding: 10px; border-radius: 8px; cursor: pointer; }
+.canvas-agent-approval-options label:hover { background: var(--cad-control); }
+.canvas-agent-approval-options input { margin: 4px 0 0; accent-color: var(--canvas-primary); }
+.canvas-agent-approval-options span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.canvas-agent-approval-options strong { font-size: 13px; font-weight: 600; }
+.canvas-agent-approval-options small { color: var(--canvas-text-soft); font-size: 11px; line-height: 1.45; white-space: normal; }
 .canvas-agent-dock .canvas-agent-icon { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--canvas-text-soft); font-size: 20px; }
 .canvas-agent-views { display: none; }
 .canvas-agent-resizer { position: absolute; z-index: var(--cad-z-resizer); left: -6px; top: 0; bottom: 0; width: 12px; cursor: ew-resize; touch-action: none; user-select: none; }
@@ -197,6 +210,7 @@ body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
   .canvas-agent-send { width: 44px; height: 44px; }
   .canvas-agent-grip { height: 44px; top: -32px; }
   .canvas-agent-head > .canvas-agent-connection { min-height: 44px; }
+  .canvas-agent-approval-menu > summary { min-height: 44px; padding-inline: 6px; font-size: 11px; }
   .canvas-agent-quote-selected { min-height: 44px; }
   .canvas-agent-footnote { margin: 8px 12px max(10px, env(safe-area-inset-bottom)); }
   .canvas-agent-popup { left: 8px; right: 8px; bottom: calc(var(--agent-composer-height, 164px) + 44px); max-height: max(100px, min(420px, calc(var(--mobile-visible-height, 100dvh) - var(--agent-composer-height, 164px) - 180px))); }

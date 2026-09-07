@@ -4,8 +4,9 @@ import { UiIcon, type UiIconName } from '../components/UiIcon';
 import { resolveComposerDrag } from './composer-resize';
 import { agentComposerLimits, agentRailWidth } from './workbench-layout';
 import { useCanvasAgent } from './use-canvas-agent';
-import { consumePairingFragment, downloadPortableConnector, CONNECTOR_RELEASES_URL } from './portable-connector';
+import { consumePairingFragment, downloadPortableConnector } from './portable-connector';
 import type { AgentCanvasAccess } from './agent-session';
+import { readAgentApprovalMode, saveAgentApprovalMode, type AgentApprovalMode } from './approval-mode';
 import { addConversationReferences, CONVERSATION_LIMIT, conversationDraftKey, emptyConversationDraft, parseConversationDraft, saveConversationDraft, type ConversationDraft } from './conversation-draft';
 import './CanvasAgentDock.css';
 
@@ -35,7 +36,9 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   onClose: () => void; onFocus: (id: string) => void; onUpload: () => void;
   onViewChange: (canvas: boolean) => void;
 }) {
-  const agent = useCanvasAgent(canvasKey, access);
+  const [approvalMode, setApprovalMode] = useState<AgentApprovalMode>(() => typeof localStorage === 'undefined' ? 'ask' : readAgentApprovalMode(localStorage));
+  const approvalMenu = useRef<HTMLDetailsElement>(null);
+  const agent = useCanvasAgent(canvasKey, access, approvalMode);
   const [connectorUrl, setConnectorUrl] = useState('http://127.0.0.1:17372');
   const [pairingCode, setPairingCode] = useState('');
   const [connectionOpen, setConnectionOpen] = useState(() => !agent.connection);
@@ -100,6 +103,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   };
   useEffect(() => { if (followMessages.current && messageList.current) messageList.current.scrollTop = messageList.current.scrollHeight; }, [agent.state.messages, agent.state.pending]);
   const view = (canvas: boolean) => { input.current?.blur(); setConnectionOpen(false); setPickerOpen(false); onViewChange(canvas); };
+  const chooseApprovalMode = (mode: AgentApprovalMode) => { setApprovalMode(mode); saveAgentApprovalMode(localStorage, mode); approvalMenu.current?.removeAttribute('open'); };
   useEffect(() => { if (canvasView) setConnectionOpen(false); setPickerOpen(false); }, [canvasView]);
   const closePicker = () => { setPickerOpen(false); trigger.current?.focus({ preventScroll: true }); };
   const openPicker = (element: HTMLElement) => {
@@ -186,6 +190,13 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         <button type="button" aria-pressed={canvasView} onClick={() => view(true)}>画布</button>
       </nav>
       <button type="button" className="canvas-agent-connection" data-connected={agent.state.connected || undefined} aria-label="查看 Agent 连接" aria-expanded={connectionOpen} onClick={() => { if (canvasView) onViewChange(false); setConnectionOpen(value => !value); setPickerOpen(false); input.current?.blur(); }}><i aria-hidden="true" /><span>{agent.state.connected ? 'Codex 已连接' : 'Codex 未连接'}</span><UiIcon name="chevronDown" /></button>
+      <details ref={approvalMenu} className="canvas-agent-approval-menu">
+        <summary aria-label="选择 Agent 审批方式"><span>{approvalMode === 'ask' ? '请求批准' : '帮我批准'}</span><UiIcon name="chevronDown" /></summary>
+        <div className="canvas-agent-approval-options" role="radiogroup" aria-label="Agent 审批方式">
+          <label><input type="radio" name="agent-approval-mode" checked={approvalMode === 'ask'} onChange={() => chooseApprovalMode('ask')} /><span><strong>请求批准</strong><small>每次修改画布前都询问</small></span></label>
+          <label><input type="radio" name="agent-approval-mode" checked={approvalMode === 'assist'} onChange={() => chooseApprovalMode('assist')} /><span><strong>帮我批准</strong><small>自动执行创建和连线；覆盖内容与付费生成仍询问</small></span></label>
+        </div>
+      </details>
       <button type="button" className="canvas-agent-icon" aria-label="关闭创作会话" title="关闭会话" onClick={onClose}><UiIcon name="close" /></button>
     </header>
     {connectionOpen && <section className="canvas-agent-connection-panel" aria-label="Agent 连接状态">
@@ -199,15 +210,14 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         }}><UiIcon name="download" />{downloadProgress === null ? '下载 Windows 免安装包' : `正在下载 · ${downloadProgress}%`}</button>
         <p className="canvas-agent-install-help">① 完整解压 ZIP　② 双击「启动黑岩连接器.cmd」　③ 按引导登录并打开画布。需要结束时运行停止脚本。</p>
         {downloadError && <p role="alert">{downloadError}</p>}
-        <p className="canvas-agent-install-help"><a href={CONNECTOR_RELEASES_URL} target="_blank" rel="noopener noreferrer">GitHub Releases 下载</a> · 没有本地安装包时使用；私有仓库需要访问权限。</p>
         {pairingPrefilled && <p className="canvas-agent-install-help">连接器已自动填好地址和一次性配对码。请确认这是你刚启动的本机连接器，再点击“配对并连接”。</p>}
         <label>连接地址<input type="url" value={connectorUrl} onChange={event => setConnectorUrl(event.target.value)} autoComplete="off" /></label>
         <label>配对码<input type="password" value={pairingCode} onChange={event => setPairingCode(event.target.value)} autoComplete="off" placeholder="输入连接器显示的配对码，不是 API 密钥" /></label>
         <button type="button" disabled={agent.busy || !pairingCode.trim()} onClick={async () => { if (await agent.pair(connectorUrl, pairingCode)) { setPairingCode(''); setConnectionOpen(false); } }}>{agent.busy ? '正在连接…' : '配对并连接'}</button>
-        <details className="canvas-agent-advanced-install"><summary>其他系统 / 手动启动</summary><a href={CONNECTOR_RELEASES_URL} target="_blank" rel="noopener noreferrer">下载源码连接器</a><p className="canvas-agent-start-command">需自行安装 Node.js 22.13+ 与 Codex CLI。在解压目录运行：<code>npm run agent:connector -- --origin {typeof location === 'undefined' ? 'http://127.0.0.1:8792' : location.origin}</code></p></details>
+        <details className="canvas-agent-advanced-install"><summary>其他系统 / 手动启动</summary><a href="/downloads/heiyan-codex-connector.zip" download>下载源码连接器</a><p className="canvas-agent-start-command">需自行安装 Node.js 22+ 与 Codex。在解压目录运行：<code>npm run agent:connector -- --origin {typeof location === 'undefined' ? 'http://127.0.0.1:8792' : location.origin}</code></p></details>
       </>}
       {agent.error && <p role="alert">{agent.error}</p>}
-      <div className="canvas-agent-boundary"><strong>仅授权当前画布</strong><p>描述与画布上下文会发送给你自己的 Codex。修改节点前会请你确认；真实生成仍由你在节点中提交。当前版本仅支持同机连接，手机远程配对尚未开放。</p></div>
+      <div className="canvas-agent-boundary"><strong>仅授权当前画布</strong><p>描述与画布上下文会发送给你自己的 Codex。Agent 可提议修改画布，也可集中请求生成；真实生成永远需要你明确确认。当前版本仅支持同机连接，手机远程配对尚未开放。</p></div>
       <button type="button" onClick={() => setConnectionOpen(false)}>返回会话<UiIcon name="right" /></button>
     </section>}
     <section ref={messageList} className="canvas-agent-conversation" aria-label="会话消息" onScroll={event => { const el = event.currentTarget; followMessages.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
@@ -223,7 +233,13 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         <ol>{agent.state.pending.input.operations?.map((operation, index) => <li key={index}>{operation.action === 'create' ? '创建' : operation.action === 'update' ? '修改' : '连接'} · {operation.title || operation.id || `${operation.source} → ${operation.target}`}{operation.prompt !== undefined && <details><summary>查看完整描述</summary><p>{operation.prompt}</p></details>}</li>)}</ol>
         {agent.state.pending.claimed ? <p>此操作已领取，等待执行结果；不会重复修改画布。</p> : <footer><button type="button" disabled={agent.busy} onClick={() => void agent.decide(false)}>拒绝</button><button type="button" disabled={agent.busy || !ready} onClick={() => void agent.decide(true)}>确认修改</button></footer>}
       </section>}
-      {agent.state.active && <p className="canvas-agent-progress" role="status">{agent.state.pending ? '等待画布操作…' : 'Codex 正在处理…'}</p>}
+      {agent.state.pending?.tool === 'heiyan_request_generation' && <section className="canvas-agent-proposal canvas-agent-generation-proposal" aria-label="待确认的真实生成">
+        <strong>确认真实生成</strong><p>{agent.state.pending.input.summary}</p>
+        <ol>{agent.state.pending.input.nodeIds?.map((id) => { const item = items.find(candidate => candidate.id === id); return <li key={id}>生成 · {item?.title || id}{item?.state ? ` · ${item.state}` : ''}</li>; })}</ol>
+        <p>将使用各节点当前的模型、规格和输入，可能产生资源消耗。</p>
+        {agent.state.pending.claimed ? <p>生成请求已领取，正在提交；不会重复执行。</p> : <footer><button type="button" disabled={agent.busy} onClick={() => void agent.decide(false)}>拒绝</button><button type="button" disabled={agent.busy || !ready} onClick={() => void agent.decide(true)}>确认并生成</button></footer>}
+      </section>}
+      {agent.state.active && <p className="canvas-agent-progress" role="status">{agent.state.pending?.tool === 'heiyan_request_generation' ? '等待生成确认…' : agent.state.pending ? '等待画布操作…' : 'Codex 正在处理…'}</p>}
       {(agent.error || agent.state.error) && <p className="canvas-agent-error" role="alert">{agent.error || agent.state.error}</p>}
     </section>
     {pickerOpen && <div ref={popup} className="canvas-agent-popup" role="dialog" aria-label="引用画布节点">
@@ -286,6 +302,6 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
           </footer>
         </>}
     </form>
-    <p className="canvas-agent-footnote" id="canvas-agent-send-hint" role={saveFailed ? 'alert' : undefined}>{saveFailed ? '无法保存草稿，请勿关闭此页面' : agent.state.connected ? '使用自己的 Codex · 修改画布前需确认' : 'Codex 未连接 · 草稿仅保存在此浏览器'}</p>
+    <p className="canvas-agent-footnote" id="canvas-agent-send-hint" role={saveFailed ? 'alert' : undefined}>{saveFailed ? '无法保存草稿，请勿关闭此页面' : agent.state.connected ? approvalMode === 'assist' ? '使用自己的 Codex · 安全操作自动批准' : '使用自己的 Codex · 修改画布前需确认' : 'Codex 未连接 · 草稿仅保存在此浏览器'}</p>
   </aside>;
 }

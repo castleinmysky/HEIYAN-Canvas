@@ -4,7 +4,11 @@ export type AgentMessage = { id: string; role: 'user' | 'assistant' | 'notice'; 
 export type AgentPending = { id: string; tool: string; input: AgentProposal; revision: string; claimed: boolean };
 export type AgentState = { messages: AgentMessage[]; active: boolean; connected: boolean; pending: AgentPending | null; error: string };
 export const emptyAgentState = (): AgentState => ({ messages: [], active: false, connected: false, pending: null, error: '' });
-export type AgentCanvasAccess = { read: (referenceIds: string[]) => AgentContext; edit: (proposal: AgentProposal, revision: string) => string };
+export type AgentCanvasAccess = {
+  read: (referenceIds: string[]) => AgentContext;
+  edit: (proposal: AgentProposal, revision: string) => string;
+  generate: (request: AgentProposal, revision: string) => Promise<string>;
+};
 export type AgentConnection = { url: string; token: string; device: string };
 export const agentConnectionKey = 'heiyan:codex-connection:v1';
 

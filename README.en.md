@@ -38,7 +38,7 @@ Text + reference images → generated assets → inputs for the next step
 
 Click a thumbnail to view it at full size. These screenshots show the Chinese interface with demo assets; the connection panels contain no account credentials.
 
-Configure official APIs and compatible third-party endpoints separately. Agent-proposed node changes require your confirmation; generation is still submitted by you.
+Configure official APIs and compatible third-party endpoints separately. The Agent can create, edit and connect nodes, then request generation for existing nodes. Resource-consuming generation always requires your explicit approval.
 
 ## Features
 
@@ -49,7 +49,7 @@ Configure official APIs and compatible third-party endpoints separately. Agent-p
 | Generation | Images, video, audio and 3D assets; reuse outputs as inputs for subsequent nodes. |
 | Image tools | Multi-view splitting, mask editing and overlapping, card-style browsing of multiple results. |
 | Generation history | Per-canvas history with deletion and clearing; scroll to zoom and middle-drag to pan previews. |
-| Codex Agent | Connect your own Codex, discuss work in chat and confirm proposed node operations. |
+| Codex Agent | Connect your own Codex, organize nodes in chat, and submit up to four existing generation nodes after explicit approval. |
 | ComfyUI | Use your own deployment's models and workflows through a connector, with supported local and cross-network connections. |
 
 ## Quick start

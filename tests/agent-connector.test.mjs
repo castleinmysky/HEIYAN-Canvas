@@ -89,9 +89,23 @@ test('stale revisions and rejection return tool failure without applying anythin
   }
   assert.ok(f.runtime.responses.every(item => item.result.success === false));
 });
+test('generation always pauses for approval and reports a single claimed execution', async t => {
+  const f = await fixture(t); const pair = await f.pair(); await f.send();
+  assert.equal(pair.data.protocol, 2);
+  assert.ok(pair.data.capabilities.includes('request_generation'));
+  f.runtime.tool('heiyan_request_generation', { summary: '生成两个镜头', nodeIds: ['shot-a', 'shot-b'] });
+  const { data } = await f.call('/state', { canvasKey: 'task-a:main' });
+  assert.equal(data.pending.tool, 'heiyan_request_generation');
+  assert.deepEqual(data.pending.input.nodeIds, ['shot-a', 'shot-b']);
+  const approved = await f.call('/decision', { canvasKey: 'task-a:main', id: data.pending.id, approved: true, revision: 'rev-a' });
+  assert.equal(approved.data.execute, true);
+  assert.equal((await f.call('/decision', { canvasKey: 'task-a:main', id: data.pending.id, approved: true, revision: 'rev-a' })).status, 409);
+  assert.equal((await f.call('/result', { canvasKey: 'task-a:main', id: data.pending.id, claim: approved.data.claim, success: true, result: 'submitted' })).status, 200);
+  assert.equal(f.runtime.responses[0].result.success, true);
+});
 test('unsupported tools are refused, stopping cancels a pending edit, disconnect revokes access', async t => {
   const f = await fixture(t); await f.pair(); await f.send();
-  f.runtime.tool('heiyan_request_generation', { summary: '生成', nodeIds: ['x'] });
+  f.runtime.tool('heiyan_delete_everything', {});
   assert.equal(f.runtime.responses[0].result.success, false);
   f.runtime.emit('message', { id: 100, method: 'item/commandExecution/requestApproval', params: { threadId: 'thread-1' } });
   assert.ok(f.runtime.responses.at(-1).denied);

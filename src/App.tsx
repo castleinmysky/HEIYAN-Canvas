@@ -5,6 +5,7 @@ import { registerTrialTools } from './trial-webmcp';
 import { CanvasAgentDock, type CanvasAgentItem } from './agent-workbench/CanvasAgentDock';
 import { canvasAgentContext, planAgentEdits } from './agent-workbench/agent-canvas';
 import type { AgentCanvasAccess } from './agent-workbench/agent-session';
+import { validateAgentTool } from '../server/agent-contract.js';
 import { agentCompactLayout, toggleAgentWorkspace, type AgentWorkspace } from './agent-workbench/workbench-layout';
 import {
   MiniMap, ReactFlow as ReactFlowBase, ReactFlowProvider, SelectionMode, reconnectEdge,
@@ -1358,7 +1359,7 @@ export function canvasDocumentTitleForLanguage(taskTitle: string, language: Canv
 export function shouldShowCanvasHome(pathname: string, search: string) {
   if (pathname !== '/') return false;
   const params = new URLSearchParams(search);
-  return !params.has('task_id') && params.get('mode') !== 'admin-standalone' && !params.has('share');
+  return !params.has('task_id') && params.get('mode') !== 'admin-standalone' && params.get('view') !== 'agent' && !params.has('share');
 }
 
 function localStudioHref(panel?: 'settings' | 'comfyui' | 'data' | 'about') {
@@ -6772,8 +6773,25 @@ function Studio() {
       pushHistory(); nodesRef.current = planned.nodes; edgesRef.current = planned.edges;
       setNodes(planned.nodes); setEdges(planned.edges); setToast('Agent 已修改画布，可撤销；尚未提交生成');
       return planned.result;
+    }, generate: async (request, revision) => {
+      if (read([]).revision !== revision) throw Error('画布已变化，请重新确认生成');
+      const nodeIds = validateAgentTool('heiyan_request_generation', request).nodeIds || [];
+      const generatorKinds = new Set(['imageGenerator', 'videoGenerator', 'audioGenerator', 'modelGenerator', 'comfyUiWorkflow']);
+      const targets = nodeIds.map((id) => nodesRef.current.find((node) => node.id === id));
+      if (targets.some((node) => !node)) throw Error('生成节点已不在当前画布');
+      if (targets.some((node) => !generatorKinds.has(node!.data.kind))) throw Error('只能提交图片、视频、音频、3D 或 ComfyUI 生成节点');
+      if (targets.some((node) => ['queued', 'running', 'paused', 'cancelling'].includes(String(node!.data.jobState || '')))) throw Error('所选节点中有任务尚未结束');
+      const submitted: Array<{ id: string; jobId: string }> = [], failed: string[] = [];
+      for (const node of targets) {
+        const jobId = await runGenerator(node!.id);
+        if (jobId) submitted.push({ id: node!.id, jobId });
+        else failed.push(node!.id);
+      }
+      if (!submitted.length) throw Error('生成请求未提交，请在节点中检查模型、提示词和输入素材');
+      setToast(`Agent 已提交 ${submitted.length} 个生成任务${failed.length ? `，${failed.length} 个未提交` : ''}`);
+      return JSON.stringify({ submitted, failed, generated: true });
     } };
-  }, [activeCanvasKey, attachActions, flow, models, pushHistory, ready, setEdges, setNodes, shareMode]);
+  }, [activeCanvasKey, attachActions, flow, models, pushHistory, ready, runGenerator, setEdges, setNodes, setToast, shareMode]);
   const selectedCharacterGenerator = selectedNodes.length === 1 && selectedNodes[0].data.kind === 'characterAnimator' ? selectedNodes[0] : null;
   const focusMobileNode = useCallback((nodeId: string) => {
     if (!mobileCanvas.mobile) return;

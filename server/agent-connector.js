@@ -40,7 +40,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
           if (!conversation || message.method !== 'item/tool/call' || !conversation.active || conversation.pending || p.namespace) return runtime.deny(message.id);
           if (!p.turnId || (conversation.active !== 'starting' && p.turnId !== conversation.active)) return runtime.deny(message.id);
           try {
-            if (!['heiyan_read_canvas', 'heiyan_edit_canvas'].includes(p.tool)) throw Error('这项工具尚未开放，请在节点中手动生成');
+            if (!['heiyan_read_canvas', 'heiyan_edit_canvas', 'heiyan_request_generation'].includes(p.tool)) throw Error('这项工具尚未开放');
             const input = validateAgentTool(p.tool, p.arguments);
             conversation.pending = { id: random(), rpcId: message.id, tool: p.tool, input, revision: conversation.context.revision };
           } catch (error) { runtime.respond(message.id, toolResult(false, { error: error.message })); }
@@ -99,7 +99,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         if (!same(input.code, pairingCode)) throw fault('配对码不正确', 401);
         pairing = true;
         try { const account = await connect(); pairedAccount = identity(account); token = random();
-          reply(200, { token, protocol: 1, device: os.hostname(), capabilities: ['conversation', 'read_canvas', 'edit_canvas'] }); return;
+          reply(200, { token, protocol: 2, device: os.hostname(), capabilities: ['conversation', 'read_canvas', 'edit_canvas', 'request_generation'] }); return;
         } finally { pairing = false; }
       }
       if (!token || !same(req.headers.authorization, `Bearer ${token}`)) throw fault('连接已失效，请重新配对', 401);
@@ -148,19 +148,20 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         runtime.respond(pending.rpcId, toolResult(true, conversation.context)); conversation.pending = null;
         reply(200, { ok: true }); return;
       }
-      if (req.url === '/decision' && pending.tool === 'heiyan_edit_canvas') {
+      if (req.url === '/decision' && ['heiyan_edit_canvas', 'heiyan_request_generation'].includes(pending.tool)) {
         if (pending.claim) throw fault('操作已被领取，不会重复执行', 409);
         if (input.approved !== true || input.revision !== pending.revision) {
           cancelPending(conversation, input.approved ? '画布已变化，请重新读取后提出方案' : '用户拒绝了此操作');
-          append(conversation, { id: random(), role: 'notice', text: input.approved ? '画布已变化，本次方案未执行。' : '已拒绝画布修改。' });
+          append(conversation, { id: random(), role: 'notice', text: input.approved ? '画布已变化，本次方案未执行。' : pending.tool === 'heiyan_request_generation' ? '已拒绝真实生成。' : '已拒绝画布修改。' });
           reply(200, { execute: false }); return;
         }
         pending.claim = random(); reply(200, { execute: true, claim: pending.claim, input: pending.input }); return;
       }
-      if (req.url === '/result' && pending.tool === 'heiyan_edit_canvas' && same(pending.claim, input.claim)) {
+      if (req.url === '/result' && ['heiyan_edit_canvas', 'heiyan_request_generation'].includes(pending.tool) && same(pending.claim, input.claim)) {
         const result = typeof input.result === 'string' ? input.result.slice(0, 12000) : '客户端未返回执行结果';
         runtime.respond(pending.rpcId, toolResult(input.success === true, { result }));
-        append(conversation, { id: random(), role: 'notice', text: input.success === true ? '画布修改已执行，可在画布中撤销。' : '画布修改未执行：' + result });
+        const generation = pending.tool === 'heiyan_request_generation';
+        append(conversation, { id: random(), role: 'notice', text: input.success === true ? generation ? '生成请求已提交，可在节点中查看进度。' : '画布修改已执行，可在画布中撤销。' : (generation ? '生成请求未执行：' : '画布修改未执行：') + result });
         conversation.pending = null; reply(200, { ok: true }); return;
       }
       throw fault('不支持此操作', 404);
