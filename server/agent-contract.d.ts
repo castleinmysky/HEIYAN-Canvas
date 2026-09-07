@@ -1,8 +1,8 @@
-export type AgentOperation = { action: 'create' | 'update' | 'connect'; id?: string; kind?: string; title?: string; prompt?: string; source?: string; target?: string };
+export type AgentOperation = { action: 'create' | 'update' | 'connect' | 'disconnect' | 'move' | 'select' | 'delete' | 'configure' | 'duplicate'; id?: string; kind?: string; title?: string; prompt?: string; source?: string; target?: string; targetPort?: string; edgeId?: string; x?: number; y?: number; nodeIds?: string[]; modelId?: string; ratio?: string; resolution?: string; count?: number; duration?: number };
 export type AgentProposal = { summary?: string; operations?: AgentOperation[]; nodeIds?: string[] };
 export type AgentGenerationRequest = { summary: string; nodeIds: string[] };
 export type AgentContextPort = { id: string; label: string; accepts: string[]; multiple: boolean };
-export type AgentContext = { revision: string; nodes: Array<{ id: string; kind: string; title: string; prompt: string; state: string; hasMedia: boolean; model: string; outputType: string; inputs: AgentContextPort[] }>; edges: Array<{ source: string; sourcePort: string; target: string; targetPort: string; type: string }>; referenceIds: string[] };
+export type AgentContext = { revision: string; availableModels?: Array<{ id: string; name: string; capability: string; ratios: string[]; resolutions: string[]; count?: { min: number; max: number }; duration?: { min: number; max: number } }>; selectedNodeIds?: string[]; selectionKnown?: boolean; nodes: Array<{ id: string; kind: string; title: string; prompt: string; settings?: { ratio: string; resolution: string; count: number; duration: number }; state: string; hasMedia: boolean; model: string; outputType: string; inputs: AgentContextPort[] }>; edges: Array<{ id?: string; source: string; sourcePort: string; target: string; targetPort: string; type: string }>; referenceIds: string[] };
 export const agentKinds: string[];
 export function validateAgentTool(tool: string, input: unknown): AgentProposal;
 export function sanitizeAgentContext(value: unknown): AgentContext;

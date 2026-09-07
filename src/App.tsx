@@ -6760,7 +6760,7 @@ function Studio() {
   const agentCanvasAccess = useMemo<AgentCanvasAccess>(() => {
     const read = (referenceIds: string[]) => {
       if (!ready || shareMode || loadedCanvasKeyRef.current !== activeCanvasKey || saveBlockedRef.current) throw Error('画布尚未就绪或已切换，操作未执行');
-      return canvasAgentContext(nodesRef.current, edgesRef.current, referenceIds);
+      return canvasAgentContext(nodesRef.current, edgesRef.current, referenceIds, models);
     };
     return { read, edit: (proposal, revision) => {
       if (read([]).revision !== revision) throw Error('画布已变化，请重新确认方案');
@@ -6768,13 +6768,36 @@ function Studio() {
       const center = flow.screenToFlowPosition({ x: bounds ? bounds.left + bounds.width / 2 : window.innerWidth / 2, y: bounds ? bounds.top + bounds.height / 2 : window.innerHeight / 2 });
       const startX = nodesRef.current.length ? Math.max(...nodesRef.current.map(node => node.position.x + (node.width || 390))) + 80 : center.x - 180;
       const planned = planAgentEdits(proposal, nodesRef.current, edgesRef.current, {
+        duplicate: (nodes, edges, nodeIds) => buildSelectedClonePlan(nodes, edges, nodeIds, 'with-inputs', crypto.randomUUID()),
+        configure: (node, operation) => {
+          const capability = ({ imageGenerator: 'image', videoGenerator: 'video', audioGenerator: 'audio', modelGenerator: 'model' } as Record<string, string>)[node.data.kind];
+          const model = models.find(model => model.id === (operation.modelId || node.data.modelId) && model.capability === capability);
+          if (!capability || !model) throw Error('该节点没有匹配的可用模型');
+          const profile = model.profile;
+          if (operation.ratio && !profile?.ratios.includes(operation.ratio)) throw Error('模型不支持该比例');
+          if (operation.resolution && !profile?.resolutions.includes(operation.resolution)) throw Error('模型不支持该分辨率');
+          for (const key of ['count', 'duration'] as const) {
+            const value = operation[key], range = profile?.[key];
+            if (value !== undefined && (!range || value < range.min || value > range.max || (key === 'count' && !Number.isInteger(value)) || (key === 'duration' && capability !== 'video'))) throw Error('模型不支持该数量或时长');
+          }
+          const defaults = compatibleGeneratorSettings(model, node.data.ratio, node.data.resolution, node.data.duration);
+          const currentCount = node.data.count || 1;
+          const count = profile ? Math.max(profile.count.min, Math.min(profile.count.max, currentCount)) : currentCount;
+          node = { ...node, data: { ...node.data, count } };
+          return { ...node, data: { ...node.data, ...defaults, ...(operation.ratio ? { ratio: operation.ratio } : {}), ...(operation.resolution ? { resolution: operation.resolution } : {}), ...(operation.count !== undefined ? { count: operation.count } : {}), ...(operation.duration !== undefined ? { duration: operation.duration } : {}) } };
+        },
         create: (kind, index) => {
           if (!canvasToolVisible(kind as SupportedCanvasNodeKind, models)) throw Error('此节点能力尚未启用，请先在画布设置中配置');
           const capability = kind === 'videoGenerator' ? 'video' : kind === 'audioGenerator' ? 'audio' : kind === 'modelGenerator' ? 'model' : 'image';
           return attachActions({ id: `${kind}-${crypto.randomUUID()}`, type: kind, position: { x: startX + (index % 3) * 470, y: center.y + Math.floor(index / 3) * 340 }, width: initialNodeWidth(kind), height: initialNodeHeight(kind), data: { ...(kind === 'text' ? {} : generatorDefaults(models, capability)), kind, title: '', outputType: kind === 'text' ? 'text' : capability } as CanvasNodeData });
         },
-        connect: (source, target, nodes, edges) => {
+        connect: (source, target, nodes, edges, targetPort) => {
           const connection = agentConnectionForNodes(source, target, nodes);
+          if (targetPort) {
+            const node = nodes.find(node => node.id === target)!;
+            if (!runtimeInputPorts(node.data.kind, node.data).some(port => port.id === targetPort)) throw Error('目标输入端口不存在，请重新读取画布');
+            connection.targetHandle = targetPort;
+          }
           const decision = evaluateConnection(connection, nodes, edges);
           if (decision.error) throw Error(decision.error);
           if (decision.replaceEdgeIds.length) throw Error('该端口已有连接，请先在画布中确认替换');
