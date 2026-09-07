@@ -2,21 +2,19 @@
 
 # HEIYAN · 黑岩画布
 
-不只是做图片。把提示词、素材和生成结果放在一起，接着往下做。
-
 一个面向图片、视频、音频和 3D 的节点创作画布。不用注册画布账号，可以接自己的 API、Codex 和 ComfyUI。
 
-**[进入画布 →](https://heiyan.f2vfhjcckr.chatgpt.site/)** · [快速开始](docs/QUICKSTART.md) · [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
+**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用](https://heiyan.f2vfhjcckr.chatgpt.site/) · [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
 
 ## 选一种开始方式
 
 | 你想做什么 | 怎么开始 |
 | --- | --- |
-| 先用起来 | [打开在线画布](https://heiyan.f2vfhjcckr.chatgpt.site/)，不用安装。接入自己的 API 后再生成。 |
+| 自行部署 | 克隆仓库，安装依赖并启动。[部署步骤](docs/QUICKSTART.md#部署整套画布) |
+| 在线试用 | [打开在线画布](https://heiyan.f2vfhjcckr.chatgpt.site/)，不用安装。接入自己的 API 后再生成。 |
 | 接自己的 Codex | Agent → 下载 Windows 免安装包 → 解压双击启动。[连接步骤](docs/QUICKSTART.md#连接自己的-codex) |
-| 部署整套画布 | 克隆仓库，安装依赖并启动。[部署步骤](docs/QUICKSTART.md#部署整套画布) |
 
-连接器只负责连接你自己的 Codex，不是整套画布的安装包。在线画布现在就可以试用。
+连接器只负责连接你自己的 Codex，不是整套画布的安装包。
 
 ## 画布预览
 
