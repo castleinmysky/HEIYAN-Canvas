@@ -1,3 +1,5 @@
+**简体中文** | [English](QUICKSTART.en.md)
+
 # 快速开始
 
 [返回首页](../README.md) · [部署配置](DEPLOYMENT.md) · [源码说明](OPEN-SOURCE.md)

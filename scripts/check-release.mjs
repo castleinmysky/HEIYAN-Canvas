@@ -118,27 +118,40 @@ for (const file of files) {
     }
   }
 }
-const readme = await fs.readFile(path.join(root, "README.md"), "utf8");
-if (/<\/?(?:table|tr|td|details|summary|sub|div|h[1-6]|img)\b/i.test(readme))
-  report("README.md", "use Markdown, not raw HTML");
-if (/首次公开发布的整理|正在整理|计划公开|README\.draft/.test(readme))
-  report("README.md", "provisional publication wording");
-const previews = [
-  ...readme.matchAll(/!\[[^\]]*\]\((docs\/media\/[^)]+)\)/g),
-].map((match) => match[1]);
-if (
-  new Set(previews).size !== 12 ||
-  previews.filter((file) => file.endsWith(".gif")).length !== 4
-)
-  report("README.md", "keep the brand, overview and all ten compact previews");
+const readmePreviews = [];
+for (const [file, other, language] of [
+  ["README.md", "README.en.md", "English"],
+  ["README.en.md", "README.md", "简体中文"],
+]) {
+  const readme = await fs.readFile(path.join(root, file), "utf8");
+  if (/<\/?(?:table|tr|td|details|summary|sub|div|h[1-6]|img)\b/i.test(readme))
+    report(file, "use Markdown, not raw HTML");
+  if (/首次公开发布的整理|正在整理|计划公开|README\.draft/.test(readme))
+    report(file, "provisional publication wording");
+  if (!readme.split(/\r?\n/, 1)[0].includes(`[${language}](${other})`))
+    report(file, "keep the language switch on the first line");
+  const previews = [
+    ...readme.matchAll(/!\[[^\]]*\]\((docs\/media\/[^)]+)\)/g),
+  ].map((match) => match[1]);
+  if (
+    new Set(previews).size !== 12 ||
+    previews.filter((preview) => preview.endsWith(".gif")).length !== 4
+  )
+    report(file, "keep the brand, overview and all ten compact previews");
+  readmePreviews.push(previews);
+}
+if (JSON.stringify(readmePreviews[0]) !== JSON.stringify(readmePreviews[1]))
+  report("README.en.md", "keep both languages' preview assets and order identical");
 for (const required of [
   ".env.example",
   "LICENSE",
   "README.md",
+  "README.en.md",
   "package-lock.json",
   "server/index.js",
   "local-bridge/start.mjs",
   "docs/QUICKSTART.md",
+  "docs/QUICKSTART.en.md",
   "docs/DEPLOYMENT.md",
   "docs/codex-connector.md",
   "docs/codex-connector-windows.md",
@@ -152,5 +165,5 @@ if (errors.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `Release check passed: ${files.length} files, local document links, 12 README visuals (4 GIFs), no detected secrets or private runtime files.`,
+    `Release check passed: ${files.length} files, local document links, both README language switches, matching 12 visuals (4 GIFs) per language, no detected secrets or private runtime files.`,
   );

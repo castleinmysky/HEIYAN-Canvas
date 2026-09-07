@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 ![黑岩画布品牌标志](docs/media/heiyan-mark.svg)
 
 # HEIYAN · 黑岩画布
