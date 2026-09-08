@@ -37,7 +37,7 @@ describe('Independent canvas conversation', () => {
   it('renders a real disconnected state with no fabricated messages or generation controls', () => {
     const html = renderToStaticMarkup(<CanvasAgentDock canvasKey="test" items={items} ready onClose={vi.fn()} onFocus={vi.fn()} onUpload={vi.fn()} onViewChange={vi.fn()} />);
     expect(html).toContain('会话消息');
-    expect(html).toContain('Codex 未连接');
+    expect(html).toContain('Agent 未连接');
     expect(html).toContain('会话描述');
     expect(html).toMatch(/type="submit"[^>]*disabled=""/);
     expect(html).not.toMatch(/generator-editor-panel|generator-run-controls|生成结果会显示在这里|生成视频/);

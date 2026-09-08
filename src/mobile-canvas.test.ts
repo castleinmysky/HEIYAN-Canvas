@@ -47,7 +47,7 @@ describe('mobile canvas without desktop regressions', () => {
     expect(app).toContain('zoomOnPinch zoomOnDoubleClick={false}');
     expect(app).toContain('autoFocus={!mobileCanvas.mobile}');
     expect(app).toContain('generatorPanelDockPosition({');
-    expect(app).toContain('if (!mobileCanvas.mobile) return;');
+    expect(app).toContain('if (!mobileCanvas.mobile || Date.now() < agentRevealUntil.current) return;');
     expect(app).toContain("setMobilePresetsOpen(false)");
     expect(css).toMatch(/\.mobile-editor-head\s*\{[^}]*pointer-events:\s*auto/);
     expect(css).toMatch(/\.generator-panel-footer\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);

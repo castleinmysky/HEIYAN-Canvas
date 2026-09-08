@@ -1,0 +1,45 @@
+.canvas-agent-head.agent-header-refined {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  flex: 0 0 auto; min-height: 72px; gap: 8px 12px; padding: 12px 16px;
+  background: var(--cad-rail);
+}
+.agent-heading-copy { display: grid; gap: 4px; min-width: 0; }
+.agent-header-refined .canvas-agent-title { display: block; font-size: 16px; line-height: 1.5; font-weight: 650; }
+.agent-heading-status { overflow: hidden; font-size: 12px; line-height: 1.5; color: var(--canvas-text-soft); text-overflow: ellipsis; white-space: nowrap; }
+.agent-heading-actions { display: flex; align-items: center; gap: 4px; }
+.agent-header-refined .agent-heading-actions .canvas-agent-icon { width: 40px; height: 40px; border-radius: var(--cad-radius-sm); }
+.agent-header-refined .agent-heading-actions .canvas-agent-icon:hover, .agent-header-settings[open] > summary { background: var(--cad-control); color: var(--canvas-text); }
+.agent-header-settings { position: static; }
+.agent-header-settings > summary { list-style: none; cursor: pointer; }
+.agent-header-settings > summary::-webkit-details-marker { display: none; }
+.agent-header-settings > summary:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.agent-header-settings-panel {
+  position: absolute; z-index: var(--cad-z-popover); top: calc(100% - 4px); right: 12px;
+  width: min(328px, calc(100% - 24px)); max-height: min(560px, calc(var(--mobile-visible-height, 100dvh) - 120px));
+  overflow-y: auto; overscroll-behavior: contain; padding: 8px;
+  border: 1px solid var(--cad-rule); border-radius: var(--cad-radius-md);
+  background: var(--cad-rail); box-shadow: 0 12px 32px var(--cad-shadow);
+}
+.agent-header-settings-panel :is(strong, legend) { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.agent-header-settings-panel small { display: block; margin-top: 4px; font-size: 12px; line-height: 1.6; color: var(--canvas-text-soft); overflow-wrap: anywhere; white-space: normal; }
+.agent-header-settings-panel fieldset { min-width: 0; padding: 12px 0 4px; margin: 8px 0 0; border: 0; border-top: 1px solid var(--cad-rule); }
+.agent-header-settings-panel legend { padding: 4px 10px 0; color: var(--canvas-text-soft); }
+.agent-header-settings-panel label { display: flex; align-items: flex-start; min-height: 52px; gap: 10px; padding: 10px; border-radius: var(--cad-radius-sm); cursor: pointer; }
+.agent-header-settings-panel label:has(input:checked) { background: var(--cad-control); }
+.agent-header-settings-panel label > span { min-width: 0; }
+.agent-header-settings-panel input { flex: 0 0 16px; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--canvas-primary); }
+.agent-header-settings-panel .agent-settings-follow { margin-top: 8px; border-top: 1px solid var(--cad-rule); border-radius: 0; }
+.agent-header-settings-panel .agent-settings-connection { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 10px; text-align: left; border: 0; border-radius: var(--cad-radius-sm); background: transparent; }
+.agent-settings-connection:hover { background: var(--cad-control); }
+.agent-settings-connection > span { flex: 1; min-width: 0; }
+.agent-header-refined .canvas-agent-views { grid-column: 1 / -1; justify-content: center; border-top: 1px solid var(--cad-rule); padding-top: 4px; }
+.agent-header-refined .canvas-agent-views > button { flex: 1; min-height: 40px; font-size: 14px; }
+.agent-header-refined .agent-header-connect-alert { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--canvas-border-strong); border-radius: var(--cad-radius-sm); background: var(--cad-control); font-size: 14px; }
+.agent-header-connect-alert strong { margin-left: auto; font-size: 14px; font-weight: 600; }
+@media (pointer: coarse) {
+  .agent-header-refined .agent-heading-actions .canvas-agent-icon { width: 44px; height: 44px; }
+}
+@container agent-rail (max-width: 400px) {
+  .canvas-agent-head.agent-header-refined { padding-inline: 12px; gap: 8px; }
+  .agent-heading-actions { gap: 0; }
+}

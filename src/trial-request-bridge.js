@@ -40,6 +40,9 @@ export function createTrialRequestBridge({ origin, nativeFetch, localApi = handl
 
   async function localFetch(input, init) {
     const url = new URL(input instanceof Request ? input.url : String(input), origin);
+    // Agent API calls (including SSE) must reach the authenticated host relay,
+    // not the browser-local canvas API or JSON hydration layer.
+    if (url.origin === origin && url.pathname === '/api/cloud/request') return nativeFetch(input, init);
     if (url.origin !== origin || !/^\/(api|media)\//.test(url.pathname)) return nativeFetch(input, init);
     let request = new Request(input instanceof Request ? input : url, init);
     request.signal.throwIfAborted();

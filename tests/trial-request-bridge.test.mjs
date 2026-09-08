@@ -74,6 +74,21 @@ test('normal assets and external URLs retain native fetch behavior', async () =>
   assert.equal(calls.length, 2);
 });
 
+test('Agent cloud relay preserves streaming, credentials and cancellation outside local storage', async () => {
+  const controller = new AbortController();
+  const response = new Response('data: {"delta":"hello"}\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  const init = { method: 'POST', body: '{}', credentials: 'same-origin', signal: controller.signal };
+  let calls = 0;
+  const bridge = createTrialRequestBridge({ origin, nativeFetch: async (input, options) => {
+    calls++; assert.equal(input, '/api/cloud/request'); assert.equal(options, init); return response;
+  }, localApi: () => { throw Error('Must not route Agent SSE to browser storage'); } });
+  assert.equal(await bridge.fetch('/api/cloud/request', init), response);
+  assert.equal(calls, 1);
+  assert.equal(response.bodyUsed, false);
+  controller.abort();
+  assert.equal(init.signal.aborted, true);
+});
+
 test('aborted writes do not change saved data', async () => {
   const bridge = createBridge(), path = task();
   const controller = new AbortController(); controller.abort();

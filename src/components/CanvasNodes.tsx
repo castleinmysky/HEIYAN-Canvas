@@ -730,6 +730,8 @@ export type CanvasNodeData = Record<string, unknown> & {
   tripoPostprocessResult?: TripoPostprocessResult;
   tripoSubmittedOptions?: TripoSubmittedOptions;
   jobId?: string;
+  /** Job that actually produced latestOutputs; submitting a new job does not change it. */
+  latestOutputJobId?: string;
   jobState?: JobState;
   jobStartedAt?: string;
   jobDeadlineAt?: string;

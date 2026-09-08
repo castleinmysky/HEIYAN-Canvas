@@ -64,7 +64,7 @@ test("default deployment is loopback; external binding requires explicit origin 
   );
 });
 test("serves the build, preserves SPA routes, rejects files outside static root and hostile Host headers", async (t) => {
-  const { base } = await fixture(t);
+  const { app, base } = await fixture(t);
   for (const route of ["/", "/studio?task_id=one", "/agent-preview"])
     assert.match(await (await fetch(base + route)).text(), /HEIYAN/);
   assert.match(
@@ -82,10 +82,14 @@ test("serves the build, preserves SPA routes, rejects files outside static root 
   assert.equal((await fetch(base + "/api/cloud/status")).status, 200);
   assert.equal((await fetch(base + "/api/unknown")).status, 404);
   assert.equal((await fetch(base + "/", { method: "POST" })).status, 405);
-  const status = await new Promise((resolve) => {
-    http.get(base, { headers: { Host: "attacker.com" } }, (res) => {
-      res.resume();
-      resolve(res.statusCode);
+  // Exercise the real server's Host gate directly: some host firewalls reset
+  // loopback HTTP with an unrelated Host before it reaches Node. Normal HTTP
+  // routes above still use sockets; this request must not leave the process.
+  const status = await new Promise((resolve, reject) => {
+    let code;
+    app.server.emit('request', { headers: { host: 'attacker.invalid' } }, {
+      setHeader() {}, writeHead(value) { code = value; },
+      end(body) { if (!body.includes('configured canvas')) reject(Error('Unexpected host rejection')); else resolve(code); },
     });
   });
   assert.equal(status, 403);

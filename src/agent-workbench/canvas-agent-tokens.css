@@ -9,6 +9,11 @@
   --cad-radius-sm: 8px;
   --cad-radius-md: 12px;
   --cad-radius-lg: 20px;
+  --cad-text-body: 1rem;
+  --cad-text-label: .875rem;
+  --cad-text-meta: .75rem;
+  --cad-control-height: 2.5rem;
+  --cad-panel-radius: 1rem;
   --cad-rail: var(--canvas-plane-raised);
   --cad-composer: var(--canvas-plane-raised);
   --cad-control: color-mix(in oklch, var(--canvas-text) 4%, var(--cad-composer));

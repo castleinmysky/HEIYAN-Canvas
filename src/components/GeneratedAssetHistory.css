@@ -1,5 +1,7 @@
 .generated-asset-history .generated-asset-preview-layer > section { height: min(780px, 100%); min-height: 0; grid-template-rows: 58px minmax(0, 1fr) auto; }
 .generated-asset-history .generated-asset-preview-media { height: 100%; min-height: 0; min-width: 0; }
+.generated-asset-history .generated-asset-preview-media:has(> .history-image-viewer) { position: relative; }
+.generated-asset-history .generated-asset-preview-media > .history-image-viewer { position: absolute; inset: 0; }
 .generation-history-head-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .generated-asset-history .generation-history-head-actions button,
 .generation-history-confirm button { min-height: 34px; padding: 0 11px; color: var(--canvas-text-soft); background: var(--canvas-control); border: 0; border-radius: 9px; cursor: pointer; font: 650 10px/1 var(--canvas-font-ui); }

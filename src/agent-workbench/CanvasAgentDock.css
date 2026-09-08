@@ -65,6 +65,19 @@ html:has(.canvas-agent-dock), body:has(.canvas-agent-dock) { overflow-x: clip; }
 .canvas-agent-connection > svg { width: 12px; height: 12px; }
 .canvas-agent-connection[aria-expanded=true] { background: var(--cad-control); color: var(--canvas-text); }
 .canvas-agent-connection[aria-expanded=true] > svg { transform: rotate(180deg); }
+.canvas-agent-approval-menu { position: relative; flex: 0 0 auto; }
+.canvas-agent-approval-menu > summary { display: flex; align-items: center; gap: 5px; min-height: 36px; padding: 4px 8px; list-style: none; border-radius: 8px; color: var(--canvas-text-soft); font-size: 12px; cursor: pointer; user-select: none; }
+.canvas-agent-approval-menu > summary::-webkit-details-marker { display: none; }
+.canvas-agent-approval-menu > summary > svg { width: 12px; height: 12px; }
+.canvas-agent-approval-menu[open] > summary { background: var(--cad-control); color: var(--canvas-text); }
+.canvas-agent-approval-menu[open] > summary > svg { transform: rotate(180deg); }
+.canvas-agent-approval-options { position: absolute; z-index: var(--cad-z-popover); top: calc(100% + 10px); right: 0; width: min(292px, calc(100vw - 24px)); padding: 8px; border: 1px solid var(--cad-rule); border-radius: 12px; background: var(--canvas-surface); box-shadow: 0 10px 30px var(--cad-shadow); }
+.canvas-agent-approval-options label { display: flex; align-items: flex-start; gap: 10px; min-height: 58px; padding: 10px; border-radius: 8px; cursor: pointer; }
+.canvas-agent-approval-options label:hover { background: var(--cad-control); }
+.canvas-agent-approval-options input { margin: 4px 0 0; accent-color: var(--canvas-primary); }
+.canvas-agent-approval-options span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.canvas-agent-approval-options strong { font-size: 13px; font-weight: 600; }
+.canvas-agent-approval-options small { color: var(--canvas-text-soft); font-size: 11px; line-height: 1.45; white-space: normal; }
 .canvas-agent-dock .canvas-agent-icon { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--canvas-text-soft); font-size: 20px; }
 .canvas-agent-views { display: none; }
 .canvas-agent-resizer { position: absolute; z-index: var(--cad-z-resizer); left: -6px; top: 0; bottom: 0; width: 12px; cursor: ew-resize; touch-action: none; user-select: none; }
@@ -115,6 +128,16 @@ body:has(.canvas-agent-composer[data-resizing]) * { cursor: ns-resize !important
 .canvas-agent-footnote { flex: 0 0 auto; margin: 9px 16px 14px; text-align: center; font-size: 10px; line-height: 1.5; color: var(--canvas-text-muted); }
 .canvas-agent-footnote[role=alert] { color: var(--canvas-danger); }
 .canvas-agent-context-references { display: flex; flex: 0 0 auto; gap: 8px; max-width: 100%; max-height: 76px; padding: 2px; overflow-x: auto; scrollbar-width: thin; }
+.canvas-agent-image-attachments { display: flex; flex: 0 0 auto; gap: 8px; max-width: 100%; padding: 2px; overflow-x: auto; }
+.canvas-agent-image-attachments figure { position: relative; width: 58px; height: 58px; flex: 0 0 58px; margin: 0; overflow: hidden; border: 1px solid var(--cad-rule); border-radius: 9px; background: var(--cad-control); }
+.canvas-agent-image-attachments img { width: 100%; height: 100%; object-fit: cover; }
+.canvas-agent-image-attachments button { position: absolute; top: 3px; right: 3px; display: grid; width: 20px; height: 20px; place-items: center; padding: 0; border: 1px solid var(--cad-rule); border-radius: 50%; color: #fff; background: rgba(0,0,0,.72); }
+.canvas-agent-image-attachments button svg { width: 11px; height: 11px; }
+.canvas-agent-model-controls { display: flex; min-width: 0; align-items: center; gap: 5px; margin-left: auto; }
+.canvas-agent-model-controls label { display: flex; align-items: center; gap: 3px; color: var(--canvas-text-muted); font-size: 11px; }
+.canvas-agent-model-controls select { width: 88px; height: 28px; padding: 0 20px 0 7px; border: 1px solid var(--cad-rule); border-radius: 7px; color: var(--canvas-text); background: var(--cad-control); font: inherit; }
+.canvas-agent-model-controls label:last-child select { width: 60px; }
+.canvas-agent-attachment-error { margin: 2px 0 0; color: var(--canvas-danger, #ef7777); font-size: 12px; }
 .canvas-agent-context-chip { display: flex; align-items: center; min-width: 0; flex: 0 0 auto; max-width: 220px; padding: 3px; border: 1px solid var(--cad-rule); border-radius: 10px; background: var(--cad-control); }
 .canvas-agent-reference-locate { display: flex; align-items: center; min-width: 0; gap: 8px; padding: 0; border: 0; background: transparent; }
 .canvas-agent-reference-locate > span:last-child { max-width: 128px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
@@ -197,6 +220,7 @@ body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
   .canvas-agent-send { width: 44px; height: 44px; }
   .canvas-agent-grip { height: 44px; top: -32px; }
   .canvas-agent-head > .canvas-agent-connection { min-height: 44px; }
+  .canvas-agent-approval-menu > summary { min-height: 44px; padding-inline: 6px; font-size: 11px; }
   .canvas-agent-quote-selected { min-height: 44px; }
   .canvas-agent-footnote { margin: 8px 12px max(10px, env(safe-area-inset-bottom)); }
   .canvas-agent-popup { left: 8px; right: 8px; bottom: calc(var(--agent-composer-height, 164px) + 44px); max-height: max(100px, min(420px, calc(var(--mobile-visible-height, 100dvh) - var(--agent-composer-height, 164px) - 180px))); }
@@ -244,6 +268,7 @@ body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
 .canvas-agent-message { flex-shrink: 0; min-width: 0; margin: 0 0 24px; font-size: 14px; line-height: 1.8; }
 .canvas-agent-message > small { display: block; margin-bottom: 6px; color: var(--canvas-text-muted); font-size: 12px; }
 .canvas-agent-message > div { white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.canvas-agent-message > em { display: block; margin-top: 6px; color: var(--canvas-text-muted); font-size: 11px; font-style: normal; }
 .canvas-agent-message[data-role=user] { align-self: flex-end; max-width: 92%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: var(--cad-control); }
 .canvas-agent-message[data-role=notice] { font-size: 12px; color: var(--canvas-text-soft); padding-left: 12px; border-left: 2px solid var(--cad-rule); }
 .canvas-agent-proposal { flex-shrink: 0; padding: 16px; margin-bottom: 16px; border: 1px solid var(--cad-rule); border-radius: 12px; background: var(--cad-composer); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
@@ -251,7 +276,7 @@ body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
 .canvas-agent-proposal details p { max-height: 240px; overflow: auto; white-space: pre-wrap; }
 .canvas-agent-proposal footer { display: flex; justify-content: flex-end; gap: 8px; }
 .canvas-agent-proposal button { min-height: 40px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--cad-rule); background: var(--cad-control); }
-.canvas-agent-proposal button:last-child, .canvas-agent-send:not(:disabled) { background: var(--canvas-primary); color: var(--canvas-primary-ink) !important; }
+.canvas-agent-proposal footer .agent-confirm-action:not(:disabled), .canvas-agent-send:not(:disabled) { background: var(--canvas-primary); color: var(--canvas-primary-ink) !important; }
 .canvas-agent-progress { font-size: 12px; color: var(--canvas-text-muted); }
 .canvas-agent-error { font-size: 13px; color: var(--canvas-danger); overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) {
@@ -260,4 +285,211 @@ body:has(.canvas-agent-dock[data-open=true]) .trial-notice { display: none; }
   .canvas-agent-dock, .canvas-agent-dock[data-open=true] { transform: none; transition: opacity 120ms linear, visibility 0s 120ms; }
   .canvas-agent-dock { opacity: 0; }
   .canvas-agent-dock[data-open=true] { opacity: 1; transition-delay: 0s; }
+}
+
+/* Project memory and API settings extend the existing compact work surface. */
+.agent-project-panel { flex: 0 0 auto; border-bottom: 1px solid var(--canvas-border); font-size: 14px; max-height: 48vh; overflow: auto; }
+.agent-project-panel > summary { padding: 12px 16px; cursor: pointer; }
+.agent-project-panel summary small { margin-left: 8px; opacity: .7; }
+.agent-project-fields { padding: 0 16px 16px; display: grid; gap: 12px; }
+.agent-project-fields label, .agent-api-form label { display: grid; gap: 6px; font-size: 14px; }
+.agent-project-fields textarea, .agent-project-fields input, .agent-api-form input, .agent-api-form select { width: 100%; box-sizing: border-box; font: inherit; color: var(--canvas-text); background: var(--canvas-field, #1b1d1e); border: 1px solid var(--canvas-border); border-radius: 8px; padding: 8px 10px; }
+.agent-project-fields textarea { resize: vertical; min-height: 64px; }
+.agent-project-fields p, .agent-api-form p { font-size: 14px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-project-fields article { border-top: 1px solid var(--canvas-border); padding-top: 8px; }
+.agent-project-fields button, .agent-connection-tabs button { padding: 9px 12px; border: 1px solid var(--canvas-border); border-radius: 8px; color: var(--canvas-text); background: var(--canvas-plane-raised, #292b2c); font: inherit; cursor: pointer; }
+.agent-connection-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.agent-connection-tabs button[aria-pressed="true"] { border-color: var(--canvas-text); }
+.agent-api-form { display: grid; gap: 12px; width: 100%; text-align: left; }
+.agent-api-form .agent-api-check { display: flex; align-items: center; }
+.agent-api-form input[type="checkbox"] { width: auto; }
+
+.canvas-agent-dock[data-connection-open] .agent-project-panel { display: none; }
+.canvas-agent-connection-panel .agent-api-form button { padding: 10px 12px; border: 1px solid var(--canvas-border); border-radius: 8px; background: var(--canvas-plane-raised, #292b2c); }
+
+/* Agent execution and retrieval controls follow the existing canvas palette. */
+.agent-settings-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.agent-settings-fields { display: grid; gap: 12px; padding-block: 12px; }
+.agent-settings-fields select, .agent-run-panel input { width: 100%; min-width: 0; font: inherit; padding: 8px; border: 1px solid var(--cad-rule); border-radius: 8px; color: var(--canvas-text); background: var(--cad-composer); }
+.agent-run-panel { flex: 0 0 auto; max-height: 35vh; overflow: auto; border-bottom: 1px solid var(--cad-rule); font-size: 14px; }
+.agent-run-panel > summary { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 16px; cursor: pointer; }
+.agent-run-panel > summary span { min-width: 0; overflow-wrap: anywhere; }
+.agent-run-panel small { color: var(--canvas-text-muted); font-size: 12px; flex-shrink: 0; }
+.agent-run-content { padding: 0 16px 14px; display: grid; gap: 12px; }
+.agent-run-content p { font-size: 14px; line-height: 1.6; margin: 0; }
+.agent-run-content label { display: grid; gap: 6px; font-size: 14px; }
+.agent-run-content strong { font-variant-numeric: tabular-nums; }
+.agent-run-panel progress, .agent-search-panel progress { width: 100%; height: 6px; accent-color: var(--canvas-focus); }
+.agent-source-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.agent-source-chips button, .agent-steer-button { padding: 7px 10px; border: 1px solid var(--cad-rule); border-radius: 8px; color: var(--canvas-text); background: var(--cad-control); font-size: 14px; }
+.agent-source-chips { max-height: 150px; overflow: auto; }
+.agent-execution-trace { padding: 0; margin: 0; list-style: none; display: grid; gap: 8px; }
+.agent-execution-trace li { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.5; }
+.agent-execution-trace time { font-size: 12px; color: var(--canvas-text-muted); }
+.agent-capability-report { width: 100%; font-size: 14px; text-align: left; }
+.agent-capability-report summary { padding-block: 10px; cursor: pointer; }
+.agent-capability-report ul { padding: 0; margin: 0; list-style: none; display: grid; gap: 12px; }
+.agent-capability-report li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding-bottom: 8px; border-bottom: 1px solid var(--cad-rule); }
+.agent-capability-report small { grid-column: 1 / -1; font-size: 13px; line-height: 1.6; color: var(--canvas-text-muted); }
+.agent-capability-report [data-status=unavailable] > span { color: var(--canvas-danger); }
+.agent-search-panel { display: grid; gap: 12px; }
+.agent-search-panel form { display: grid; gap: 10px; }
+.agent-search-original { max-height: 250px; overflow: auto; white-space: pre-wrap; }
+.agent-search-panel details > summary { cursor: pointer; }
+.agent-search-panel button { max-width: 100%; overflow-wrap: anywhere; }
+.canvas-agent-proposal .agent-api-check { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; margin-block: 10px; }
+.canvas-agent-proposal input[type=checkbox] { flex: 0 0 auto; margin-top: 5px; }
+.canvas-agent-dock[data-connection-open] .agent-run-panel { display: none; }
+.canvas-agent-message:focus { outline: 2px solid var(--canvas-focus); outline-offset: 5px; }
+@media (max-width: 480px) { .agent-settings-pair { grid-template-columns: 1fr; } .agent-run-panel > summary { flex-wrap: wrap; } }
+
+.agent-canvas-controls { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--cad-rule); font-size: 14px; }
+.agent-canvas-controls label { display: flex; align-items: center; gap: 7px; }
+.agent-canvas-controls input { accent-color: var(--canvas-focus); }
+.agent-canvas-controls button, .agent-visual-proposal button, .agent-edit-result button, .agent-job-card button, .agent-generation-plan button, .agent-assessment button { padding: 8px 10px; border: 1px solid var(--cad-rule); border-radius: 8px; color: var(--canvas-text); background: var(--cad-control); font: inherit; font-size: 14px; cursor: pointer; }
+.agent-canvas-controls button:disabled, .agent-visual-proposal button:disabled, .agent-job-card button:disabled { opacity: .5; cursor: default; }
+.agent-visual-proposal > header, .agent-generation-results > header, .agent-edit-result { display: grid; gap: 7px; }
+.agent-card-kicker { font-size: 12px; color: var(--canvas-text-muted); letter-spacing: .04em; }
+.agent-visual-proposal strong, .agent-generation-results strong, .agent-edit-result strong { font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.agent-change-card, .agent-generation-plan article { border: 1px solid var(--cad-rule); border-radius: 12px; padding: 12px; margin-block: 12px; background: var(--cad-composer); }
+.agent-change-card > summary { display: flex; gap: 10px; align-items: center; list-style: none; cursor: pointer; }
+.agent-change-card > summary > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 4px; overflow-wrap: anywhere; }
+.agent-change-card summary small { font-size: 12px; color: var(--canvas-text-muted); }
+.agent-change-card summary em { font-size: 12px; font-style: normal; white-space: nowrap; }
+.agent-change-card .canvas-agent-thumb, .agent-job-card .canvas-agent-thumb, .agent-generation-plan .canvas-agent-thumb { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 8px; overflow: hidden; }
+.agent-change-card > button { margin-top: 10px; }
+.agent-change-card dl { margin-bottom: 0; }
+.agent-change-field dt { font-size: 14px; margin: 12px 0 6px; font-weight: 600; }
+.agent-change-field dd { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.agent-change-field dd > span { min-width: 0; padding: 10px; border-radius: 8px; border: 1px solid var(--cad-rule); }
+.agent-change-field dd > span:last-child { border-color: var(--canvas-focus); }
+.agent-change-field small { font-size: 12px; color: var(--canvas-text-muted); }
+.agent-change-field p { max-height: 200px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; margin: 6px 0 0; }
+.agent-layout-warnings { border-left: 3px solid #e6b45d; padding: 8px 12px; font-size: 14px; }
+.agent-edit-result, .agent-generation-results, .agent-assessment { white-space: normal; width: 100%; min-width: 0; font-size: 14px; line-height: 1.65; }
+.agent-edit-result > small, .agent-generation-results > small, .agent-assessment > small { display: block; font-size: 12px; color: var(--canvas-text-muted); margin-block: 8px; }
+.agent-job-card { border: 1px solid var(--cad-rule); border-radius: 12px; padding: 12px; margin-block: 12px; background: var(--cad-composer); }
+.agent-job-card > header, .agent-generation-plan header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.agent-job-card > header strong, .agent-generation-plan header strong { flex: 1; min-width: 100px; }
+.agent-job-card > header > span:last-child { font-size: 14px; }
+.agent-job-card[data-state=succeeded] > header > span:last-child { color: var(--canvas-text); font-weight: 600; }
+.agent-job-card[data-state=failed] > header > span:last-child { color: var(--canvas-danger); }
+.agent-job-card progress { width: 100%; accent-color: var(--canvas-focus); margin-top: 12px; height: 6px; }
+.agent-job-card p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-job-media { margin-block: 12px; border-radius: 8px; overflow: hidden; background: var(--cad-control); }
+.agent-job-media img, .agent-job-media video { display: block; width: 100%; max-height: 240px; object-fit: contain; }
+.agent-job-media audio { width: 100%; }
+.agent-job-media small { padding: 6px 8px; display: block; }
+.agent-job-media > a { display: block; padding: 8px 10px; color: var(--canvas-text); font-size: 14px; }
+.agent-output-choices { display: flex; gap: 6px; padding: 8px; overflow-x: auto; }
+.agent-output-choices button { flex-shrink: 0; }
+.agent-output-choices [aria-pressed=true] { border-color: var(--canvas-focus); }
+.agent-image-permission { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; }
+.agent-image-permission .canvas-agent-thumb { width: 56px; height: 56px; flex-shrink: 0; overflow: hidden; }
+.agent-image-permission img { width: 100%; height: 100%; object-fit: contain; }
+.agent-result-checks { display: grid; gap: 7px; list-style: none; padding: 0; margin-block: 12px; }
+.agent-result-checks li { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; font-size: 14px; }
+.agent-result-checks li small { grid-column: 1 / -1; font-size: 12px; color: var(--canvas-text-muted); overflow-wrap: anywhere; }
+.agent-result-checks [data-state=failed] b { color: var(--canvas-danger); }
+.agent-result-checks [data-state=unknown] b { font-weight: 400; color: var(--canvas-text-muted); }
+.agent-job-card footer { display: flex; flex-wrap: wrap; gap: 8px; }
+.agent-assessment { border-left: 3px solid var(--canvas-focus); padding-left: 12px; }
+.agent-assessment[data-verdict=needs_changes] { border-color: var(--canvas-danger); }
+.agent-canvas-feedback { position: absolute; z-index: 35; top: 14px; left: 14px; max-width: min(600px, calc(100% - 28px)); display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--canvas-text); background: var(--canvas-plane-raised, #24272a); border: 1px solid var(--canvas-focus); border-radius: 10px; box-shadow: 0 6px 24px #0003; font-size: 14px; }
+.agent-canvas-feedback span { min-width: 0; overflow-wrap: anywhere; }
+.agent-canvas-feedback button { flex-shrink: 0; padding: 6px; color: inherit; background: transparent; border: 0; cursor: pointer; font: inherit; }
+.agent-canvas-spot { position: absolute; z-index: 20; border: 2px solid var(--canvas-focus); border-radius: 12px; box-shadow: 0 0 0 5px color-mix(in srgb, var(--canvas-focus) 18%, transparent); pointer-events: none; }
+.agent-canvas-spot > span { position: absolute; bottom: 100%; left: 0; max-width: 240px; padding: 4px 8px; border: 1px solid var(--canvas-focus); border-radius: 6px 6px 0 0; background: var(--canvas-plane-raised, #24272a); color: var(--canvas-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+@media (max-width: 480px) { .agent-change-field dd { grid-template-columns: 1fr; } .agent-canvas-controls { padding-inline: 12px; } .agent-canvas-feedback { align-items: flex-start; gap: 4px; } }
+
+/* Conversation hierarchy: quiet prose, grouped process, explicit decisions. */
+.canvas-agent-dock { container-type: inline-size; container-name: agent-rail; }
+.agent-conversation-turn { display: flex; flex-direction: column; flex: 0 0 auto; min-width: 0; gap: 16px; padding-bottom: 24px; }
+.agent-conversation-turn + .agent-conversation-turn { padding-top: 24px; border-top: 1px solid var(--cad-rule); }
+.agent-conversation-turn .canvas-agent-message { margin: 0; font-size: 16px; line-height: 1.75; }
+.agent-conversation-turn .canvas-agent-message > small { font-size: 12px; letter-spacing: .02em; }
+.agent-conversation-turn .canvas-agent-message > em { font-size: 12px; }
+.agent-conversation-turn .canvas-agent-message[data-role=user] { max-width: 92%; border-radius: 16px 16px 4px 16px; }
+.agent-conversation-turn .canvas-agent-message[data-role=notice] { border: 0; padding: 0; font-size: 14px; }
+.agent-conversation-turn .canvas-agent-message[data-role=notice] > div { white-space: normal; }
+.agent-process-group { min-width: 0; border-left: 2px solid var(--cad-rule); padding-left: 12px; color: var(--canvas-text-soft); }
+.agent-process-group > summary { cursor: pointer; font-size: 14px; line-height: 1.6; padding: 8px 0; }
+.agent-process-group > summary > span:first-child { font-weight: 600; }
+.agent-process-group > summary > span:last-child { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--canvas-text-muted); font-size: 12px; }
+.agent-process-group[open] > summary > span:last-child { display: none; }
+.agent-process-group > div { display: grid; gap: 12px; padding: 8px 0; }
+.agent-process-group .canvas-agent-message > small { display: none; }
+.agent-process-group .canvas-agent-message[data-role=notice] > div { white-space: pre-wrap; }
+.canvas-agent-proposal { border-color: var(--canvas-border-strong); scroll-margin-block: 12px; }
+.canvas-agent-proposal:focus { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-proposal footer { flex-wrap: wrap; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--cad-rule); }
+.canvas-agent-proposal footer button { font-size: 14px; min-height: 44px; white-space: normal; }
+.canvas-agent-proposal footer .agent-confirm-action { font-weight: 650; padding-inline: 18px; }
+.canvas-agent-proposal footer button:not(.agent-confirm-action) { background: transparent; }
+.canvas-agent-composer { margin-top: 12px; border-radius: 16px; gap: 10px; }
+.app-shell .canvas-agent-dock textarea.canvas-agent-input { font-size: 16px; }
+.canvas-agent-model-controls { width: 100%; margin: 0; padding-top: 8px; border-top: 1px solid var(--cad-rule); gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+.canvas-agent-model-controls label { flex: 1 1 130px; font-size: 12px; gap: 8px; }
+.canvas-agent-model-controls select, .canvas-agent-model-controls label:last-child select { flex: 1; min-width: 0; width: auto; height: 34px; font-size: 14px; }
+.canvas-agent-composer-footer { flex: 0 0 auto; min-height: 44px; flex-wrap: wrap; }
+.canvas-agent-submit-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.canvas-agent-submit-actions .canvas-agent-send { width: 44px; height: 44px; }
+.canvas-agent-submit-actions .agent-steer-button { min-height: 44px; }
+.canvas-agent-quote-selected { font-size: 12px !important; }
+.canvas-agent-footnote { font-size: 12px; margin-top: 8px; }
+.agent-pending-jump { display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; gap: 12px; width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--cad-rule); border-radius: 8px; background: var(--cad-control); font-size: 12px !important; text-align: left; white-space: normal !important; }
+.agent-pending-jump > span:last-child { flex-shrink: 0; color: var(--canvas-text); }
+@container agent-rail (max-width: 400px) {
+  .canvas-agent-conversation { padding: 16px; }
+  .canvas-agent-composer { margin-inline: 8px; padding-inline: 10px; }
+  .agent-change-field dd { grid-template-columns: minmax(0, 1fr); }
+  .canvas-agent-proposal { padding: 12px; }
+  .canvas-agent-proposal footer .agent-confirm-action { flex: 1 1 100%; }
+  .canvas-agent-quote-selected { max-width: 92px; }
+}
+
+/* Shared proportions for the existing Agent surfaces, independent of canvas zoom. */
+.canvas-agent-dock :is(.canvas-agent-proposal,.agent-job-card,.agent-change-card,.agent-generation-plan article) {
+  min-width: 0; padding: var(--cad-space-md); border-radius: var(--cad-radius-md);
+}
+.canvas-agent-dock :is(.agent-job-card,.agent-change-card,.agent-generation-plan article) { margin-block: var(--cad-space-sm); }
+.canvas-agent-dock .canvas-agent-composer { border-radius: var(--cad-panel-radius); }
+.canvas-agent-dock :is(.agent-job-card,.agent-edit-result,.agent-assessment,.agent-generation-plan,.agent-source-chips,.agent-project-fields,.agent-api-form,.agent-search-panel,.agent-connection-tabs) button {
+  min-height: var(--cad-control-height); max-width: 100%; font-size: var(--cad-text-label);
+  line-height: 1.5; white-space: normal; overflow-wrap: anywhere; border-radius: var(--cad-radius-sm);
+}
+.canvas-agent-dock :is(.canvas-agent-error,.canvas-agent-advanced-install,.canvas-agent-reopen span) { font-size: var(--cad-text-label); }
+.canvas-agent-dock :is(.canvas-agent-footnote,.canvas-agent-scope,.agent-capability-report small,.canvas-agent-install-help,.canvas-agent-boundary p) { font-size: var(--cad-text-meta); line-height: 1.6; }
+.canvas-agent-dock :is(.canvas-agent-model-controls label,.canvas-agent-quote-selected,.canvas-agent-reference-locate > span:last-child) { font-size: var(--cad-text-label) !important; }
+.canvas-agent-dock :is(.agent-project-panel,.agent-run-panel) > summary { min-height: 44px; padding: 12px 16px; font-size: var(--cad-text-label); line-height: 1.5; }
+.canvas-agent-dock .agent-project-panel summary small { font-size: var(--cad-text-meta); color: var(--canvas-text-soft); opacity: 1; }
+.canvas-agent-dock .agent-job-card :is(p,details) { margin-block: 12px; }
+.canvas-agent-dock .agent-job-card footer { padding-top: 12px; border-top: 1px solid var(--cad-rule); }
+.canvas-agent-dock .agent-job-media { border-radius: var(--cad-radius-sm); }
+.canvas-agent-dock .agent-job-media :is(img,video) { max-height: min(300px, 45vh); }
+.canvas-agent-dock .agent-result-checks li { grid-template-columns: minmax(0, 1fr) auto; }
+.canvas-agent-dock .agent-result-checks li > span { overflow-wrap: anywhere; }
+.canvas-agent-dock .agent-image-permission > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.canvas-agent-dock .agent-canvas-controls { padding-block: 4px; }
+.canvas-agent-dock .agent-canvas-controls > button { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; border: 0; background: transparent; white-space: normal; text-align: left; }
+.canvas-agent-dock .canvas-agent-context-chip { border-radius: var(--cad-radius-sm); }
+.canvas-agent-dock .canvas-agent-image-attachments figure { border-radius: var(--cad-radius-sm); }
+.canvas-agent-dock .canvas-agent-quote-selected { min-width: 0; }
+.canvas-agent-dock .canvas-agent-submit-actions { max-width: 100%; }
+@media (pointer: coarse) {
+  .canvas-agent-dock { --cad-control-height: 2.75rem; }
+}
+@container agent-rail (max-width: 440px) {
+  .canvas-agent-dock :is(.agent-settings-pair,.agent-change-field dd) { grid-template-columns: minmax(0, 1fr); }
+  .canvas-agent-dock :is(.canvas-agent-proposal,.agent-job-card,.agent-change-card,.agent-generation-plan article) { padding: var(--cad-space-sm); }
+  .canvas-agent-dock .agent-job-card > header { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 4px 12px; }
+  .canvas-agent-dock .agent-job-card > header > .canvas-agent-thumb { grid-row: 1 / 3; }
+  .canvas-agent-dock .agent-job-card > header > strong { min-width: 0; }
+  .canvas-agent-dock .agent-job-card > header > span:last-child { grid-column: 2; }
+  .canvas-agent-dock .agent-job-card footer > button { flex: 1 1 100%; }
+  .canvas-agent-dock .agent-run-panel > summary { flex-wrap: wrap; gap: 4px; }
+  .canvas-agent-dock .agent-change-card > summary { flex-wrap: wrap; }
+  .canvas-agent-dock .agent-change-card > summary > em { margin-left: 60px; }
+  .canvas-agent-dock .agent-project-panel > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .canvas-agent-dock .agent-project-panel > summary > small { margin-left: 0; }
 }

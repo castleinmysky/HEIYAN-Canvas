@@ -38,7 +38,7 @@ Text + reference images → generated assets → inputs for the next step
 
 Click a thumbnail to view it at full size. These screenshots show the Chinese interface with demo assets; the connection panels contain no account credentials.
 
-Configure official APIs and compatible third-party endpoints separately. Agent-proposed node changes require your confirmation; generation is still submitted by you.
+Configure official APIs and compatible third-party endpoints separately. Agent can read the canvas, edit nodes and submit generation; paid generation always requires separate confirmation.
 
 ## Features
 
@@ -49,7 +49,7 @@ Configure official APIs and compatible third-party endpoints separately. Agent-p
 | Generation | Images, video, audio and 3D assets; reuse outputs as inputs for subsequent nodes. |
 | Image tools | Multi-view splitting, mask editing and overlapping, card-style browsing of multiple results. |
 | Generation history | Per-canvas history with deletion and clearing; scroll to zoom and middle-drag to pan previews. |
-| Codex Agent | Connect your own Codex, discuss work in chat and confirm proposed node operations. |
+| Agent | Connect your own Codex or chat API; image input, model and reasoning controls, project memory, history search, node editing, generation approval and result inspection. |
 | ComfyUI | Use your own deployment's models and workflows through a connector, with supported local and cross-network connections. |
 
 ## Quick start
@@ -100,8 +100,8 @@ See the [English quick-start guide](docs/QUICKSTART.en.md) for API configuration
 | Privacy | Cloud services receive the prompts, assets and credentials needed for each request. Configured proxies and tunnels also handle the traffic they forward. |
 | Model access | A successful connection does not guarantee access to every model or feature. Provider permissions, quota and deployment configuration still apply. |
 | Local services | Keep the connector and ComfyUI running during generation. Clearing browser history does not delete original files on the generation machine. |
-| Agent | Currently works mainly with node information. It does not fully understand arbitrary image, video or audio content, or autonomously produce an entire short film. |
-| Cross-device Codex | Connecting a phone to another computer's Codex, and restoring conversations after the connector shuts down, are not currently supported. |
+| Agent | Image analysis requires a vision-capable model and explicit image sharing. Audio understanding and autonomous film editing are not supported. |
+| Session recovery | Project memory can be loaded after reconnecting. This does not resume the original running Codex turn or replay approved operations. Connecting a phone to another computer's Codex is not supported. |
 | Refresh recovery | Depends on the provider API. Synchronous requests without background execution cannot be guaranteed to survive a refresh. Uncertain generation submissions are not automatically repeated. |
 
 ## Source and contributions

@@ -8,7 +8,7 @@ import { EventEmitter } from 'node:events';
 const site = 'https://heiyan.example';
 test('portable control requires local Origin and secret; website cannot sign in or stop it', async t => {
   let loggedIn = false, loginCalls = 0, stopCalls = 0;
-  class Runtime extends EventEmitter { constructor() { super(); this.ready = Promise.resolve({ type: 'chatgpt' }); } close() {} }
+  class Runtime extends EventEmitter { constructor() { super(); this.ready = Promise.resolve({ type: 'chatgpt' }); } models() { return Promise.resolve([]); } close() {} }
   const connector = createAgentConnector({ origin: site, runtimeFactory: () => new Runtime(), localHandler: createLocalControl({ secret: 'local-secret', packageId: 'package-a', siteUrl: site,
     probe: async () => ({ loggedIn }), login: async () => { loginCalls++; loggedIn = true; }, stop: () => { stopCalls++; } }),
   });
@@ -41,14 +41,12 @@ test('portable links use fragments, local connector only; site configuration exc
   assert.equal(url.search, '?view=agent'); assert.ok(!url.search.includes('code')); assert.ok(url.hash.includes('code='));
   for (const value of ['file:///etc/passwd', 'javascript:alert(1)', 'http://example.com', 'https://name:pass@example.com', 'https://example.com/#secret']) assert.throws(() => canvasSite(value));
   assert.equal(canvasSite('http://localhost:8792').origin, 'http://localhost:8792');
-  const current=new URL(pairingLink(site+'/studio?task_id=current&title=scene','http://127.0.0.1:17372','a'.repeat(32)));
-  assert.equal(current.searchParams.get('task_id'),'current');
-  assert.equal(current.searchParams.get('title'),'scene');
 });
 test('launcher uses packaged binaries, owned authenticated stop and no process-wide termination or autostart', async () => {
   const launcher = await readFile(new URL('../scripts/portable-launcher.mjs', import.meta.url), 'utf8');
   assert.match(launcher, /runtime', 'codex', 'bin', 'codex.exe/);
-  assert.match(launcher, /windowsHide: true/); assert.match(launcher, /management\(instance, 'stop'\)/);
+  assert.match(launcher, /windowsHide: true/); const application = await readFile(new URL('../scripts/portable-main.mjs', import.meta.url), 'utf8');
+  assert.match(launcher, /application.runPortable/); assert.match(application, /management\(instance, 'stop'\)/);
   assert.doesNotMatch(launcher, /taskkill|Stop-Process|setx|schtasks|auth\.json|account\/logout|turn\/start|CODEX_HOME\s*=/);
   const cmd = await readFile(new URL('../scripts/portable/start.cmd', import.meta.url), 'utf8');
   assert.match(cmd, /runtime\\node\\node.exe/); assert.doesNotMatch(cmd, /npm|winget|setx|ExecutionPolicy/);

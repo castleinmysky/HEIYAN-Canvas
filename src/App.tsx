@@ -4,7 +4,11 @@ import { canvasTouchInteraction, mobileNodeFocusViewport, useMobileCanvas } from
 import { registerTrialTools } from './trial-webmcp';
 import { CanvasAgentDock, type CanvasAgentItem } from './agent-workbench/CanvasAgentDock';
 import { canvasAgentContext, planAgentEdits } from './agent-workbench/agent-canvas';
+import { nodeBounds } from './agent-workbench/agent-spatial';
+import { editPreview } from './agent-workbench/agent-proposals';
+import { jobSnapshot } from './agent-workbench/agent-jobs';
 import type { AgentCanvasAccess } from './agent-workbench/agent-session';
+import { validateAgentTool } from '../server/agent-contract.js';
 import { agentCompactLayout, toggleAgentWorkspace, type AgentWorkspace } from './agent-workbench/workbench-layout';
 import {
   MiniMap, ReactFlow as ReactFlowBase, ReactFlowProvider, SelectionMode, reconnectEdge,
@@ -173,7 +177,7 @@ export function canvasViewportDetailClass(zoom: number): '' | 'zoom-detail-mid' 
 const ReactFlow = (props: ReactFlowProps<CanvasNode, Edge>) => <ReactFlowBase elevateNodesOnSelect={false} {...props} zIndexMode="manual" />;
 const canvasThemeStorageKey = 'ai-canvas:theme:v1';
 export type CanvasTheme = 'day' | 'night';
-export const canvasAppVersionLabel = 'v1.0';
+export const canvasAppVersionLabel = 'v1.1';
 type SettingsCenterSection = 'api' | 'comfyui' | 'data' | 'about';
 
 export function settingsSectionFromPanel(panel: string | null): SettingsCenterSection | null {
@@ -1358,7 +1362,7 @@ export function canvasDocumentTitleForLanguage(taskTitle: string, language: Canv
 export function shouldShowCanvasHome(pathname: string, search: string) {
   if (pathname !== '/') return false;
   const params = new URLSearchParams(search);
-  return !params.has('task_id') && params.get('mode') !== 'admin-standalone' && !params.has('share');
+  return !params.has('task_id') && params.get('mode') !== 'admin-standalone' && params.get('view') !== 'agent' && !params.has('share');
 }
 
 function localStudioHref(panel?: 'settings' | 'comfyui' | 'data' | 'about') {
@@ -2649,6 +2653,18 @@ export function evaluateConnection(connection: Connection, nodes: CanvasNode[], 
   return { error: '', replaceEdgeIds, targetHandle };
 }
 
+export function agentConnectionForNodes(sourceId: string, targetId: string, nodes: CanvasNode[]): Connection {
+  const source = nodes.find((node) => node.id === sourceId);
+  const target = nodes.find((node) => node.id === targetId);
+  if (!source || !target) throw new Error('连接节点不在当前画布中');
+  const sourceHandle = 'output';
+  const sourceType = outputTypeFor(source, sourceHandle);
+  if (!sourceType) throw new Error('来源节点没有可连接的输出');
+  const targetHandle = defaultInputPort(target.data.kind, sourceType, target.data);
+  if (!targetHandle) throw new Error(`目标节点没有兼容 ${sourceType} 的输入端口`);
+  return { source: sourceId, sourceHandle, target: targetId, targetHandle };
+}
+
 export type SelectedCloneMode = 'with-inputs' | 'next-step';
 export type SelectedClonePlan = {
   nodes: CanvasNode[];
@@ -3771,7 +3787,7 @@ function Studio() {
         data: {
           ...node.data, jobId: job.id, jobState: job.status, jobStartedAt: job.createdAt || job.updatedAt || node.data.jobStartedAt || new Date().toISOString(), jobUpdatedAt: job.updatedAt || node.data.jobUpdatedAt, jobDeadlineAt: job.deadlineAt, progress: job.progress, comfyPreview: ['succeeded', 'cancelled'].includes(job.status) ? undefined : job.comfyPreview, stale: false, cancelling: job.status === 'cancelling', jobPollLost: false,
           localQueue: job.localQueue,
-          ...(job.status === 'succeeded' && latestOutputs.length && !isGeneratorExport ? { latestOutputs, latestMediaType: job.outputs[0].mediaType, selectedOutput: 0 } : {}),
+          ...(job.status === 'succeeded' && latestOutputs.length && !isGeneratorExport ? { latestOutputs, latestOutputJobId: job.id, latestMediaType: job.outputs[0].mediaType, selectedOutput: 0 } : {}),
           ...(generationVersions ? { generationVersions } : {}),
           ...(tripoSubmittedOptions ? { tripoSubmittedOptions } : {}),
           ...(isPostprocess ? { tripoPostprocessOperation: job.tripoPostprocessOperation, ...(job.postprocessResult ? { tripoPostprocessResult: job.postprocessResult } : {}) } : {}),
@@ -6722,6 +6738,26 @@ function Studio() {
       ...(output.type && output.value ? { reference: { sourceId: node.id, type: output.type, label: node.data.title || '未命名节点', token: `node-${node.id}`, previewUrl: output.previewUrl, ...(output.type === 'text' ? { text: String(output.value) } : { mediaUrl: String(output.value) }), duration: output.duration } } : {}),
     };
   }), [agentOpen, nodes, edges]);
+  const [agentFollow, setAgentFollow] = useState(() => { try { return localStorage.getItem('heiyan:agent-follow') !== 'off'; } catch { return true; } });
+  const agentRevealUntil = useRef(0);
+  const agentFollowRef = useRef(agentFollow); agentFollowRef.current = agentFollow;
+  const agentOpenRef = useRef(agentOpen); agentOpenRef.current = agentOpen;
+  const [agentFeedback, setAgentFeedback] = useState<{ ids: string[]; label: string; at: number } | null>(null);
+  useEffect(() => { setAgentFeedback(null); }, [activeCanvasKey]);
+  useEffect(() => { if (!agentFeedback) return; const timer = setTimeout(() => setAgentFeedback(null), 7000); return () => clearTimeout(timer); }, [agentFeedback]);
+  const revealAgentNodes = useCallback((ids: string[], label: string, automatic = false) => {
+    if (loadedCanvasKeyRef.current !== activeCanvasKey) return;
+    const live = ids.filter(id => nodesRef.current.some(n => n.id === id));
+    setAgentFeedback({ ids: live, label, at: Date.now() });
+    if (!live.length || automatic && (!agentFollowRef.current || !agentOpenRef.current)) return;
+    agentRevealUntil.current = Date.now() + 500;
+    if (!automatic || agentCompactLayout(window.innerWidth)) setAgentWorkspace('canvas');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (loadedCanvasKeyRef.current !== activeCanvasKey) return;
+      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260;
+      void flow.fitView({ nodes: live.map(id => ({ id })), padding: .22, duration, minZoom: canvasMinimumZoom, maxZoom: 1 });
+    }));
+  }, [activeCanvasKey, flow]);
   const focusAgentNode = useCallback((nodeId: string) => {
     selectNode(nodeId);
     // Mobile selection tracking owns the viewport after the surface switch.
@@ -6744,24 +6780,57 @@ function Studio() {
       }
     });
   }, [flow, selectNode, mobileCanvas.mobile, mobileCanvas.width, mobileCanvas.height, mobileCanvas.top, mobileCanvas.sheetHeight]);
+  const agentPreviewPlan = useRef<{ key: string; plan: ReturnType<typeof planAgentEdits> } | null>(null);
   const agentCanvasAccess = useMemo<AgentCanvasAccess>(() => {
-    const read = (referenceIds: string[]) => {
-      if (!ready || shareMode || loadedCanvasKeyRef.current !== activeCanvasKey || saveBlockedRef.current) throw Error('画布尚未就绪或已切换，操作未执行');
-      return canvasAgentContext(nodesRef.current, edgesRef.current, referenceIds);
+    const ensureReady = () => { if (!ready || shareMode || loadedCanvasKeyRef.current !== activeCanvasKey || saveBlockedRef.current) throw Error('画布尚未就绪或已切换，操作未执行'); };
+    const read = (referenceIds: string[], request: import('../server/agent-contract.js').AgentProposal = {}) => {
+      ensureReady();
+      const view = flow.getViewport(), area = flowAreaRef.current?.getBoundingClientRect();
+      return canvasAgentContext(nodesRef.current, edgesRef.current, referenceIds, models, request, area ? { x: -view.x / view.zoom, y: -view.y / view.zoom, width: area.width / view.zoom, height: area.height / view.zoom, zoom: view.zoom } : undefined);
     };
-    return { read, edit: (proposal, revision) => {
-      if (read([]).revision !== revision) throw Error('画布已变化，请重新确认方案');
+    const prepare = (proposal: import('../server/agent-contract.js').AgentProposal) => {
+      const context = read([]), key = activeCanvasKey + ':' + context.revision + ':' + JSON.stringify(proposal);
+      const selection = (plan: ReturnType<typeof planAgentEdits>) => {
+        const changesSelection = proposal.operations?.some(op => ['select', 'duplicate'].includes(op.action)), currentNodes = new Map(nodesRef.current.map(n => [n.id, n]));
+        return { ...plan, nodes: plan.nodes.map(n => { const current = currentNodes.get(n.id); if (!current) return n;
+          return { ...n, selected: changesSelection ? n.selected : current.selected, dragging: current.dragging, data: { ...n.data, progress: current.data.progress, jobUpdatedAt: current.data.jobUpdatedAt, jobDeadlineAt: current.data.jobDeadlineAt, comfyPreview: current.data.comfyPreview, localQueue: current.data.localQueue, status: n.data.stale !== current.data.stale ? n.data.status : current.data.status } };
+        }) };
+      };
+      if (agentPreviewPlan.current?.key === key) return selection(agentPreviewPlan.current.plan);
       const bounds = flowAreaRef.current?.getBoundingClientRect();
       const center = flow.screenToFlowPosition({ x: bounds ? bounds.left + bounds.width / 2 : window.innerWidth / 2, y: bounds ? bounds.top + bounds.height / 2 : window.innerHeight / 2 });
       const startX = nodesRef.current.length ? Math.max(...nodesRef.current.map(node => node.position.x + (node.width || 390))) + 80 : center.x - 180;
       const planned = planAgentEdits(proposal, nodesRef.current, edgesRef.current, {
+        duplicate: (nodes, edges, nodeIds) => buildSelectedClonePlan(nodes, edges, nodeIds, 'with-inputs', crypto.randomUUID()),
+        configure: (node, operation) => {
+          const capability = ({ imageGenerator: 'image', videoGenerator: 'video', audioGenerator: 'audio', modelGenerator: 'model' } as Record<string, string>)[node.data.kind];
+          const model = models.find(model => model.id === (operation.modelId || node.data.modelId) && model.capability === capability);
+          if (!capability || !model) throw Error('该节点没有匹配的可用模型');
+          const profile = model.profile;
+          if (operation.ratio && !profile?.ratios.includes(operation.ratio)) throw Error('模型不支持该比例');
+          if (operation.resolution && !profile?.resolutions.includes(operation.resolution)) throw Error('模型不支持该分辨率');
+          for (const key of ['count', 'duration'] as const) {
+            const value = operation[key], range = profile?.[key];
+            if (value !== undefined && (!range || value < range.min || value > range.max || (key === 'count' && !Number.isInteger(value)) || (key === 'duration' && capability !== 'video'))) throw Error('模型不支持该数量或时长');
+          }
+          const defaults = compatibleGeneratorSettings(model, node.data.ratio, node.data.resolution, node.data.duration);
+          const currentCount = node.data.count || 1;
+          const count = profile ? Math.max(profile.count.min, Math.min(profile.count.max, currentCount)) : currentCount;
+          node = { ...node, data: { ...node.data, count } };
+          return { ...node, data: { ...node.data, ...defaults, ...(operation.ratio ? { ratio: operation.ratio } : {}), ...(operation.resolution ? { resolution: operation.resolution } : {}), ...(operation.count !== undefined ? { count: operation.count } : {}), ...(operation.duration !== undefined ? { duration: operation.duration } : {}) } };
+        },
         create: (kind, index) => {
           if (!canvasToolVisible(kind as SupportedCanvasNodeKind, models)) throw Error('此节点能力尚未启用，请先在画布设置中配置');
           const capability = kind === 'videoGenerator' ? 'video' : kind === 'audioGenerator' ? 'audio' : kind === 'modelGenerator' ? 'model' : 'image';
           return attachActions({ id: `${kind}-${crypto.randomUUID()}`, type: kind, position: { x: startX + (index % 3) * 470, y: center.y + Math.floor(index / 3) * 340 }, width: initialNodeWidth(kind), height: initialNodeHeight(kind), data: { ...(kind === 'text' ? {} : generatorDefaults(models, capability)), kind, title: '', outputType: kind === 'text' ? 'text' : capability } as CanvasNodeData });
         },
-        connect: (source, target, nodes, edges) => {
-          const connection: Connection = { source, target, sourceHandle: 'output', targetHandle: null };
+        connect: (source, target, nodes, edges, targetPort) => {
+          const connection = agentConnectionForNodes(source, target, nodes);
+          if (targetPort) {
+            const node = nodes.find(node => node.id === target)!;
+            if (!runtimeInputPorts(node.data.kind, node.data).some(port => port.id === targetPort)) throw Error('目标输入端口不存在，请重新读取画布');
+            connection.targetHandle = targetPort;
+          }
           const decision = evaluateConnection(connection, nodes, edges);
           if (decision.error) throw Error(decision.error);
           if (decision.replaceEdgeIds.length) throw Error('该端口已有连接，请先在画布中确认替换');
@@ -6769,14 +6838,75 @@ function Studio() {
           return colorEdge({ ...connection, id: `edge-${crypto.randomUUID()}`, targetHandle: decision.targetHandle || null, data: { referenceOrder: Date.now(), ...(sourceType ? { referenceToken: nextReferenceToken(edges, target, sourceType) } : {}) }, reconnectable: 'target' }, sourceType);
         },
       });
+      agentPreviewPlan.current = { key, plan: planned };
+      return selection(planned);
+    };
+    return { read, reveal: revealAgentNodes, jobs: targets => { ensureReady(); return targets.map(target => jobSnapshot(nodesRef.current, target)); }, preview: proposal => { const planned = prepare(proposal); return editPreview(nodesRef.current, planned.nodes, edgesRef.current, planned.edges, read([]).revision, planned.warnings, read([]).availableModels); }, documents: () => {
+      read([]);
+      return nodesRef.current.map(node => ({ id: node.id, source: 'node' as const, title: String(node.data.title || node.id),
+        text: String(node.data.kind === 'text' ? node.data.text || '' : node.data.prompt || ''),
+        nodeIds: [...new Set([node.id, ...edgesRef.current.filter(e => e.source === node.id || e.target === node.id).flatMap(e => [e.source, e.target])])] }));
+    }, images: async (nodeIds, jobIds, outputIndexes) => {
+      read([]);
+      const images: string[] = [];
+      for (const [i, id] of nodeIds.slice(0, 4).entries()) {
+        const node = nodesRef.current.find(n => n.id === id);
+        if (!node) throw Error('图片节点已不存在');
+        const resultJob = jobIds ? jobSnapshot(nodesRef.current, { nodeId: id, jobId: jobIds[i] }) : null;
+        const output = resultJob?.outputs[outputIndexes?.[i] || 0];
+        if (resultJob && (resultJob.state !== 'succeeded' || resultJob.type !== 'image' || !output?.mediaUrl || output.simulated)) throw Error('此任务的指定图片尚不可读取，请先核实结果');
+        const source = resultJob ? { mediaUrl: output!.mediaUrl! } : clipboardImageForNode(node);
+        if (!source) throw Error(`节点「${node.data.title}」没有可读取的图片`);
+        let blob = await clipboardPngBlob(source.mediaUrl);
+        if (blob.size > 3 * 1024 * 1024) {
+          const bitmap = await createImageBitmap(blob);
+          try {
+            for (const limit of [1536, 1024, 768]) {
+              const scale = Math.min(1, limit / Math.max(bitmap.width, bitmap.height));
+              const preview = document.createElement('canvas'); preview.width = Math.max(1, Math.round(bitmap.width * scale)); preview.height = Math.max(1, Math.round(bitmap.height * scale));
+              const context = preview.getContext('2d'); if (!context) throw Error('无法准备检查图片');
+              context.drawImage(bitmap, 0, 0, preview.width, preview.height);
+              blob = await new Promise<Blob>((resolve, reject) => preview.toBlob(value => value ? resolve(value) : reject(Error('检查图片转换失败')), 'image/png'));
+              if (blob.size <= 3 * 1024 * 1024) break;
+            }
+          } finally { bitmap.close(); }
+        }
+        if (blob.size > 3 * 1024 * 1024) throw Error('检查图片仍超过传输上限，请先在节点核实素材');
+        const data = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(Error('图片读取失败')); reader.readAsDataURL(blob); });
+        images.push(data);
+      }
+      return images;
+    }, edit: (proposal, revision) => {
+      if (read([]).revision !== revision) throw Error('画布已变化，请重新确认方案');
+      const planned = prepare(proposal);
+      agentPreviewPlan.current = null;
       pushHistory(); nodesRef.current = planned.nodes; edgesRef.current = planned.edges;
       setNodes(planned.nodes); setEdges(planned.edges); setToast('Agent 已修改画布，可撤销；尚未提交生成');
+      revealAgentNodes(planned.affected, proposal.summary || 'Agent 已修改画布', true);
       return planned.result;
+    }, generate: async (request, revision) => {
+      if (read([]).revision !== revision) throw Error('画布已变化，请重新确认生成');
+      const nodeIds = validateAgentTool('heiyan_request_generation', request).nodeIds || [];
+      const generatorKinds = new Set(['imageGenerator', 'videoGenerator', 'audioGenerator', 'modelGenerator', 'comfyUiWorkflow']);
+      const targets = nodeIds.map((id) => nodesRef.current.find((node) => node.id === id));
+      if (targets.some((node) => !node)) throw Error('生成节点已不在当前画布');
+      if (targets.some((node) => !generatorKinds.has(node!.data.kind))) throw Error('只能提交图片、视频、音频、3D 或 ComfyUI 生成节点');
+      if (targets.some((node) => ['queued', 'running', 'paused', 'cancelling'].includes(String(node!.data.jobState || '')))) throw Error('所选节点中有任务尚未结束');
+      const submitted: Array<{ id: string; jobId: string; title: string; expected: { count: number; ratio: string; resolution: string; duration: number } }> = [], failed: string[] = [];
+      for (const node of targets) {
+        const jobId = await runGenerator(node!.id);
+        if (jobId) submitted.push({ id: node!.id, jobId, title: String(node!.data.title || node!.id), expected: { count: node!.data.count || 1, ratio: node!.data.ratio || '', resolution: node!.data.resolution || '', duration: node!.data.duration || 0 } });
+        else failed.push(node!.id);
+      }
+      if (!submitted.length) throw Error('生成请求未提交，请在节点中检查模型、提示词和输入素材');
+      setToast(`Agent 已提交 ${submitted.length} 个生成任务${failed.length ? `，${failed.length} 个未提交` : ''}`);
+      revealAgentNodes(submitted.map(n => n.id), '已提交生成，等待素材返回', true);
+      return JSON.stringify({ summary: request.summary, submitted, failed, generated: false });
     } };
-  }, [activeCanvasKey, attachActions, flow, models, pushHistory, ready, setEdges, setNodes, shareMode]);
+  }, [activeCanvasKey, attachActions, flow, models, pushHistory, ready, revealAgentNodes, runGenerator, setEdges, setNodes, setToast, shareMode]);
   const selectedCharacterGenerator = selectedNodes.length === 1 && selectedNodes[0].data.kind === 'characterAnimator' ? selectedNodes[0] : null;
   const focusMobileNode = useCallback((nodeId: string) => {
-    if (!mobileCanvas.mobile) return;
+    if (!mobileCanvas.mobile || Date.now() < agentRevealUntil.current) return;
     if (agentOpen && !agentCanvasView) return;
     const node = nodesRef.current.find((item) => item.id === nodeId);
     const area = flowAreaRef.current;
@@ -7508,6 +7638,10 @@ function Studio() {
         <path d={`M ${batchReferenceDrag.start.x} ${batchReferenceDrag.start.y} C ${batchReferenceDrag.start.x + 72} ${batchReferenceDrag.start.y}, ${batchReferenceDrag.current.x - 72} ${batchReferenceDrag.current.y}, ${batchReferenceDrag.current.x} ${batchReferenceDrag.current.y}`} />
         <circle cx={batchReferenceDrag.current.x} cy={batchReferenceDrag.current.y} r="5" />
       </svg>}
+      {agentFeedback && <>
+        <div className="agent-canvas-feedback" role="status"><span>{agentFeedback.label}</span>{!!agentFeedback.ids.length && <button type="button" onClick={() => revealAgentNodes(agentFeedback.ids, agentFeedback.label)}>查看变化</button>}<button type="button" aria-label="关闭变化提示" onClick={() => setAgentFeedback(null)}>×</button></div>
+        {agentFeedback.ids.slice(0, 80).map(id => { const node = nodes.find(n => n.id === id); if (!node) return null; const b = nodeBounds(node, nodes); return <div key={id} className="agent-canvas-spot" aria-hidden="true" style={{ left: b.x * viewport.zoom + viewport.x, top: b.y * viewport.zoom + viewport.y, width: b.width * viewport.zoom, height: b.height * viewport.zoom }}><span>Agent · {node.data.title || '已更新'}</span></div>; })}
+      </>}
       {batchTargetHighlight && <div className={`batch-reference-target-highlight${activeBatchReferencePlan?.sourceIds.length ? ' is-valid' : ' is-invalid'}`} style={batchTargetHighlight} aria-hidden="true" />}
       {!shareMode && batchSelectionHandlePosition && <button
         type="button"
@@ -7663,6 +7797,7 @@ function Studio() {
       {selectionToolbarPosition && <div className="selection-toolbar" data-placement={selectionToolbarPosition.placement} style={{ left: selectionToolbarPosition.left, top: selectionToolbarPosition.top }}><strong><span>{selectedNodes.length}</span> 个节点</strong><div className="selection-toolbar-group"><button title="向左紧密排列 · Ctrl + ←" aria-label="向左紧密排列" onClick={() => arrangeSelected('left')}><UiIcon name="left" /></button><button title="向右紧密排列 · Ctrl + →" aria-label="向右紧密排列" onClick={() => arrangeSelected('right')}><UiIcon name="right" /></button><button title="向上紧密排列 · Ctrl + ↑" aria-label="向上紧密排列" onClick={() => arrangeSelected('top')}><UiIcon name="up" /></button><button title="向下紧密排列 · Ctrl + ↓" aria-label="向下紧密排列" onClick={() => arrangeSelected('bottom')}><UiIcon name="down" /></button><button title="均匀分布" aria-label="均匀分布" disabled={selectedNodes.length < 3} onClick={() => arrangeSelected('spaceX')}><UiIcon name="distribute" /></button><button title="自动排列" aria-label="自动排列" onClick={() => arrangeSelected('auto')}><UiIcon name="autoArrange" /></button></div></div>}
     </div></section>
     {!shareMode && <CanvasAgentDock key={activeCanvasKey} canvasKey={activeCanvasKey} open={agentOpen} canvasView={agentCanvasView} items={agentItems} selectedId={singleSelectedNodeId} ready={ready} access={agentCanvasAccess}
+      followCanvas={agentFollow} onFollowCanvas={value => { setAgentFollow(value); try { localStorage.setItem('heiyan:agent-follow', value ? 'on' : 'off'); } catch { /* Current-page setting still applies. */ } }}
       onClose={() => switchAgentWorkspace('closed')} onViewChange={canvas => switchAgentWorkspace(canvas ? 'canvas' : 'conversation')}
       onFocus={focusAgentNode} onUpload={() => openUpload()} />}
     {canvasConfirmation && <div className="canvas-confirmation-layer" role="presentation" data-tone={canvasConfirmation.tone} onPointerDown={(event) => {

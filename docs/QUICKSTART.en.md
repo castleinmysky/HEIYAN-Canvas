@@ -98,8 +98,9 @@ For another canvas address, set `--origin` to its exact origin without a path. I
 ### Scope
 
 - Uses your own Codex login and quota. Do not send login files or pairing codes to the author or other users.
-- Currently reads mainly node information, supports creative discussion and proposes node operations for confirmation.
+- Supports model and reasoning controls, image input, project memory, history search, node editing, approved generation and result inspection. Update the Codex connector to 1.6.0.
 - Does not automatically submit paid generation or autonomously complete an entire film.
+- Self-hosted project requirements, conversations and execution receipts are isolated by canvas in this browser's IndexedDB. Reconnecting can load them without replaying old operations. Clearing site data removes these records. Agent API keys remain in page memory, not project records; no account or cloud storage is required.
 - Supports a desktop browser and connector on the same computer. Cross-device mobile Codex connections are not available.
 - Keep the connector running. Conversation recovery after shutdown is not guaranteed.
 

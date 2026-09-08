@@ -18,7 +18,7 @@ describe('page branding', () => {
   });
 
   it('shows the actual packaged semantic version', () => {
-    expect(canvasAppVersionLabel).toBe('v1.0');
+    expect(canvasAppVersionLabel).toBe('v1.1');
   });
 
   it('exports the current canvas with a filesystem-safe readable name', () => {
@@ -31,6 +31,7 @@ describe('page branding', () => {
     expect(shouldShowCanvasHome('/studio', '')).toBe(false);
     expect(shouldShowCanvasHome('/', '?task_id=local-canvas')).toBe(false);
     expect(shouldShowCanvasHome('/', '?mode=admin-standalone')).toBe(false);
+    expect(shouldShowCanvasHome('/', '?view=agent')).toBe(false);
   });
 
   it('routes legacy and new links into the unified settings center', () => {
