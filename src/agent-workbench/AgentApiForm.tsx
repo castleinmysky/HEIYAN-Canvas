@@ -1,8 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ApiProfile } from './agent-api';
-export function AgentApiForm({ busy, testing, connect, cancel }: { busy: boolean; testing: boolean; connect: (profile: ApiProfile) => Promise<boolean>; cancel: () => void }) {
+import type { ProbeProgress } from './agent-capabilities';
+export function AgentApiForm({ busy, testing, progress, connect, cancel }: { busy: boolean; testing: boolean; progress?: ProbeProgress | null; connect: (profile: ApiProfile) => Promise<boolean>; cancel: () => void }) {
   const [profile, setProfile] = useState<ApiProfile>({ provider: 'official', baseUrl: 'https://api.openai.com/v1', apiKey: '', model: '', protocol: 'responses', vision: false, effort: '', contextChars: 48000, contextTokens: 128000, outputTokens: 4096, stream: true, nativeCompaction: true, tokenBudget: 250000, callLimit: 24 });
   const patch = (value: Partial<ApiProfile>) => setProfile(p => ({ ...p, ...value }));
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!testing || !progress) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [testing, progress?.startedAt]);
   return <div className="agent-api-form">
     <label>API 来源<select disabled={busy} value={profile.provider} onChange={e => patch({ provider: e.target.value as ApiProfile['provider'], ...(e.target.value === 'official' ? { baseUrl: 'https://api.openai.com/v1', protocol: 'responses' } : {}) })}><option value="official">OpenAI 官方</option><option value="custom">自定义 / 中转 API</option></select></label>
     {profile.provider === 'custom' && <><label>API 地址<input disabled={busy} type="url" value={profile.baseUrl} onChange={e => patch({ baseUrl: e.target.value })} placeholder="https://你的服务地址/v1" /></label><label>接口协议<select disabled={busy} value={profile.protocol} onChange={e => patch({ protocol: e.target.value as ApiProfile['protocol'] })}><option value="responses">Responses</option><option value="chat">Chat Completions</option></select></label></>}
@@ -24,5 +32,6 @@ export function AgentApiForm({ busy, testing, connect, cancel }: { busy: boolean
     <p>密钥不写入会话，刷新后需重新填写。检测会发送少量测试请求，可能计费；模型名称和提供方不会自动更换。</p>
     <button type="button" disabled={busy || !profile.apiKey.trim() || !profile.model.trim()} onClick={async () => { if (await connect(profile)) patch({ apiKey: '' }); }}>{testing ? '正在逐项检测…' : '检测能力并连接'}</button>
     {testing && <button type="button" onClick={cancel}>取消连接检测</button>}
+    {testing && progress && <p role="status">正在检测：{progress.label}<br /><span aria-live="off">已等待 {Math.max(0, Math.floor((now - progress.startedAt) / 1000))} 秒 · 本项最多 {Math.ceil(progress.timeoutMs / 1000)} 秒</span><br />{progress.optional ? '可选项超时会跳过，不影响已通过的基础连接。' : '基础工具调用须通过；超时会停止，不自动重试。'}</p>}
   </div>;
 }

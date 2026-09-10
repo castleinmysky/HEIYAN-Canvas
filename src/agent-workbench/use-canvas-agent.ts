@@ -6,7 +6,7 @@ import { emptyProject, mergeMessages, projectRequest, searchProjectHistory, type
 import { writeMessageImages } from './message-images';
 import { progressSignature } from './agent-progress';
 import { validateApiProfile, type ApiMessage, type ApiProfile, type Capability, type UsageRecord } from './agent-api';
-import { probeApi } from './agent-capabilities';
+import { probeApi, type ProbeProgress } from './agent-capabilities';
 import { buildProjectContext, contextLimits, promptReferenceContext } from './agent-context';
 import { runApiAgent, toolLabels, type AgentActivity } from './agent-runner';
 import { SemanticIndex, embedTexts, projectDocuments, serializeSearch, type SemanticProfile, type SearchResult } from './agent-search';
@@ -21,6 +21,7 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
   const [api, setApi] = useState<ApiProfile | null>(null), [models, setModels] = useState<AgentModelOption[]>([]);
   const [model, setModel] = useState(''), [effort, setEffort] = useState('');
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
+  const [connectionProgress, setConnectionProgress] = useState<ProbeProgress | null>(null);
   const [activity, setActivity] = useState<AgentActivity>({ phase: 'idle', detail: '等待任务', at: Date.now() });
   const [trace, setTrace] = useState<AgentActivity[]>([]);
   const [indexState, setIndexState] = useState<{ configured: boolean; building: boolean; indexed: number; total: number; tokens: number; error: string; service?: string }>({ configured: false, building: false, indexed: 0, total: 0, tokens: 0, error: '' });
@@ -317,21 +318,22 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
     }),
     stopIndex: () => indexController.current?.abort(),
     updateBudget: (fields: Pick<ApiProfile, 'tokenBudget' | 'callLimit'>) => { if (!stateRef.current.active && apiRef.current) { const next = { ...apiRef.current, ...fields }; try { validateApiProfile(next); setApi(next); apiRef.current = next; } catch (e) { report(e); } } },
-    cancelConnectionTest: () => connectionController.current?.abort(),
+    cancelConnectionTest: () => connectionController.current?.abort(Error('连接检测已取消，未自动重试')),
     testingConnection: !!connectionController.current,
+    connectionProgress,
     connectApi: (profile: ApiProfile) => lock(async () => {
       profile = { ...profile, request: accessRef.current?.request };
       if (stateRef.current.active) throw Error('请先停止当前任务再切换连接');
-      const abort = new AbortController(); connectionController.current = abort; const timer = setTimeout(() => abort.abort(), 300000);
+      const abort = new AbortController(); connectionController.current = abort;
       setCapabilities([]); setRunUsage([]);
       try {
-        const tested = await probeApi(profile, abort.signal, c => setCapabilities(previous => [...previous.filter(v => v.key !== c.key), c]), u => setRunUsage(previous => [...previous, u]));
+        const tested = await probeApi(profile, abort.signal, c => setCapabilities(previous => [...previous.filter(v => v.key !== c.key), c]), u => setRunUsage(previous => [...previous, u]), value => { if (mounted.current) setConnectionProgress(value); });
         if (abort.signal.aborted || !mounted.current) throw Error('连接检测已取消');
         setApi(tested); apiRef.current = tested; apiHistory.current = [];
         semantic.current.configure(null); setIndexState({ configured: false, building: false, indexed: 0, total: 0, tokens: 0, error: '' });
         if (tested.embeddingModel) { semantic.current.configure({ ...tested, model: tested.embeddingModel }); setIndexState({ configured: true, building: false, indexed: 0, total: semantic.current.coverage(documents()).total, tokens: 0, error: '', service: `${tested.provider === 'official' ? 'OpenAI' : new URL(tested.baseUrl).hostname} · ${tested.embeddingModel}` }); }
         updateState({ connected: true, active: false, pending: null, error: '', messages: projectRef.current.messages });
-      } finally { clearTimeout(timer); connectionController.current = null; }
+      } finally { connectionController.current = null; if (mounted.current) setConnectionProgress(null); }
     }),
     pair: (url: string, code: string) => lock(async () => {
       if (stateRef.current.active) throw Error('请先停止当前任务');

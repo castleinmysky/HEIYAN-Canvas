@@ -236,7 +236,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
       <UiIcon name="link" /><h2>选择 Agent 连接方式</h2>
       <label className="agent-follow-setting"><input type="checkbox" checked={followCanvas} disabled={!onFollowCanvas} onChange={event => onFollowCanvas?.(event.target.checked)} />跟随画布变化</label>
       <div className="agent-connection-tabs"><button type="button" aria-pressed={connectionMode === 'codex'} onClick={() => setConnectionMode('codex')}>本机 Codex</button><button type="button" aria-pressed={connectionMode === 'api'} onClick={() => setConnectionMode('api')}>官方 / 自定义 API</button></div>
-      {connectionMode === 'api' && <AgentApiForm busy={agent.busy || agent.state.active} testing={agent.testingConnection} cancel={agent.cancelConnectionTest} connect={async profile => { const ok = await agent.connectApi(profile); return ok; }} />}
+      {connectionMode === 'api' && <AgentApiForm busy={agent.busy || agent.state.active} testing={agent.testingConnection} progress={agent.connectionProgress} cancel={agent.cancelConnectionTest} connect={async profile => { const ok = await agent.connectApi(profile); return ok; }} />}
       {connectionMode === 'codex' && <>
       <p>无需注册画布账号。Windows 免安装包已包含运行环境，解压后双击启动；后续普通更新会在启动时自动完成。</p>
       {agent.connection ? <><p>已配对设备：{agent.connection.device}</p><button type="button" disabled={agent.busy} onClick={() => void agent.disconnect()}>断开连接</button>{!agent.state.connected && <button type="button" disabled={agent.busy} onClick={agent.forget}>移除本页的失效连接</button>}</> : <>

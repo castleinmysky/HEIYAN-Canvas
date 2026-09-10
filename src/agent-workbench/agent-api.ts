@@ -1,6 +1,7 @@
 import { agentInstructions, contextInstructions, agentTools } from '../../server/agent-contract.js';
 import { contextLimits, estimateTokens, messageTokens } from './agent-context';
 import { readAgentResponse } from './agent-stream';
+import { awaitAbortable } from './agent-abort';
 export type ApiProfile = {
   request?: typeof fetch;
   provider: 'official' | 'custom'; baseUrl: string; apiKey: string; model: string; protocol: 'responses' | 'chat'; vision: boolean; effort: string; contextChars: number;
@@ -77,9 +78,13 @@ export function apiPayload(profile: ApiProfile, messages: ApiMessage[], instruct
 export class ApiHttpError extends Error { constructor(public status: number) { super(({ 401: '密钥未通过验证', 403: '当前服务拒绝访问此模型', 404: '模型或接口不存在', 429: '额度或请求频率达到上限' } as Record<number, string>)[status] || `API 请求失败（${status}），请检查模型、参数与协议`); } }
 export async function apiTransport(profile: Pick<ApiProfile, 'provider' | 'baseUrl' | 'protocol' | 'apiKey' | 'request'>, body: object, signal: AbortSignal, resource?: string) {
   if (!profile.apiKey.trim()) throw Error('请填写 API 密钥');
-  const response = await (profile.request || fetch)('/api/v1/agent/cloud/request', { method: 'POST', credentials: 'same-origin', signal,
-    headers: { 'Content-Type': 'application/json', 'x-heiyan-cloud': '1', 'x-heiyan-method': 'POST', 'x-heiyan-upstream': apiEndpoint(profile, resource), 'x-heiyan-api-authorization': 'Bearer ' + profile.apiKey.trim() }, body: JSON.stringify(body) });
-  if (!response.ok) { await response.body?.cancel(); throw new ApiHttpError(response.status); }
+  const response = await awaitAbortable(signal, async () => {
+    const value = await (profile.request || fetch)('/api/v1/agent/cloud/request', { method: 'POST', credentials: 'same-origin', signal,
+      headers: { 'Content-Type': 'application/json', 'x-heiyan-cloud': '1', 'x-heiyan-method': 'POST', 'x-heiyan-upstream': apiEndpoint(profile, resource), 'x-heiyan-api-authorization': 'Bearer ' + profile.apiKey.trim() }, body: JSON.stringify(body) });
+    if (signal.aborted) { void value.body?.cancel().catch(() => {}); signal.throwIfAborted(); }
+    return value;
+  });
+  if (!response.ok) { void response.body?.cancel().catch(() => {}); throw new ApiHttpError(response.status); }
   return response;
 }
 export function usageRecord(profile: ApiProfile, usage: any, messages: ApiMessage[], text: string, kind = '对话'): UsageRecord {
@@ -97,7 +102,7 @@ export async function apiStep(profile: ApiProfile, messages: ApiMessage[], signa
   if (!profile.model.trim()) throw Error('请填写模型名称');
   const timed = AbortSignal.any([signal, AbortSignal.timeout(180000)]);
   const response = await apiTransport(profile, apiPayload(profile, messages, options?.instructions, options?.tools), timed);
-  return readAgentResponse(response, profile.protocol, options?.onText);
+  return readAgentResponse(response, profile.protocol, options?.onText, timed);
 }
 export async function countApiTokens(profile: ApiProfile, messages: ApiMessage[], signal: AbortSignal) {
   const payload = apiPayload(profile, messages) as { model: string; input?: object[]; instructions?: string; tools?: object[] };

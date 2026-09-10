@@ -159,7 +159,10 @@ describe('provider capability detection', () => {
       if (target.endsWith('/input_tokens')) return json({ input_tokens: 100 });
       if (target.endsWith('/compact')) return json({ output: [{ type: 'compaction', encrypted_content: 'opaque' }, { role: 'user', content: 'retained' }], usage: { input_tokens: 100, output_tokens: 10 } });
       if (body.input?.some((i: any) => i.type === 'compaction')) { expect(body.input.some((i: any) => i.content === 'retained')).toBe(true); replayed = true; }
-      if (body.tools) return json({ ...final(), output: [{ type: 'function_call', call_id: 'probe', name: 'heiyan_read_canvas', arguments: body.tools[0].strict ? '{"query":null,"nodeIds":null,"offset":null,"promptOffset":null}' : '{}' }] });
+      if (body.tools) {
+        const response = { ...final(), output: [{ type: 'function_call', call_id: 'probe', name: 'heiyan_read_canvas', arguments: body.tools[0].strict ? '{"query":null,"nodeIds":null,"offset":null,"promptOffset":null}' : '{}' }] };
+        return body.stream ? sse([event({ type: 'response.completed', response })]) : json(response);
+      }
       return body.stream ? sse([event({ type: 'response.completed', response: final() })]) : json(final());
     }));
     const tested = await probeApi({ ...profile, nativeCompaction: true, stream: true }, signal(), c => capabilities.push(c));
