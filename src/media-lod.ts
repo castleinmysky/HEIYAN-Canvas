@@ -40,6 +40,17 @@ function absoluteMediaUrl(value: string) {
   return new URL(value, window.location.href).href;
 }
 
+function mediaLodSourceKey(value: string) {
+  const url = new URL(value, window.location.href);
+  if (url.origin === window.location.origin && /^\/api\/(?:v1\/canvas\/[^/]+\/assets|public\/canvas\/assets)\/[^/]+$/i.test(url.pathname)
+      && ['1', 'lod'].includes(url.searchParams.get('preview') || '')) url.searchParams.delete('preview');
+  return url.href;
+}
+/** Reuse the in-memory derivative before a virtualized image's first paint. */
+export function cachedMediaLodUrl(sourceUrl: string) {
+  return sourceUrl && typeof window !== 'undefined' ? memoryUrls.get(mediaLodSourceKey(sourceUrl)) || '' : '';
+}
+
 function canvasBlob(canvas: HTMLCanvasElement) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('LOD 缩略图生成失败')), 'image/webp', 0.72);
@@ -146,7 +157,7 @@ export function persistentMediaLodUrl(options: {
   sourceBlob?: Blob;
 }) {
   if (!options.sourceUrl || typeof window === 'undefined') return Promise.resolve('');
-  const sourceUrl = absoluteMediaUrl(options.sourceUrl);
+  const sourceUrl = mediaLodSourceKey(options.sourceUrl);
   const memory = memoryUrls.get(sourceUrl);
   if (memory) return Promise.resolve(memory);
   const existing = pending.get(sourceUrl);
@@ -171,7 +182,7 @@ export function persistentMediaLodUrl(options: {
         memoryUrls.set(sourceUrl, objectUrl);
         resolve(objectUrl);
       } catch {
-        resolve(options.previewUrl || '');
+        resolve(options.previewUrl || (options.mediaType === 'image' ? sourceUrl : ''));
       } finally {
         pending.delete(sourceUrl);
       }

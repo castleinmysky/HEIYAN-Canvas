@@ -21,7 +21,7 @@ import { UiActionContent, UiIcon, type UiIconName } from './UiIcon';
 import { PromptTokenComposer, resolvePromptTokenSelectionTags, type PromptTokenSelectionTag } from './PromptTokenComposer';
 import { promptTokenMarker, promptTokenMarkerPattern, supportsNegativePromptTokens } from '../prompt-token-library';
 import { canvasAssetDownloadUrl, nodeResourceDownloadFileName, videoDownloadFileName } from '../media-download';
-import { persistentMediaLodUrl, type CanvasMediaLodLevel } from '../media-lod';
+import { cachedMediaLodUrl, persistentMediaLodUrl, type CanvasMediaLodLevel } from '../media-lod';
 import { localMediaBindingRoleForPort, type LocalMediaBindingMethod, type LocalMediaBindingRole, type LocalMediaVersionPolicy } from '../../shared/local-media-binding.js';
 import { AudioWaveformPlayer } from './AudioWaveformPlayer';
 import { promptPresetChipInterfaceCopy, storedCanvasInterfaceLanguage } from '../interface-language';
@@ -1393,11 +1393,12 @@ function EmptyNodeState({ icon, label, className = '' }: { icon: UiIconName; lab
 }
 
 function usePersistentMediaLod(sourceUrl: string, mediaType: 'image' | 'video', previewUrl?: string) {
-  const [lodUrl, setLodUrl] = useState(previewUrl || '');
+  const initialUrl = () => cachedMediaLodUrl(sourceUrl) || (mediaType === 'image' ? canvasImagePreviewUrl(sourceUrl, previewUrl) : previewUrl) || '';
+  const [lodUrl, setLodUrl] = useState(initialUrl);
   useEffect(() => {
     let active = true;
-    setLodUrl(previewUrl || '');
-    void persistentMediaLodUrl({ sourceUrl, mediaType, previewUrl }).then((url) => {
+    setLodUrl(initialUrl());
+    void persistentMediaLodUrl({ sourceUrl, mediaType, previewUrl: mediaType === 'image' ? canvasImagePreviewUrl(sourceUrl, previewUrl) : previewUrl }).then((url) => {
       if (active && url) setLodUrl(url);
     });
     return () => { active = false; };
@@ -1405,7 +1406,7 @@ function usePersistentMediaLod(sourceUrl: string, mediaType: 'image' | 'video', 
   return lodUrl;
 }
 
-function CanvasLodImage({ src, previewUrl, lodLevel, className = '', alt, style, onLoad }: {
+export function CanvasLodImage({ src, previewUrl, lodLevel, className = '', alt, style, onLoad }: {
   src: string;
   previewUrl?: string;
   lodLevel: CanvasMediaLodLevel;
@@ -1415,12 +1416,12 @@ function CanvasLodImage({ src, previewUrl, lodLevel, className = '', alt, style,
   onLoad?: (image: HTMLImageElement) => void;
 }) {
   const lodUrl = usePersistentMediaLod(src, 'image', previewUrl);
-  const [highActivated, setHighActivated] = useState(lodLevel === 'high' || !previewUrl);
-  const [highReady, setHighReady] = useState(false);
+  const [highActivated, setHighActivated] = useState(lodLevel === 'high');
+  const [loadedSource, setLoadedSource] = useState('');
+  const highReady = loadedSource === src;
   const [lodFailed, setLodFailed] = useState(false);
   useEffect(() => {
-    setHighActivated(lodLevel === 'high' || !previewUrl);
-    setHighReady(false);
+    setHighActivated(lodLevel === 'high');
     setLodFailed(false);
   }, [src]);
   useEffect(() => {
@@ -1429,7 +1430,7 @@ function CanvasLodImage({ src, previewUrl, lodLevel, className = '', alt, style,
   const usableLod = Boolean(lodUrl && !lodFailed);
   return <span className={`media-lod-stack ${className} is-${lodLevel}${usableLod ? ' has-lod' : ''}${highReady ? ' is-high-ready' : ''}`} style={style}>
     {lodUrl && <img className="media-lod-layer media-lod-preview" draggable={false} decoding="async" src={lodUrl} alt="" aria-hidden="true" data-media-source={src} data-media-kind="image" onLoad={() => setLodFailed(false)} onError={() => { setLodFailed(true); setHighActivated(true); }} />}
-    {highActivated && <img className={`media-lod-layer media-lod-full${highReady ? ' is-ready' : ''}`} draggable={false} decoding="async" src={src} alt={alt} data-media-source={src} data-media-kind="image" onDragStart={(event) => event.preventDefault()} onLoad={(event) => { setHighReady(true); onLoad?.(event.currentTarget); }} />}
+    {highActivated && <img className={`media-lod-layer media-lod-full${highReady ? ' is-ready' : ''}`} draggable={false} decoding="async" src={src} alt={alt} data-media-source={src} data-media-kind="image" onDragStart={(event) => event.preventDefault()} onLoad={(event) => { setLoadedSource(src); onLoad?.(event.currentTarget); }} />}
     {!lodUrl && !highActivated && <EmptyNodeState icon="image" label="正在准备预览" />}
   </span>;
 }
