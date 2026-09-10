@@ -14,7 +14,7 @@ export function pairingLink(site, connectorUrl, code) {
   target.hash = 'heiyan-pair=' + new URLSearchParams({ url: connectorUrl, code }).toString();
   return target.href;
 }
-export function createLocalControl({ secret, packageId, siteUrl, probe, login, stop }) {
+export function createLocalControl({ secret, packageId, siteUrl, probe, login, stop, version, distribution }) {
   return async (req, res, connector) => {
     const pathname = req.url?.split('?')[0];
     if (!['/setup', '/setup.js', '/setup.css'].includes(pathname) && !pathname?.startsWith('/local/')) return false;
@@ -31,7 +31,7 @@ export function createLocalControl({ secret, packageId, siteUrl, probe, login, s
       }
       if (req.method !== 'POST' || req.headers.origin !== ownOrigin || !secureEqual(req.headers.authorization, 'Bearer ' + secret) || !String(req.headers['content-type']).startsWith('application/json')) { reply(403, { error: '本机管理授权已失效，请重新双击启动脚本' }); return true; }
       let bytes = 0; for await (const chunk of req) { bytes += chunk.length; if (bytes > 2048) throw Error('请求过大'); }
-      if (pathname === '/local/status') reply(200, { app: 'heiyan-portable', packageId, ...(await probe()), paired: connector.paired, site: canvasSite(siteUrl).origin });
+      if (pathname === '/local/status') reply(200, { app: 'heiyan-portable', packageId, version, distribution, ...(await probe()), paired: connector.paired, site: canvasSite(siteUrl).href });
       else if (pathname === '/local/login') { if (connector.paired) throw Error('请先从原画布断开连接，再重新登录'); await login(); reply(200, { ok: true }); }
       else if (pathname === '/local/connect') {
         if (!(await probe()).loggedIn) throw Error('请先完成自己的 Codex 登录');

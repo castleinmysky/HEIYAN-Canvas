@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { EventEmitter } from 'node:events';
 import { agentInstructions, contextInstructions, agentTools } from './agent-contract.js';
+import { connectorVersion } from './agent-version.js';
 
 // These are process/thread overrides, never writes to the user's Codex config.
 export const isolatedConfig = {
@@ -59,7 +60,7 @@ export class CodexRuntime extends EventEmitter {
     });
   }
   async initialize() {
-    await this.request('initialize', { clientInfo: { name: 'heiyan_connector', title: 'HEIYAN 画布连接器', version: '1.6.0' }, capabilities: { experimentalApi: true } });
+    await this.request('initialize', { clientInfo: { name: 'heiyan_connector', title: 'HEIYAN 画布连接器', version: connectorVersion }, capabilities: { experimentalApi: true } });
     this.write({ method: 'initialized', params: {} });
     // Discover ONLY configured server names, then disable each before any thread
     // can start. Do not persist, expose or log the returned configuration.

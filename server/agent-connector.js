@@ -2,6 +2,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import os from 'node:os';
 import { CodexRuntime } from './codex-runtime.js';
+import { connectorVersion, connectorDistribution } from './agent-version.js';
 import { sanitizeAgentContext, sanitizeGenerationReport, validateAgentTool } from './agent-contract.js';
 
 const random = () => crypto.randomBytes(24).toString('base64url');
@@ -119,7 +120,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         if (!same(input.code, pairingCode)) throw fault('配对码不正确', 401);
         pairing = true;
         try { const account = await connect(); const models = await runtime.models(); pairedAccount = identity(account); token = random();
-          reply(200, { token, protocol: 6, device: os.hostname(), capabilities: ['conversation', 'read_canvas', 'edit_canvas', 'request_generation', 'model_selection', 'image_input', 'project_context', 'steering', 'usage_events', 'spatial_layout', 'generation_results'], models }); return;
+          reply(200, { token, protocol: 6, version: connectorVersion, distribution: connectorDistribution, device: os.hostname(), capabilities: ['conversation', 'read_canvas', 'edit_canvas', 'request_generation', 'model_selection', 'image_input', 'project_context', 'steering', 'usage_events', 'spatial_layout', 'generation_results', 'durable_receipts', 'state_delta'], models }); return;
         } finally { pairing = false; }
       }
       if (!token || !same(req.headers.authorization, `Bearer ${token}`)) throw fault('连接已失效，请重新配对', 401);
@@ -132,7 +133,11 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         conversation = { messages: [], active: null, pending: null, error: '', submissions: new Map() };
         conversations.set(input.canvasKey, conversation);
       }
-      if (req.url === '/state') { reply(200, { ...state(conversation), connected: !!runtime && !runtime.closed }); return; }
+      if (req.url === '/state') {
+        const value = { ...state(conversation), connected: !!runtime && !runtime.closed };
+        const cursor = crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+        reply(200, input.cursor === cursor ? { unchanged: true, cursor, connected: value.connected } : { ...value, cursor }); return;
+      }
       if (!runtime || runtime.closed) throw fault('连接器已断开，请重新配对', 409);
       if (req.url === '/send') {
         if (identity(await runtime.account()) !== pairedAccount) throw fault('Codex 账号已变化，请重新启动连接器', 409);
@@ -193,6 +198,15 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
       }
       const pending = conversation.pending;
       if (!pending || pending.id !== input.id) throw fault('此操作已结束或不属于当前画布', 409);
+      // Accept a saved receipt without granting a second execution claim.
+      if (req.url === '/recover-result' && pending.claim) {
+        const success = input.success === true && pending.tool !== 'heiyan_read_images';
+        const result = pending.tool === 'heiyan_read_images' ? '页面已恢复，图片数据未重发。需要看图请重新通过图片工具按当前权限读取。'
+          : typeof input.result === 'string' ? input.result.slice(0, 24000) : '执行结果未知，只能核实，禁止重放';
+        runtime.respond(pending.rpcId, toolResult(success, { result, recovered: true }));
+        conversation.pending = null;
+        reply(200, { ok: true }); return;
+      }
       if (req.url === '/read' && ['heiyan_read_canvas', 'heiyan_search_history', 'heiyan_read_generation', 'heiyan_review_result'].includes(pending.tool)) {
         const value = pending.tool === 'heiyan_read_canvas' ? sanitizeAgentContext(input.context) : pending.tool === 'heiyan_read_generation' && input.success !== false ? { jobs: sanitizeGenerationReport(input.jobs) } : { history: String(input.history || '').slice(0, 64000) };
         if (pending.tool === 'heiyan_read_canvas') conversation.context = value;

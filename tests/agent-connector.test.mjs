@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events';
 import http from 'node:http';
 import { createAgentConnector } from '../server/agent-connector.js';
 import { validateAgentTool, sanitizeAgentContext } from '../server/agent-contract.js';
+import { connectorVersion, connectorDistribution } from '../server/agent-version.js';
 
 const origin = 'http://127.0.0.1:5201';
 const context = { revision: 'rev-a', nodes: [], edges: [], referenceIds: [] };
@@ -59,6 +60,34 @@ test('pairing does not create a model turn; sends are idempotent and canvases is
   assert.equal(other.data.pending, null);
   assert.equal((await f.call('/state', { canvasKey: 'task-a:main' })).data.messages[0].role, 'user');
 });
+test('new connector metadata and state cursors remain compatible with old canvas clients', async t => {
+  const f = await fixture(t), paired = await f.pair();
+  assert.equal(paired.data.version, connectorVersion); assert.equal(paired.data.distribution, connectorDistribution);
+  assert.equal(paired.data.protocol, 6); assert.ok(paired.data.capabilities.includes('state_delta'));
+  const first = (await f.call('/state', { canvasKey: 'task-a:main' })).data;
+  assert.ok(Array.isArray(first.messages));
+  const same = (await f.call('/state', { canvasKey: 'task-a:main', cursor: first.cursor })).data;
+  assert.equal(same.unchanged, true); assert.equal(same.messages, undefined);
+  await f.send();
+  const changed = (await f.call('/state', { canvasKey: 'task-a:main', cursor: first.cursor })).data;
+  assert.notEqual(changed.cursor, first.cursor); assert.equal(changed.messages[0].role, 'user');
+  assert.ok(Array.isArray((await f.call('/state', { canvasKey: 'task-a:main' })).data.messages));
+});
+
+test('a saved execution receipt can finish a claimed operation without replay or cross-canvas access', async t => {
+  const f = await fixture(t); await f.pair(); await f.send();
+  f.runtime.tool('heiyan_edit_canvas', { summary: '创建文本', operations: [{ action: 'create', id: 'x', kind: 'text', title: '故事' }] });
+  const { pending } = (await f.call('/state', { canvasKey: 'task-a:main' })).data;
+  const receipt = { canvasKey: 'task-a:main', id: pending.id, success: true, result: '已创建节点 x' };
+  assert.notEqual((await f.call('/recover-result', receipt)).status, 200);
+  assert.equal((await f.call('/decision', { canvasKey: 'task-a:main', id: pending.id, approved: true, revision: context.revision })).data.execute, true);
+  assert.equal((await f.call('/recover-result', { ...receipt, canvasKey: 'other' })).status, 409);
+  assert.equal((await f.call('/recover-result', receipt)).status, 200);
+  assert.equal(JSON.parse(f.runtime.responses[0].result.contentItems[0].text).recovered, true);
+  assert.equal((await f.call('/recover-result', receipt)).status, 409);
+  assert.equal(f.runtime.responses.length, 1); assert.equal(f.runtime.calls.length, 1);
+});
+
 test('canvas reads return current sanitized data, not stale send snapshots', async t => {
   const f = await fixture(t); await f.pair(); await f.send(); f.runtime.tool('heiyan_read_canvas');
   const { data } = await f.call('/state', { canvasKey: 'task-a:main' });

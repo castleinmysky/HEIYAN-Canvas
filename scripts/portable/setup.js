@@ -12,6 +12,7 @@ async function refresh() {
   if (stopped) return;
   try {
     const state = await request('status');
+    $('connector-version').textContent = 'HEIYAN · 开源连接器 ' + state.version;
     $('badge').textContent = state.paired ? '画布已连接' : '运行中';
     $('login-state').textContent = state.loggingIn ? '请在刚打开的官方页面完成登录。' : state.loggedIn ? '已检测到有效的 Codex 登录。' : '尚未登录。点击下方按钮，在官方页面使用自己的账号登录。';
     $('login').disabled = state.loggedIn || state.loggingIn || state.paired;

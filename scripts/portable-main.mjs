@@ -6,6 +6,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { createAgentConnector } from './server/agent-connector.js';
 import { CodexRuntime } from './server/codex-runtime.js';
+import { connectorVersion, connectorDistribution } from './server/agent-version.js';
 import { canvasSite, createLocalControl } from './portable/control.js';
 
 const readJson = async file => JSON.parse(await fs.readFile(file, 'utf8'));
@@ -74,7 +75,7 @@ export async function runPortable({ root, codex, childEnv, packageId }) {
       };
       connector = createAgentConnector({ origin: site.origin,
         runtimeFactory: () => new CodexRuntime({ executable: codex, cwd: workspace, environment: childEnv }),
-        localHandler: createLocalControl({ secret, packageId, siteUrl: site.href, probe, login, stop: async () => { await cleanup(); process.exit(0); } }),
+        localHandler: createLocalControl({ secret, packageId, siteUrl: site.href, version: connectorVersion, distribution: connectorDistribution, probe, login, stop: async () => { await cleanup(); process.exit(0); } }),
       });
       const listen = requested => new Promise((resolve, reject) => { const failure = error => { connector.server.off('listening', success); reject(error); }; const success = () => { connector.server.off('error', failure); resolve(); }; connector.server.once('error', failure); connector.server.once('listening', success); connector.server.listen(requested, '127.0.0.1'); });
       try { await listen(port); } catch (error) { if (error.code !== 'EADDRINUSE') throw error; await listen(0); }

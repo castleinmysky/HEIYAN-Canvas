@@ -6,6 +6,7 @@ import os from 'node:os';
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
+import { connectorVersion, connectorDistribution } from '../server/agent-version.js';
 const root = path.resolve(process.argv[2] || '');
 if (!process.argv[2]) throw Error('Pass an extracted portable package directory');
 const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'heiyan-portable-qa-'));
@@ -27,6 +28,8 @@ try {
     return { status: response.status, body: await response.json() };
   };
   const state = await call('/local/status'); assert.equal(state.status, 200); assert.equal(state.body.loggedIn, false); assert.equal(state.body.paired, false);
+  assert.equal(state.body.version, connectorVersion); assert.equal(state.body.distribution, connectorDistribution);
+  assert.equal(JSON.parse(await fs.readFile(path.join(root, 'app/current.json'), 'utf8')).version, connectorVersion);
   assert.equal((await call('/local/connect')).status, 400);
   assert.equal((await call('/local/stop', 'https://evil.test')).status, 403);
   assert.equal((await call('/local/login', base, 'wrong')).status, 403);

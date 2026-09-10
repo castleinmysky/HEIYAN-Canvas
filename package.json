@@ -1,6 +1,6 @@
 {
   "name": "heiyan-canvas",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "description": "黑岩画布：连接自己的模型、素材与 Codex 的节点创作空间",

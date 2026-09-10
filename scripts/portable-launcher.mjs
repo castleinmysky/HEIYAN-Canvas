@@ -18,6 +18,7 @@ const compareVersions = (left, right) => left.split('.').map(Number).reduce((res
 export function validateUpdateManifest(value, siteOrigin) {
   const origin = new URL(siteOrigin).origin;
   if (!value || value.schema !== 1 || value.channel !== 'stable' || !validVersion(value.version) || value.minBootstrapVersion !== BOOTSTRAP_VERSION) throw Error('更新清单不受支持');
+  if (value.distribution !== 'heiyan-standalone') throw Error('更新不属于开源独立版，继续使用已验证的连接器');
   if (value.runtime?.node !== '22.23.2' || value.runtime?.codex !== '0.153.4') throw Error('更新需要新的完整运行包');
   if (!Array.isArray(value.files) || !value.files.length || value.files.length > 32) throw Error('更新文件清单无效');
   let total = 0;

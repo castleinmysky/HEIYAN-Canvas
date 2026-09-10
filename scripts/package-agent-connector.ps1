@@ -9,7 +9,7 @@ $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::
 $stage = Join-Path $tempRoot ('heiyan-connector-package-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stage | Out-Null
 try {
-  $files = @('LICENSE', 'server/agent-connector.js', 'server/agent-contract.js', 'server/codex-runtime.js', 'scripts/start-agent-connector.mjs')
+  $files = @('LICENSE', 'server/agent-connector.js', 'server/agent-contract.js', 'server/agent-version.js', 'server/codex-runtime.js', 'scripts/start-agent-connector.mjs')
   foreach ($file in $files) {
     $destination = Join-Path $stage $file
     New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
