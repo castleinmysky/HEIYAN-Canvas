@@ -1,6 +1,6 @@
 // GPT Image 2 Images API constraints, verified against official documentation:
 // https://developers.openai.com/api/docs/guides/image-generation#size-and-quality-options
-export const isFlexibleGptImage = name => /^gpt-image-2(?:-\d{4}-\d{2}-\d{2})?$/.test(String(name || 'gpt-image-2').toLowerCase());
+export const isFlexibleGptImage = name => /^gpt-image-2(?:\.5)?(?:-\d{4}-\d{2}-\d{2})?$/.test(String(name || 'gpt-image-2').toLowerCase());
 
 // Exact aspect ratios, not cropped or stretched results. 4K is a resolution tier:
 // the 8,294,400-pixel ceiling means square/4:3 outputs cannot have a 3840px edge.

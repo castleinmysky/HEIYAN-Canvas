@@ -48,7 +48,7 @@ export function canvasAgentContext(nodes: CanvasNode[], edges: Edge[], reference
     })),
     edges: edges.slice(0, 500).map(edge => {
       const source = allNodes.find(node => node.id === edge.source);
-      return { id: edge.id, source: edge.source, sourcePort: String(edge.sourceHandle || 'output'), target: edge.target, targetPort: String(edge.targetHandle || ''), type: String(source && source.data.kind !== 'unsupported' ? (source.data.kind === 'result' ? source.data.outputType || '' : portDefinitions[source.data.kind].outputs[0]?.type || '') : '') };
+      return { id: edge.id, source: edge.source, sourcePort: String(edge.sourceHandle || 'output'), target: edge.target, targetPort: String(edge.targetHandle || ''), referenceToken: String(edge.data?.referenceToken || ''), type: String(source && source.data.kind !== 'unsupported' ? (source.data.kind === 'result' ? source.data.outputType || '' : portDefinitions[source.data.kind].outputs[0]?.type || '') : '') };
     }), referenceIds: referenceIds.slice(0, 64),
   };
 }

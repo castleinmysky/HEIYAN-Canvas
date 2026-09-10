@@ -3932,9 +3932,6 @@ export function GeneratorEditorPanel({ id, data, composer }: { id: string; data:
         ? { ratios: ['Auto'], resolutions: ['WAV'], defaultRatio: 'Auto', defaultResolution: 'WAV', count: { min: 1, max: 1, default: 1 }, duration: { min: 1, max: 1, default: 1 }, audio: true, audioInput: true }
       : { ratios: ['Auto'], resolutions: ['STANDARD', 'DETAILED'], defaultRatio: 'Auto', defaultResolution: 'STANDARD', count: { min: 1, max: 1, default: 1 }, duration: { min: 1, max: 1, default: 1 }, audio: false, audioInput: false };
   const profile = selectedModel?.profile || fallbackProfile;
-  const nativeCinemaModel = capability === 'image'
-    ? models.find((model) => model.id !== selectedModel?.id && model.profile?.ratios.includes('21:9'))
-    : undefined;
   const isSeedance = selectedModel?.adapter === 'seedance-video';
   const isLocalH3Spec = selectedModel?.adapter === 'comfyui-minimax-h3';
   const selectedRatio = data.ratio && profile.ratios.includes(data.ratio) ? data.ratio : (selectedModel?.defaults?.ratio || profile.defaultRatio);
@@ -4058,7 +4055,6 @@ export function GeneratorEditorPanel({ id, data, composer }: { id: string; data:
           {showSpecMenu && <div className={`generator-popover generator-spec-menu ${capability === 'model' ? 'tripo-spec-menu' : ''}`}>
             {selectedModel?.adapter === 'openai-image' && profile.ratios.includes('21:9') && selectedRatio === '21:9' && <p className="generator-input-mode-hint" data-no-interface-translation>{promptPresetChipLanguageForElement() === 'en' ? `Native 21:9 · ${gptImageSize(selectedRatio, selectedResolution)} px. No crop or padding. 4K is a resolution tier; high-resolution output is experimental. Relay support may vary.` : `原生 21:9 · ${gptImageSize(selectedRatio, selectedResolution)} 像素，不裁切、不补边。4K 为分辨率档位，高分辨率输出为实验能力；中转接口需支持自定义尺寸。`}</p>}
             {capability !== 'model' && capability !== 'audio' && <div><small>比例</small><section>{ratioOptions.map((option) => <button key={option} className={`generator-ratio-option${selectedRatio === option ? ' active' : ''}`} aria-label={`比例 ${option}`} aria-pressed={selectedRatio === option} onClick={() => data.onChange(id, { ratio: option })}><GenerationRatioOption ratio={option} /></button>)}</section></div>}
-            {capability === 'image' && !profile.ratios.includes('21:9') && <div><small>21:9 超宽画幅</small><p className="generator-input-mode-hint">当前模型连接未开放 21:9；不会自动裁切、补边或切换模型。</p>{nativeCinemaModel && <section><button type="button" onClick={() => { data.onChange(id, { modelId: nativeCinemaModel.id, ratio: '21:9' }); setShowSpecMenu(false); }}>切换到 {nativeCinemaModel.name}</button></section>}</div>}
             {capability !== 'model' && capability !== 'audio' && <div><small>分辨率</small><section>{resolutionOptions.map((option) => <button key={option} className={selectedResolution === option ? 'active' : ''} onClick={() => data.onChange(id, { resolution: option })}>{option}</button>)}</section></div>}
             {selectedModel?.adapter === 'openai-image' && <div><small>图像质量 · 与分辨率独立</small><section>{(['auto', 'low', 'medium', 'high'] as const).map(option => <button key={option} className={(data.imageQuality || 'auto') === option ? 'active' : ''} onClick={() => data.onChange(id, { imageQuality: option })}>{({ auto: '自动', low: '快速草稿', medium: '均衡', high: '高质量' })[option]}</button>)}</section></div>}
             {capability === 'audio' && <>

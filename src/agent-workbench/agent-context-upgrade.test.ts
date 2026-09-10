@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { canvasAgentContext } from './agent-canvas';
+import type { CanvasNode } from '../components/CanvasNodes';
 import { sanitizeAgentContext, validateAgentTool } from '../../server/agent-contract.js';
 import { emptyProject, mergeMessages, projectContext, searchProjectHistory } from './agent-memory';
 import { apiPayload, apiEndpoint } from './agent-api';
@@ -7,7 +8,7 @@ import type { ApiProfile } from './agent-api';
 const profile: ApiProfile = { provider: 'custom', baseUrl: 'https://gateway.vendor.com/v1', apiKey: 'never-send-to-memory', model: 'model', protocol: 'responses', effort: '', vision: true, contextChars: 48000 };
 describe('Agent context and provider continuity', () => {
   it('finds selected and searched nodes beyond the old 200-node cap and pages full prompts', () => {
-    const nodes = Array.from({ length: 260 }, (_, i) => ({ id: `n${i}`, type: 'text' as const, position: { x: 0, y: 0 }, selected: i === 259, data: { kind: 'text' as const, title: `node ${i}`, text: i === 259 ? 'A'.repeat(17000) + 'END' : '' } }));
+    const nodes = Array.from({ length: 260 }, (_, i) => ({ id: `n${i}`, type: 'text' as const, position: { x: 0, y: 0 }, selected: i === 259, data: { kind: 'text' as const, title: `node ${i}`, text: i === 259 ? 'A'.repeat(17000) + 'END' : '' } } as CanvasNode));
     const overview = canvasAgentContext(nodes, [], []);
     expect(overview.nodes[0].id).toBe('n259'); expect(overview.overview?.totalNodes).toBe(260);
     expect(overview.nodes[0].promptTruncated).toBe(true);

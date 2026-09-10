@@ -25,7 +25,7 @@ export function AgentConversation({ messages, renderMessage }: {
     }
     return <section className="agent-conversation-turn" key={group.id} aria-label="请求与相关回复">
       {blocks.map(block => block.notices ? <details className="agent-process-group" key={block.id}>
-        <summary><span>过程记录 · {block.messages.length}</span><span>{block.messages[block.messages.length - 1].text}</span></summary>
+        <summary><span>过程记录 · {block.messages.length}</span><span aria-hidden="true">›</span></summary>
         <div>{block.messages.map(renderMessage)}</div>
       </details> : block.messages.map(renderMessage))}
     </section>;

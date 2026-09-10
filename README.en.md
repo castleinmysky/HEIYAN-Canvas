@@ -38,7 +38,7 @@ Text + reference images → generated assets → inputs for the next step
 
 Click a thumbnail to view it at full size. These screenshots show the Chinese interface with demo assets; the connection panels contain no account credentials.
 
-Configure official APIs and compatible third-party endpoints separately. Agent can read the canvas, edit nodes and submit generation; paid generation always requires separate confirmation.
+Configure official APIs and compatible third-party endpoints separately. Agent asks before generation by default. Opting into full access allows automatic operations, including paid generation, on the current canvas. This choice is saved per canvas and can be revoked at any time. [1.2 release notes](docs/releases-1.2.md)
 
 ## Features
 
@@ -49,7 +49,7 @@ Configure official APIs and compatible third-party endpoints separately. Agent c
 | Generation | Images, video, audio and 3D assets; reuse outputs as inputs for subsequent nodes. |
 | Image tools | Multi-view splitting, mask editing and overlapping, card-style browsing of multiple results. |
 | Generation history | Per-canvas history with deletion and clearing; scroll to zoom and middle-drag to pan previews. |
-| Agent | Connect your own Codex or chat API; image input, model and reasoning controls, project memory, history search, node editing, generation approval and result inspection. |
+| Agent | Connect your own Codex or chat API; chat bubbles, attachment thumbnails, image/video result previews, approval and model controls, project memory, history search, node editing and `@` references. |
 | ComfyUI | Use your own deployment's models and workflows through a connector, with supported local and cross-network connections. |
 
 ## Quick start

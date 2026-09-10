@@ -63,6 +63,12 @@ describe('generated image hand', () => {
     expect(html).toContain('Image 3 of 4, front');
     expect(html).not.toMatch(/[\u4e00-\u9fff]/);
     expect(emphasized).toEqual([2]);
-    expect(html).toContain('nodrag');
+    expect(html).not.toContain('nodrag');
+  });
+  it('allows node drag propagation and distinguishes dragging from card selection', () => {
+    const source = readFileSync(new URL('./GeneratedImageHand.tsx', import.meta.url), 'utf8');
+    expect(source).not.toContain('onPointerDown={event => event.stopPropagation()}');
+    expect(source).toContain('if (dragged) return');
+    expect(source).toContain('event.detail !== 0');
   });
 });

@@ -7,6 +7,8 @@ import { useCanvasAgent } from './use-canvas-agent';
 import { consumePairingFragment, downloadPortableConnector, CONNECTOR_RELEASES_URL } from './portable-connector';
 import type { AgentCanvasAccess } from './agent-session';
 import { readAgentApprovalMode, saveAgentApprovalMode, type AgentApprovalMode } from './approval-mode';
+import { AgentComposerOptions } from './AgentComposerOptions';
+import { AgentMessageImages } from './AgentMessageImages';
 import { addConversationReferences, CONVERSATION_LIMIT, conversationDraftKey, emptyConversationDraft, parseConversationDraft, saveConversationDraft, type ConversationDraft } from './conversation-draft';
 import { AgentProjectPanel } from './AgentProjectPanel';
 import { AgentApiForm } from './AgentApiForm';
@@ -16,8 +18,11 @@ import { AgentProposalCard } from './AgentActionCards';
 import { AgentResultCard, parseReceipt } from './AgentResultCard';
 import { generationReceipts, type JobSnapshot } from './agent-jobs';
 import { AgentConversation } from './AgentConversation';
-import { AgentHeader } from './AgentHeader';
+import { AgentMessageBody } from './AgentMessageBody';
+import { AgentHeader, type AgentPage } from './AgentHeader';
+import './agent-navigation.css';
 import './CanvasAgentDock.css';
+import './agent-conversation-reading.css';
 
 export type CanvasAgentItem = {
   id: string; title: string; kind: CanvasNodeKind; state?: string; status?: string;
@@ -36,8 +41,10 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   onClose: () => void; onFocus: (id: string) => void; onUpload: () => void;
   onViewChange: (canvas: boolean) => void;
 }) {
-  const [approvalMode, setApprovalMode] = useState<AgentApprovalMode>(() => typeof localStorage === 'undefined' ? 'ask' : readAgentApprovalMode(localStorage));
+  const [approvalMode, setApprovalMode] = useState<AgentApprovalMode>(() => typeof localStorage === 'undefined' ? 'ask' : readAgentApprovalMode(localStorage, canvasKey));
   const agent = useCanvasAgent(canvasKey, access, approvalMode);
+  const [page, setPage] = useState<AgentPage>('chat');
+  useEffect(() => { setPage('chat'); }, [canvasKey]);
   const generationRuns = useMemo(() => generationReceipts(agent.project.receipts), [agent.project.receipts]);
   const liveJobs = useMemo(() => { if (!ready || !access?.jobs) return []; try { return access.jobs(generationRuns.flatMap(r => r.targets)); } catch { return []; } }, [ready, access, generationRuns, items]);
   const observedJobs = useRef(new Map<string, string>());
@@ -50,7 +57,6 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   const generationPreview = useMemo(() => { if (!ready || agent.state.pending?.tool !== 'heiyan_request_generation') return undefined; try { return access?.read([], { nodeIds: agent.state.pending.input.nodeIds }); } catch { return undefined; } }, [agent.state.pending, access, ready, items]);
   const imageReadPreview = useMemo(() => { const p = agent.state.pending; if (!ready || p?.tool !== 'heiyan_read_images' || !p.input.jobIds || !access?.jobs) return []; try { return access.jobs((p.input.nodeIds || []).map((nodeId, i) => ({ nodeId, jobId: p.input.jobIds![i] }))); } catch { return []; } }, [agent.state.pending, access, ready, items]);
   const receiptById = useMemo(() => new Map(agent.project.receipts.map(r => [r.id, r])), [agent.project.receipts]);
-  const relatedReceipt = selectedId && [...agent.project.receipts].reverse().find(r => { const data = parseReceipt(r); return data && (data.affected?.includes(selectedId) || data.changed?.includes?.(selectedId) || data.submitted?.some((v: { id: string }) => v.id === selectedId) || data.nodeId === selectedId); });
   const [rememberImages, setRememberImages] = useState(false);
   useEffect(() => setRememberImages(false), [agent.state.pending?.id]);
   const [connectionMode, setConnectionMode] = useState<'codex' | 'api'>('codex');
@@ -65,6 +71,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   useEffect(() => {
     const pair = consumePairingFragment(window.location, window.history);
     if (pair) { setConnectorUrl(pair.url); setPairingCode(pair.code); setPairingPrefilled(true); setConnectionOpen(true); }
+
   }, []);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -141,8 +148,8 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     setImages(current => [...current, ...loaded]);
   };
   useEffect(() => { if (followMessages.current && messageList.current) messageList.current.scrollTop = messageList.current.scrollHeight; }, [agent.state.messages, agent.state.pending]);
-  const view = (canvas: boolean) => { input.current?.blur(); setConnectionOpen(false); setPickerOpen(false); onViewChange(canvas); };
-  const chooseApprovalMode = (mode: AgentApprovalMode) => { setApprovalMode(mode); saveAgentApprovalMode(localStorage, mode); };
+  const view = (canvas: boolean) => { input.current?.blur(); setPage('chat'); setConnectionOpen(false); setPickerOpen(false); onViewChange(canvas); };
+  const chooseApprovalMode = (mode: AgentApprovalMode) => { setApprovalMode(mode); saveAgentApprovalMode(localStorage, mode, canvasKey); };
   useEffect(() => { if (canvasView) setConnectionOpen(false); setPickerOpen(false); }, [canvasView]);
   const closePicker = () => { setPickerOpen(false); trigger.current?.focus({ preventScroll: true }); };
   const openPicker = (element: HTMLElement) => {
@@ -208,7 +215,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  return <aside ref={dock} id="canvas-agent-conversation" className="canvas-agent-dock" data-open={open} inert={!open} aria-hidden={!open} data-canvas-view={canvasView} data-connection-open={connectionOpen || undefined} aria-label="Agent 创作会话" onKeyDown={event => {
+  return <aside ref={dock} id="canvas-agent-conversation" className="canvas-agent-dock" data-open={open} data-page={connectionOpen ? 'settings' : page} inert={!open} aria-hidden={!open} data-canvas-view={canvasView} data-connection-open={connectionOpen || undefined} aria-label="Agent 创作会话" onKeyDown={event => {
     if (event.key === 'Escape' && !pickerOpen && !event.nativeEvent.isComposing) { event.stopPropagation(); onClose(); document.getElementById('canvas-agent-toggle')?.focus({ preventScroll: true }); }
   }}>
     <div role="separator" className="canvas-agent-resizer" data-dragging={railResizing || undefined} aria-label="调整会话侧栏宽度" aria-controls="canvas-agent-conversation" aria-orientation="vertical" tabIndex={0} aria-valuemin={360} aria-valuemax={railSize.max} aria-valuenow={railSize.width} aria-valuetext={`${railSize.width} 像素`}
@@ -222,12 +229,12 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); setRailWidth(event.key === 'Home' ? 360 : railSize.max); }
         if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setRailWidth(agentRailWidth(railSize.width + (event.key === 'ArrowLeft' ? 1 : -1) * (event.shiftKey ? 32 : 8), window.innerWidth)); }
       }} />
-    <AgentHeader visible={open} connected={agent.state.connected} connectionLabel={agent.api ? 'API 已连接' : 'Codex 已连接'} connectionOpen={connectionOpen} active={agent.state.active} waiting={!!agent.state.pending && !agent.state.pending.claimed && ['heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(agent.state.pending.tool)} canvasView={canvasView} approvalMode={approvalMode} followCanvas={followCanvas} onApproval={chooseApprovalMode} onFollow={onFollowCanvas}
-      onConnection={() => { if (canvasView) onViewChange(false); setConnectionOpen(value => !value); setPickerOpen(false); input.current?.blur(); }}
-      onCompose={() => { view(false); setCollapsed(false); requestAnimationFrame(() => input.current?.focus({ preventScroll: true })); }} onView={view} onClose={onClose} />
-    {!connectionOpen && relatedReceipt && <div className="agent-canvas-controls"><button type="button" onClick={() => { view(false); requestAnimationFrame(() => document.getElementById('agent-message-execution:' + relatedReceipt.id)?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })); }}><UiIcon name="history" />查看选中节点的记录</button></div>}
+    <AgentHeader page={connectionOpen ? 'settings' : page} connected={agent.state.connected} active={agent.state.active} waiting={!!agent.state.pending && !agent.state.pending.claimed}
+      onPage={next => { input.current?.blur(); setPickerOpen(false); onViewChange(false); setPage(next); setConnectionOpen(next === 'settings'); }}
+      onView={view} onClose={onClose} />
     {connectionOpen && <section className="canvas-agent-connection-panel" aria-label="Agent 连接状态">
       <UiIcon name="link" /><h2>选择 Agent 连接方式</h2>
+      <label className="agent-follow-setting"><input type="checkbox" checked={followCanvas} disabled={!onFollowCanvas} onChange={event => onFollowCanvas?.(event.target.checked)} />跟随画布变化</label>
       <div className="agent-connection-tabs"><button type="button" aria-pressed={connectionMode === 'codex'} onClick={() => setConnectionMode('codex')}>本机 Codex</button><button type="button" aria-pressed={connectionMode === 'api'} onClick={() => setConnectionMode('api')}>官方 / 自定义 API</button></div>
       {connectionMode === 'api' && <AgentApiForm busy={agent.busy || agent.state.active} testing={agent.testingConnection} cancel={agent.cancelConnectionTest} connect={async profile => { const ok = await agent.connectApi(profile); return ok; }} />}
       {connectionMode === 'codex' && <>
@@ -237,15 +244,15 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
           setDownloadError(''); setDownloadProgress(0);
           try { await downloadPortableConnector(setDownloadProgress); } catch (error) { setDownloadError(error instanceof Error ? error.message : '下载失败，请稍后重试'); }
           finally { setDownloadProgress(null); }
-        }}><UiIcon name="download" />{downloadProgress === null ? '下载 Windows 免安装包' : `正在下载 · ${downloadProgress}%`}</button>
-        <p className="canvas-agent-install-help">① 完整解压 ZIP　② 双击「启动黑岩连接器.cmd」　③ 按引导登录并打开画布。本包已包含 1.6.0。若自动更新不可用，可重新下载完整包；需要结束时运行停止脚本。</p>
-        {downloadError && <p role="alert">{downloadError}</p>}
-        <p className="canvas-agent-install-help"><a href={CONNECTOR_RELEASES_URL} target="_blank" rel="noopener noreferrer">GitHub Releases 下载连接器</a> · 下载后解压，双击启动。已有旧包请升级到 1.6.0。</p>
+        }}><UiIcon name="download" />{downloadProgress === null ? '下载 Windows 免安装包' : `正在下载 ${downloadProgress}%`}</button>
+        {downloadError && <p className="canvas-agent-download-feedback" role="alert">{downloadError}</p>}
+        <p className="canvas-agent-install-help">① 解压 ZIP　② 双击「启动黑岩连接器.cmd」　③ 打开当前画布并配对。连接器使用本机 Codex 登录。</p>
+        <p><a href={CONNECTOR_RELEASES_URL} target="_blank" rel="noreferrer">从 GitHub Releases 下载连接器</a></p>
         {pairingPrefilled && <p className="canvas-agent-install-help">连接器已自动填好地址和一次性配对码。请确认这是你刚启动的本机连接器，再点击“配对并连接”。</p>}
         <label>连接地址<input type="url" value={connectorUrl} onChange={event => setConnectorUrl(event.target.value)} autoComplete="off" /></label>
         <label>配对码<input type="password" value={pairingCode} onChange={event => setPairingCode(event.target.value)} autoComplete="off" placeholder="输入连接器显示的配对码，不是 API 密钥" /></label>
-        <button type="button" disabled={agent.busy || !pairingCode.trim()} onClick={async () => { if (await agent.pair(connectorUrl, pairingCode)) { setPairingCode(''); setConnectionOpen(false); } }}>{agent.busy ? '正在连接…' : '配对并连接'}</button>
-        <details className="canvas-agent-advanced-install"><summary>其他系统 / 手动启动</summary><a href={CONNECTOR_RELEASES_URL} target="_blank" rel="noreferrer">下载源码连接器</a><p className="canvas-agent-start-command">需自行安装 Node.js 22+ 与 Codex。在解压目录运行：<code>npm run agent:connector -- --origin {typeof location === 'undefined' ? 'http://127.0.0.1:8792' : location.origin}</code></p></details>
+        <button type="button" disabled={agent.busy || !pairingCode.trim()} onClick={async () => { if (await agent.pair(connectorUrl, pairingCode)) { setPairingCode(''); view(false); } }}>{agent.busy ? '正在连接…' : '配对并连接'}</button>
+        <details className="canvas-agent-advanced-install"><summary>其他系统 / 手动启动</summary><a href="/downloads/heiyan-codex-connector.zip" download>下载源码连接器</a><p className="canvas-agent-start-command">需自行安装 Node.js 22+ 与 Codex。在解压目录运行：<code>npm run agent:connector -- --origin {typeof location === 'undefined' ? 'http://127.0.0.1:8792' : location.origin}</code></p></details>
       </>}
       </>}
       {connectionMode === 'api' && agent.api && <button type="button" disabled={agent.busy || agent.state.active} onClick={() => void agent.disconnect()}>断开 API</button>}
@@ -253,10 +260,15 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
       {!agent.api && agent.state.connected && !agent.connection?.capabilities?.includes('generation_results') && <p>当前连接器支持基础操作。空间排版、等待生成和结果评估需要更新连接器并重新配对。</p>}
       {agent.error && <p role="alert">{agent.error}</p>}
       <div className="canvas-agent-boundary"><strong>仅授权当前画布</strong><p>相关节点、项目要求和你批准的图片会发送给当前选中的模型服务。Agent 可分析附图、提议修改画布，也可集中请求生成；真实生成永远需要你明确确认。读取画布图片前会列出节点并请求确认，可选择仅在本轮内允许再次读取这些节点。项目记忆随画布保存，API 密钥不写入会话。</p></div>
-      <button type="button" onClick={() => setConnectionOpen(false)}>返回会话<UiIcon name="right" /></button>
+      <button type="button" onClick={() => view(false)}>返回会话<UiIcon name="right" /></button>
     </section>}
-    <AgentProjectPanel project={agent.project} ready={agent.memoryReady} error={agent.memoryError} busy={agent.busy || agent.state.active} save={agent.saveMemory} reload={agent.reloadMemory} searchTools={{ search: agent.search, focus: id => { view(true); onFocus(id); }, indexState: agent.indexState, configure: agent.configureSemantic, clear: agent.clearSemantic, build: agent.buildIndex, stop: agent.stopIndex, busy: agent.busy || agent.state.active }} />
-    <AgentRunPanel activity={agent.activity} trace={agent.trace} active={agent.state.active} usage={agent.runUsage} api={agent.api} connectorUsage={agent.state.usage} updateBudget={agent.updateBudget} focus={id => { view(true); onFocus(id); }} nodeTitle={id => items.find(item => item.id === id)?.title || id} />
+    <section className="agent-function-page" hidden={connectionOpen || !['memory', 'progress'].includes(page)} aria-label={page === 'memory' ? '项目记忆' : '执行进度'}>
+    <div hidden={page !== 'memory'}>
+    <AgentProjectPanel expanded project={agent.project} ready={agent.memoryReady} error={agent.memoryError} busy={agent.busy || agent.state.active} save={agent.saveMemory} reload={agent.reloadMemory} searchTools={{ search: agent.search, focus: id => { view(true); onFocus(id); }, indexState: agent.indexState, configure: agent.configureSemantic, clear: agent.clearSemantic, build: agent.buildIndex, stop: agent.stopIndex, busy: agent.busy || agent.state.active }} />
+    </div><div hidden={page !== 'progress'}>
+    <AgentRunPanel expanded activity={agent.activity} trace={agent.trace} active={agent.state.active} usage={agent.runUsage} api={agent.api} connectorUsage={agent.state.usage} updateBudget={agent.updateBudget} focus={id => { view(true); onFocus(id); }} nodeTitle={id => items.find(item => item.id === id)?.title || id} />
+    </div></section>
+    {page === 'skills' && !connectionOpen && <section className="agent-function-page agent-skill-placeholder" aria-label="Skill"><UiIcon name="toolbox" /><h2>Skill</h2><p>入口已预留，尚未接入技能。</p><button type="button" onClick={() => setPage('chat')}>返回会话</button></section>}
     <section ref={messageList} className="canvas-agent-conversation" aria-label="会话消息" onScroll={event => { const el = event.currentTarget; followMessages.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
       {!agent.state.messages.length && <div className="canvas-agent-quiet-state">
         <span className="canvas-agent-emblem"><UiIcon name="robot" /></span>
@@ -264,7 +276,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         <p>描述你的创作目标，<br />也可以引用画布中的素材与节点。</p>
         <span className="canvas-agent-scope">图像 · 视频 · 声音 · 3D · 短片</span>
       </div>}
-      <AgentConversation messages={agent.state.messages} renderMessage={message => <article className="canvas-agent-message" data-role={message.role} id={'agent-message-' + message.id} tabIndex={-1} key={message.id}><small>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Agent' : '画布'}</small><div>{message.role === 'notice' && message.id.startsWith('execution:') && receiptById.has(message.id.slice(10)) ? <AgentResultCard receipt={receiptById.get(message.id.slice(10))!} jobs={liveJobs} receipts={agent.project.receipts} items={items} connected={agent.state.connected} active={agent.busy || agent.state.active} focus={(ids, label) => { view(true); if (access?.reveal) access.reveal(ids, label); else if (ids[0]) onFocus(ids[0]); }} followup={(text, ids) => { view(false); void agent.send(text, ids); }} /> : message.text}</div>{message.imageCount ? <em>附图 {message.imageCount} 张 · {message.model}{message.effort ? ` · ${message.effort}` : ''}</em> : null}</article>} />
+      <AgentConversation messages={agent.state.messages} renderMessage={message => <article className="canvas-agent-message" data-role={message.role} id={'agent-message-' + message.id} tabIndex={-1} key={message.id}><small>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Agent' : '画布'}</small><div>{message.role === 'notice' && message.id.startsWith('execution:') && receiptById.has(message.id.slice(10)) ? <AgentResultCard receipt={receiptById.get(message.id.slice(10))!} jobs={liveJobs} receipts={agent.project.receipts} items={items} connected={agent.state.connected} active={agent.busy || agent.state.active} focus={(ids, label) => { view(true); if (access?.reveal) access.reveal(ids, label); else if (ids[0]) onFocus(ids[0]); }} followup={(text, ids) => { view(false); void agent.send(text, ids); }} /> : message.role === 'assistant' ? <AgentMessageBody text={message.text} /> : message.text}</div>{message.imageCount ? <><AgentMessageImages canvasKey={canvasKey} messageId={message.id} /><em>附图 {message.imageCount} 张 · {message.model}{message.effort ? ` · ${message.effort}` : ''}</em></> : null}</article>} />
       {agent.state.pending?.tool === 'heiyan_edit_canvas' && <AgentProposalCard pending={agent.state.pending} items={items} access={access} ready={ready} busy={agent.busy} focus={id => { view(true); onFocus(id); }} decide={approved => void agent.decide(approved)} revise={agent.api || agent.connection?.capabilities?.includes('steering') ? () => void agent.steer('请重新读取当前画布，核对并修正待确认的方案。之前尚未执行的方案作废。') : undefined} />}
       {agent.state.pending?.tool === 'heiyan_request_generation' && <section id="agent-pending-proposal" tabIndex={-1} className="canvas-agent-proposal canvas-agent-generation-proposal" aria-label="待确认的真实生成">
         <strong>确认真实生成</strong><p>{agent.state.pending.input.summary}</p>
@@ -280,7 +292,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         {agent.state.pending.tool === 'heiyan_read_images' && !agent.state.pending.claimed && <label className="agent-api-check"><input type="checkbox" checked={rememberImages} onChange={e => setRememberImages(e.target.checked)} />本轮允许再次读取以上指定图片，结束后失效</label>}
         {agent.state.pending.claimed ? <p>操作已领取，请等待结果。</p> : <footer><button type="button" disabled={agent.busy} onClick={() => void agent.decide(false)}>取消本次操作</button><button type="button" className="agent-confirm-action" disabled={agent.busy || !ready || !agent.memoryReady} onClick={() => void agent.decide(true, rememberImages)}>{agent.state.pending.tool === 'heiyan_read_images' ? '允许读取图片' : '确认保存记忆'}</button></footer>}
       </section>}
-      {agent.state.active && <p className="canvas-agent-progress" role="status">{agent.state.pending?.tool === 'heiyan_request_generation' ? '等待生成确认…' : agent.state.pending?.tool === 'heiyan_read_generation' ? '等待素材生成，仍可补充要求或停止等待…' : agent.state.pending?.tool === 'heiyan_review_result' ? '正在记录结果检查…' : agent.state.pending ? '等待画布操作…' : 'Agent 正在处理…'}</p>}
+      {agent.state.active && <p className="canvas-agent-progress" role="status">{!agent.state.connected ? '状态连接中断，执行结果待核实；请勿重复发送。' : agent.state.pending?.tool === 'heiyan_request_generation' ? '等待生成确认…' : agent.state.pending?.tool === 'heiyan_read_generation' ? '等待素材生成，仍可补充要求或停止等待…' : agent.state.pending?.tool === 'heiyan_review_result' ? '正在记录结果检查…' : agent.state.pending ? '等待画布操作…' : 'Agent 正在处理…'}</p>}
       {(agent.error || agent.state.error) && <p className="canvas-agent-error" role="alert">{agent.error || agent.state.error}</p>}
     </section>
     {pickerOpen && <div ref={popup} className="canvas-agent-popup" role="dialog" aria-label="引用画布节点">
@@ -336,7 +348,6 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
               if (event.key === 'Enter' && !event.shiftKey && !composing.current && !event.nativeEvent.isComposing && agent.state.connected) { event.preventDefault(); void send(); }
               if (event.key === '@' && !composing.current && !event.nativeEvent.isComposing) { event.preventDefault(); openPicker(event.currentTarget); }
             }} />
-            {!!agent.models.length && <div className="canvas-agent-model-controls"><label>模型<select aria-label="Codex 模型" disabled={agent.state.active} value={agent.model} onChange={event => agent.setModel(event.target.value)}>{agent.models.map(item => <option key={item.id} value={item.model}>{item.name}</option>)}</select></label><label>思考<select aria-label="思考程度" disabled={agent.state.active} value={agent.effort} onChange={event => agent.setEffort(event.target.value)}>{(agent.models.find(item => item.model === agent.model)?.efforts || []).map(item => <option key={item.value} value={item.value}>{item.value}</option>)}</select></label></div>}
           <footer className="canvas-agent-composer-footer">
             <div className="canvas-agent-tools">
               <button type="button" className="canvas-agent-icon" aria-label="引用画布节点" title="引用节点 · @" aria-expanded={pickerOpen} disabled={!ready} onClick={event => openPicker(event.currentTarget)}><UiIcon name="mention" /></button>
@@ -344,6 +355,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
               {selected && !draft.nodeIds.includes(selected.id) && <button type="button" className="canvas-agent-quote-selected" title={'引用：' + selected.title} onClick={() => addReferences([selected.id])}><UiIcon name="link" /><span>引用选中</span></button>}
             </div>
 
+            <AgentComposerOptions mode={approvalMode} onMode={chooseApprovalMode} models={agent.models} model={agent.model} effort={agent.effort} onModel={agent.setModel} onEffort={agent.setEffort} active={agent.state.active} />
             <div className="canvas-agent-submit-actions">{agent.state.active && !!draft.text.trim() && <button type="submit" className="agent-steer-button" disabled={agent.busy || !(agent.api || agent.connection?.capabilities?.includes('steering'))}>补充要求</button>}
             {agent.state.active ? <button type="button" className="canvas-agent-send" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : <button type="submit" className="canvas-agent-send" aria-label={agent.state.connected ? '发送消息' : '发送消息（需先连接 Agent）'} title={agent.state.connected ? '发送 · Enter，换行 · Shift+Enter' : '请先连接 Agent'} disabled={!agent.state.connected || !agent.memoryReady || (!draft.text.trim() && !images.length) || !ready || agent.busy}><UiIcon name="arrowUp" /></button>}
             </div>
@@ -351,6 +363,6 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
           {attachmentError && <p className="canvas-agent-attachment-error" role="alert">{attachmentError}</p>}
         </>}
     </form>
-    <p className="canvas-agent-footnote" id="canvas-agent-send-hint" role={saveFailed ? 'alert' : undefined}>{saveFailed ? '无法保存草稿，请勿关闭此页面' : agent.state.connected ? approvalMode === 'assist' ? '当前连接 · 安全操作自动批准' : '项目会话自动保存 · 修改画布前需确认' : 'Agent 未连接 · 草稿仅保存在此浏览器'}</p>
+    <p className="canvas-agent-footnote" id="canvas-agent-send-hint" role={saveFailed ? 'alert' : undefined}>{saveFailed ? '无法保存草稿，请勿关闭此页面' : agent.state.connected ? approvalMode === 'full' ? '全自动 · 删除、覆盖与付费生成无需确认' : approvalMode === 'assist' ? '当前连接 · 安全操作自动批准' : '项目会话自动保存 · 修改画布前需确认' : 'Agent 未连接 · 草稿仅保存在此浏览器'}</p>
   </aside>;
 }

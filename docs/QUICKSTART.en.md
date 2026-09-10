@@ -99,7 +99,7 @@ For another canvas address, set `--origin` to its exact origin without a path. I
 
 - Uses your own Codex login and quota. Do not send login files or pairing codes to the author or other users.
 - Supports model and reasoning controls, image input, project memory, history search, node editing, approved generation and result inspection. Update the Codex connector to 1.6.0.
-- Does not automatically submit paid generation or autonomously complete an entire film.
+- Paid generation asks for approval by default. Explicitly enabling full access authorizes automatic operations, including paid generation, on the current canvas. You can switch back at any time. It does not autonomously complete an entire film. See the [1.2 notes](releases-1.2.md).
 - Self-hosted project requirements, conversations and execution receipts are isolated by canvas in this browser's IndexedDB. Reconnecting can load them without replaying old operations. Clearing site data removes these records. Agent API keys remain in page memory, not project records; no account or cloud storage is required.
 - Supports a desktop browser and connector on the same computer. Cross-device mobile Codex connections are not available.
 - Keep the connector running. Conversation recovery after shutdown is not guaranteed.

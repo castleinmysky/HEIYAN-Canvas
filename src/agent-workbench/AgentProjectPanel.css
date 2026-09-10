@@ -1,0 +1,32 @@
+/* Hallmark · component: project memory · genre: modern-minimal · inherited HEIYAN
+ * Pre-emit critique: P4 H4 E4 S4 R5 V4 · no decorative motion */
+.canvas-agent-dock .agent-project-panel { color: var(--canvas-text); font-family: var(--canvas-font-ui); }
+.canvas-agent-dock .agent-project-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.canvas-agent-dock .agent-project-panel > summary strong { font-size: 16px; font-weight: 650; }
+.canvas-agent-dock .agent-project-panel > summary small { font-size: 12px; color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-project-fields { padding: 0 16px 24px; display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.canvas-agent-dock .agent-project-fields p { margin: 0; overflow-wrap: anywhere; }
+.canvas-agent-dock .agent-project-fields .memory-intro { font-size: 12px; line-height: 1.5; color: var(--canvas-text-soft); padding-bottom: 16px; }
+.canvas-agent-dock .memory-section { padding: 12px 0 16px; border-top: 1px solid var(--cad-rule); min-width: 0; }
+.canvas-agent-dock :is(.memory-section-head,.memory-history-head) { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.canvas-agent-dock .agent-project-fields h3 { font: 600 13px/1.5 var(--canvas-font-ui); margin: 0; }
+.canvas-agent-dock .agent-project-fields .memory-hint { display: block; font-size: 12px; line-height: 1.5; color: var(--canvas-text-soft); margin: 4px 0 8px; }
+.canvas-agent-dock .agent-project-fields .memory-value { font: 400 13px/1.6 var(--canvas-font-ui); white-space: pre-wrap; margin-top: 8px; }
+.canvas-agent-dock .memory-value.is-empty { color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-project-fields button { width: auto; min-height: 32px; padding: 4px 8px; border: 1px solid var(--cad-rule); border-radius: 8px; font: 400 12px/1.5 var(--canvas-font-ui); color: var(--canvas-text); background: var(--cad-control); white-space: nowrap; cursor: pointer; }
+.canvas-agent-dock .agent-project-fields button:disabled { opacity: .5; cursor: not-allowed; }
+.canvas-agent-dock .agent-project-fields :is(button,textarea,input,select,summary):focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .agent-project-fields button:active { border-color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-project-fields textarea { box-sizing: border-box; width: 100%; min-height: 160px; max-height: 480px; padding: 12px; margin-top: 8px; resize: vertical; border: 1px solid var(--canvas-border-strong); border-radius: 8px; background: var(--cad-control); color: var(--canvas-text); font: 400 13px/1.6 var(--canvas-font-ui); }
+.canvas-agent-dock .agent-project-fields .memory-expand { margin-top: 8px; }
+.canvas-agent-dock .memory-save-bar { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 0; background: var(--cad-rail); color: var(--canvas-text); border-block: 1px solid var(--cad-rule); }
+.canvas-agent-dock .memory-save-bar span { font-size: 12px; color: var(--canvas-text-soft); }
+.canvas-agent-dock .memory-save-bar button:not(:disabled) { background: var(--canvas-primary); color: var(--canvas-primary-ink); }
+.canvas-agent-dock .memory-history-head { padding-top: 24px; }
+.canvas-agent-dock .agent-project-fields > details { padding: 8px 0; border: 0; border-bottom: 1px solid var(--cad-rule); }
+.canvas-agent-dock .agent-project-fields details > summary { cursor: pointer; padding: 8px 0; font-size: 13px; }
+.canvas-agent-dock .agent-project-fields article { padding: 12px 0; border-bottom: 1px solid var(--cad-rule); }
+.canvas-agent-dock .agent-project-fields article p { white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+.canvas-agent-dock .agent-project-fields [role=alert] { border: 1px solid var(--canvas-border-strong); padding: 12px; margin-block: 8px; }
+@media (hover: hover) { .canvas-agent-dock .agent-project-fields button:hover:not(:disabled) { border-color: var(--canvas-text-soft); } }
+@media (pointer: coarse) { .canvas-agent-dock .agent-project-fields button { min-height: 44px; } }

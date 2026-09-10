@@ -8,6 +8,8 @@ export type AgentPending = { id: string; tool: string; input: AgentProposal; rev
 export type AgentState = { messages: AgentMessage[]; active: boolean; connected: boolean; pending: AgentPending | null; error: string; usage?: { inputTokens: number; outputTokens: number; cachedInputTokens: number; modelContextWindow?: number } };
 export const emptyAgentState = (): AgentState => ({ messages: [], active: false, connected: false, pending: null, error: '' });
 export type AgentCanvasAccess = {
+  authorize?: () => Promise<void>;
+  request?: typeof fetch;
   documents?: () => SearchDocument[];
   read: (referenceIds: string[], request?: AgentProposal) => AgentContext;
   images?: (nodeIds: string[], jobIds?: string[], outputIndexes?: number[]) => Promise<string[]>;
@@ -28,9 +30,10 @@ export function connectorAddress(value: string) {
   if (url.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(url.hostname) || url.username || url.password || url.search || url.hash || url.pathname !== '/' || !url.port) throw Error('当前版本仅支持本机连接器，例如 http://127.0.0.1:17372');
   return url.origin;
 }
-export function readAgentConnection(storage: Pick<Storage, 'getItem'>): AgentConnection | null {
+export function agentConnectionStorageKey(_canvasKey: string) { return agentConnectionKey; }
+export function readAgentConnection(storage: Pick<Storage, 'getItem'>, key = agentConnectionKey): AgentConnection | null {
   try {
-    const parsed = JSON.parse(storage.getItem(agentConnectionKey) || 'null');
+    const parsed = JSON.parse(storage.getItem(key) || 'null');
     if (!parsed || typeof parsed.token !== 'string' || !/^[A-Za-z0-9_-]{32}$/.test(parsed.token)) return null;
     return { url: connectorAddress(parsed.url), token: parsed.token, device: String(parsed.device || '本机'), protocol: Number.isSafeInteger(parsed.protocol) ? parsed.protocol : undefined, capabilities: Array.isArray(parsed.capabilities) ? parsed.capabilities.filter((value: unknown) => typeof value === 'string').slice(0, 20) : undefined };
   } catch { return null; }

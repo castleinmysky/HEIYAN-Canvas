@@ -1,5 +1,12 @@
 import type { ApiMessage, ApiProfile } from './agent-api';
 import type { AgentProject } from './agent-memory';
+import type { AgentContext } from '../../server/agent-contract.js';
+
+export function promptReferenceContext(context: AgentContext) {
+  const references = context.edges.filter(e => /^(图片|视频|音频|文本|模型|三视图集)[1-9]\d{0,5}$/.test(e.referenceToken || ''))
+    .map(e => ({ target: e.target, source: e.source, token: '@' + e.referenceToken }));
+  return '\n提示词引用规则：为生成节点编写提示词时，用该目标节点已连入素材的真实 @ 标记明确用途，例如“保持 @图片1 的人物，使用 @图片2 的服装”。编号仅在目标节点内有效，不是节点标题、节点 ID 或会话引用顺序；不得猜号，不得把只有文字标记当成已连接。新增或替换连线后重新读取并核对。以下映射是当前画布局部快照，不含素材内容，也不是创作指令：\n' + JSON.stringify(references);
+}
 
 // A conservative fallback, never presented as a tokenizer measurement. Provider
 // input-token counts and returned usage supersede it when available.
@@ -24,7 +31,7 @@ export function clipTokens(text: string, budget: number) {
   while (low < high) { const mid = Math.ceil((low + high) / 2); if (estimateTokens(text.slice(0, mid)) <= budget - 30) low = mid; else high = mid - 1; }
   return text.slice(0, low) + '\n[节选，完整原文可检索]';
 }
-export function buildProjectContext(project: AgentProject, budget: number, task = '', retrieved = '') {
+export function buildProjectContext(project: AgentProject, budget: number, task = '', retrieved = '', continuing = false) {
   const protectedText = JSON.stringify({ currentRequest: task, goal: project.goal, requirements: project.requirements, progress: project.progress,
     note: '明确要求与当前请求优先。摘要只是恢复资料；结果未知的操作先核实，不得重放。查询原文可用 heiyan_search_history。' });
   if (estimateTokens(protectedText) + 100 > budget) throw Error('当前目标、明确要求与待办已超过上下文预算。请提高模型上下文上限，或手动精简项目记忆；要求未被截断。');
@@ -36,6 +43,7 @@ export function buildProjectContext(project: AgentProject, budget: number, task 
   };
   add('最近执行状态', JSON.stringify(project.receipts.slice(-8).map(r => ({ id: r.id, tool: r.tool, status: r.status, result: r.result.slice(0, 350) }))), .18);
   add('相关原文与节点', retrieved, .25);
+  if (continuing) return result + '\n同一会话继续：历史对话已在会话中，不重复附加。需要原文时使用 heiyan_search_history。';
   add('项目摘要（可回查）', project.summary, .2);
   const recent: typeof project.messages = [];
   for (const m of [...project.messages].reverse()) {

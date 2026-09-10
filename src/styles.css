@@ -9148,7 +9148,7 @@ body,
   pointer-events: none;
 }
 .canvas-theme-mask__reveal { position: absolute; inset: 0; will-change: clip-path; }
-.app-shell .react-flow__nodes { isolation: isolate; backface-visibility: hidden; }
+.app-shell .react-flow__nodes { isolation: auto; backface-visibility: visible; }
 .canvas-boot-grid {
   background: var(--canvas-text-muted);
   opacity: .15;

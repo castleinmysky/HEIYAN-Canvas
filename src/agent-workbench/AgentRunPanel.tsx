@@ -5,14 +5,15 @@ import type { AgentState } from './agent-session';
 export function AgentCapabilities({ capabilities }: { capabilities: Capability[] }) {
   return capabilities.length ? <details className="agent-capability-report"><summary>连接能力 · {capabilities.filter(c => c.status === 'passed').length} 项通过</summary><ul>{capabilities.map(c => <li key={c.key} data-status={c.status}><b>{c.label}</b><span>{({ passed: '通过', unavailable: '未通过', untested: '未检测' })[c.status]}</span><small>{c.detail}</small></li>)}</ul></details> : null;
 }
-export function AgentRunPanel({ activity, trace, active, usage, api, connectorUsage, updateBudget, focus, nodeTitle }: {
-  activity: AgentActivity; trace: AgentActivity[]; active: boolean; usage: UsageRecord[]; api: ApiProfile | null; connectorUsage?: AgentState['usage'];
+export function AgentRunPanel({ expanded = false, activity, trace, active, usage, api, connectorUsage, updateBudget, focus, nodeTitle }: {
+  expanded?: boolean; activity: AgentActivity; trace: AgentActivity[]; active: boolean; usage: UsageRecord[]; api: ApiProfile | null; connectorUsage?: AgentState['usage'];
   updateBudget: (fields: Pick<ApiProfile, 'tokenBudget' | 'callLimit'>) => void; focus: (id: string) => void; nodeTitle: (id: string) => string;
 }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { if (!active) return; const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, [active]);
   const total = usage.reduce((s, u) => ({ input: s.input + u.input, output: s.output + u.output, cached: s.cached + u.cached, usd: s.usd + (u.usd || 0), priced: s.priced + (u.usd === undefined ? 0 : 1) }), { input: 0, output: 0, cached: 0, usd: 0, priced: 0 });
-  return <details className="agent-run-panel"><summary><span>{activity.detail}</span>{active && <small>{Math.max(0, Math.floor((now - activity.at) / 1000))} 秒前更新</small>}</summary><div className="agent-run-content">
+  return <details open={expanded || undefined} className="agent-run-panel"><summary tabIndex={expanded ? -1 : undefined} onClick={event => { if (expanded) event.preventDefault(); }}><span>{activity.detail}</span>{active && <small>最后进展 · {Math.max(0, Math.floor((now - activity.at) / 1000))} 秒前</small>}</summary><div className="agent-run-content">
+    {active && now - activity.at > 60000 && <p role="status">超过一分钟没有收到新进展。可能仍在推理、等待服务或工具返回；目前无法确定原因，不会自动重发。</p>}
     {activity.input !== undefined && <div><label>本次输入 · {activity.measured ? '服务端计数' : '估算'}<strong>{activity.input.toLocaleString()} / {activity.limit?.toLocaleString() || '上限未知'}</strong></label>{activity.limit && <progress value={Math.min(activity.input, activity.limit)} max={activity.limit} />}</div>}
     {!!activity.nodeIds?.length && <div className="agent-source-chips">{activity.nodeIds.map(id => <button type="button" key={id} onClick={() => focus(id)}>{nodeTitle(id)}</button>)}</div>}
     {api && <>

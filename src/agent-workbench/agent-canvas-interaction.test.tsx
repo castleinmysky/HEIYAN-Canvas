@@ -10,7 +10,7 @@ import { AgentResultCard } from './AgentResultCard';
 import { emptyProject, type ExecutionReceipt } from './agent-memory';
 import { runApiAgent, type RunnerCallbacks } from './agent-runner';
 import type { ApiProfile } from './agent-api';
-const node = (id: string, kind: CanvasNodeKind = 'imageGenerator'): CanvasNode => ({ id, type: kind, position: { x: 0, y: 0 }, width: 200, height: 120, data: { kind, title: id, prompt: '旧描述' } });
+const node = (id: string, kind: CanvasNodeKind = 'imageGenerator'): CanvasNode => ({ id, type: kind, position: { x: 0, y: 0 }, width: 200, height: 120, data: { kind, title: id, prompt: '旧描述' } } as CanvasNode);
 const target = { nodeId: 'n', jobId: 'new', expected: { count: 1, ratio: '1:1', resolution: '512x512' } };
 const output = { mediaUrl: 'https://assets.example/result.png', width: 512, height: 512 };
 const job = (): JobSnapshot => ({ ...target, title: '角色', state: 'succeeded', detail: '', type: 'image', outputs: [output] });
@@ -112,7 +112,7 @@ describe('exact task results and assessments', () => {
     const receipt: ExecutionReceipt = { id: 'r', tool: 'heiyan_request_generation', status: 'succeeded', at: 1, result: JSON.stringify({ summary: '生成角色', submitted: [{ id: 'n', jobId: 'new', expected: target.expected }] }) };
     expect(generationReceipts([receipt])[0].targets[0].jobId).toBe('new');
     const html = renderToStaticMarkup(<AgentResultCard receipt={receipt} receipts={[receipt]} jobs={[job()]} items={[]} focus={vi.fn()} connected active={false} followup={vi.fn()} />);
-    expect(html).toContain('内容待检查'); expect(html).toContain('让 Agent 检查'); expect(html).toContain(output.mediaUrl); expect(html).toContain('本次结果 1');
+    expect(html).toContain('内容待检查'); expect(html).toContain('让 Agent 检查'); expect(html).toContain(output.mediaUrl); expect(html).toContain('agent-media-gallery'); expect(html).toContain('下载');
     expect(html).not.toContain('Agent 评估符合要求');
   });
 });

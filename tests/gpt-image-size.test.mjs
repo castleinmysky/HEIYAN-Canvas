@@ -21,7 +21,7 @@ test('every exposed GPT Image 2 size is exact and within the documented pixel co
 });
 
 test('GPT Image 2 and its snapshot expose 21:9; legacy and fixed relay models do not', () => {
-  for (const name of ['gpt-image-2', 'gpt-image-2-2026-04-21']) {
+  for (const name of ['gpt-image-2', 'gpt-image-2-2026-04-21', 'gpt-image-2.5']) {
     const model = { id: 'custom-name', capability: 'image', adapter: 'openai-image', config: { model: name } };
     assert.ok(publicGenerationProfile(model).ratios.includes('21:9'));
     assert.equal(normalizeGenerationOptions(model, { ratio: '21:9', resolution: '2K' }).ratio, '21:9');
@@ -60,6 +60,20 @@ test('unsupported relay alias still rejects 21:9 without a paid request', async 
   const adapter = createCloudProviders(async () => { calls++; throw new Error('must not submit'); }).get({ adapter: 'openai-image', config: { model: 'gpt-image-2-4k' } });
   await assert.rejects(adapter.run({ ratio: '21:9', prompt: 'fixture' }), /does not support/);
   assert.equal(calls, 0);
+});
+
+test('2.5 preserves the requested model and exact 1K cinema size for generation and edits', async () => {
+  for (const edit of [false, true]) {
+    const bytes = Buffer.from('fixture');
+    const adapter = createCloudProviders(async (_url, init) => {
+      const body = edit ? Object.fromEntries(init.body) : JSON.parse(init.body);
+      assert.equal(body.model, 'gpt-image-2.5');
+      assert.equal(body.size, '1568x672');
+      return Response.json({ data: [{ b64_json: bytes.toString('base64') }] });
+    }).get({ adapter: 'openai-image', config: { model: 'gpt-image-2.5', baseUrl: 'https://relay.example.com', apiKey: 'fixture' } });
+    const output = await adapter.run({ prompt: 'fixture', ratio: '21:9', resolution: '1K', count: 1, referenceImages: edit ? [{ buffer: bytes, mimeType: 'image/png' }] : [] });
+    assert.deepEqual(output[0].buffer, bytes);
+  }
 });
 
 test('removed three-view generator tool does not remove existing multiview splitting or saved guide compatibility', async () => {

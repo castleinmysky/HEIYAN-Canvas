@@ -1,0 +1,47 @@
+/* Hallmark · component: Agent navigation · inherited HEIYAN tokens · restrained
+ * Pre-emit critique: P4 H4 E4 S4 R5 V4 */
+.canvas-agent-dock .agent-header-compact {
+  display: flex; align-items: center; flex: 0 0 48px; min-height: 48px;
+  gap: 4px; padding: 0 8px; background: var(--cad-rail); color: var(--canvas-text);
+  border-bottom: 1px solid var(--cad-rule);
+}
+.agent-top-navigation { display: flex; gap: 0; min-width: 0; }
+.agent-header-compact .agent-top-canvas { display: none; }
+.agent-header-compact .canvas-agent-icon {
+  position: relative; width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 8px; color: var(--canvas-text-soft);
+}
+.agent-header-compact .canvas-agent-icon svg { width: 18px; height: 18px; }
+.agent-header-compact .canvas-agent-icon[aria-pressed=true] {
+  background: var(--cad-control); color: var(--canvas-text);
+}
+.agent-header-compact .canvas-agent-icon:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: -2px; }
+.agent-header-compact .canvas-agent-icon:active { background: var(--cad-control); }
+.agent-header-compact .canvas-agent-icon:disabled { opacity: .5; cursor: not-allowed; }
+@media (hover: hover) {
+  .agent-header-compact .canvas-agent-icon:hover { background: var(--cad-control); color: var(--canvas-text); }
+}
+.agent-top-status { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--canvas-text-soft); }
+.agent-nav-indicator { position: absolute; width: 4px; height: 4px; right: 6px; top: 6px; border-radius: 50%; background: var(--canvas-primary); }
+.canvas-agent-dock:not([data-page=chat]) > :is(.canvas-agent-conversation,.canvas-agent-composer,.canvas-agent-footnote) { display: none; }
+.canvas-agent-dock .agent-function-page { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 16px 0; }
+.canvas-agent-dock .agent-function-page[hidden], .agent-function-page [hidden] { display: none; }
+.agent-function-page :is(.agent-project-panel,.agent-run-panel) { max-height: none; border: 0; overflow: visible; }
+.agent-function-page :is(.agent-project-panel,.agent-run-panel) > summary { pointer-events: none; list-style: none; padding: 0 16px 16px; font-size: 13px; }
+.agent-function-page summary::-webkit-details-marker { display: none; }
+.agent-function-page :is(.agent-project-fields,.agent-run-content) { font-size: 13px; }
+.canvas-agent-dock .agent-skill-placeholder { padding: 32px 24px; text-align: center; }
+.agent-skill-placeholder h2 { font-size: 16px; }
+.agent-skill-placeholder p { font-size: 13px; color: var(--canvas-text-soft); }
+.agent-follow-setting { display: flex !important; align-items: center; gap: 8px; }
+.agent-follow-setting input { width: 16px !important; }
+@media (pointer: coarse) {
+  .agent-header-compact .canvas-agent-icon { width: 44px; height: 44px; }
+  .agent-top-status { display: none; }
+}
+@media (max-width: 767px) {
+  .agent-header-compact .agent-top-canvas { display: flex; }
+  .agent-top-status { display: none; }
+  .canvas-agent-dock .agent-header-compact { gap: 0; padding-inline: 4px; }
+  .agent-header-compact .canvas-agent-icon { width: 44px; height: 44px; }
+}

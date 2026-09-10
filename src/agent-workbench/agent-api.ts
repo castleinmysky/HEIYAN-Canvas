@@ -2,6 +2,7 @@ import { agentInstructions, contextInstructions, agentTools } from '../../server
 import { contextLimits, estimateTokens, messageTokens } from './agent-context';
 import { readAgentResponse } from './agent-stream';
 export type ApiProfile = {
+  request?: typeof fetch;
   provider: 'official' | 'custom'; baseUrl: string; apiKey: string; model: string; protocol: 'responses' | 'chat'; vision: boolean; effort: string; contextChars: number;
   contextTokens?: number; outputTokens?: number; stream?: boolean; strict?: boolean; nativeCompaction?: boolean; countTokens?: boolean;
   helperModel?: string; embeddingModel?: string; tokenBudget?: number; callLimit?: number;
@@ -74,9 +75,9 @@ export function apiPayload(profile: ApiProfile, messages: ApiMessage[], instruct
     ...(profile.effort ? { reasoning_effort: profile.effort } : {}), ...(tools ? { parallel_tool_calls: true, tools: specs.map(({ type, ...fn }) => ({ type, function: fn })) } : {}) };
 }
 export class ApiHttpError extends Error { constructor(public status: number) { super(({ 401: '密钥未通过验证', 403: '当前服务拒绝访问此模型', 404: '模型或接口不存在', 429: '额度或请求频率达到上限' } as Record<number, string>)[status] || `API 请求失败（${status}），请检查模型、参数与协议`); } }
-export async function apiTransport(profile: Pick<ApiProfile, 'provider' | 'baseUrl' | 'protocol' | 'apiKey'>, body: object, signal: AbortSignal, resource?: string) {
+export async function apiTransport(profile: Pick<ApiProfile, 'provider' | 'baseUrl' | 'protocol' | 'apiKey' | 'request'>, body: object, signal: AbortSignal, resource?: string) {
   if (!profile.apiKey.trim()) throw Error('请填写 API 密钥');
-  const response = await fetch('/api/cloud/request', { method: 'POST', credentials: 'same-origin', signal,
+  const response = await (profile.request || fetch)('/api/v1/agent/cloud/request', { method: 'POST', credentials: 'same-origin', signal,
     headers: { 'Content-Type': 'application/json', 'x-heiyan-cloud': '1', 'x-heiyan-method': 'POST', 'x-heiyan-upstream': apiEndpoint(profile, resource), 'x-heiyan-api-authorization': 'Bearer ' + profile.apiKey.trim() }, body: JSON.stringify(body) });
   if (!response.ok) { await response.body?.cancel(); throw new ApiHttpError(response.status); }
   return response;

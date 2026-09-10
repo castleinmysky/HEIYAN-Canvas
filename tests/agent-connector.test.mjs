@@ -128,7 +128,7 @@ test('contract strips provider secrets and limits allowed edit fields', () => {
   const safe = sanitizeAgentContext({ ...context, secret: 'key', nodes: [{ id: 'a', kind: 'imageGenerator', title: 'a', mediaUrl: 'private', apiKey: 'key', outputType: 'image', inputs: [{ id: 'input', label: '输入', accepts: ['text', 'image'], multiple: true, endpoint: 'private' }] }], edges: [{ source: 'ref', sourcePort: 'output', target: 'a', targetPort: 'input', type: 'image', token: 'private' }] });
   assert.equal(safe.nodes[0].mediaUrl, undefined); assert.equal(safe.nodes[0].apiKey, undefined);
   assert.deepEqual(safe.nodes[0].inputs[0], { id: 'input', label: '输入', accepts: ['text', 'image'], multiple: true });
-  assert.deepEqual(safe.edges[0], { id: '', source: 'ref', sourcePort: 'output', target: 'a', targetPort: 'input', type: 'image' });
+  assert.deepEqual(safe.edges[0], { id: '', source: 'ref', sourcePort: 'output', target: 'a', targetPort: 'input', referenceToken: '', type: 'image' });
   for (const patch of [{ modelId: 'other' }, { mediaUrl: 'private' }, { kind: 'imageGenerator' }]) assert.throws(() => validateAgentTool('heiyan_edit_canvas', { summary: '修改', operations: [{ action: 'update', id: 'a', ...patch }] }));
   assert.throws(() => sanitizeAgentContext({ ...context, nodes: [null] }), /有效/);
   assert.throws(() => sanitizeAgentContext({ ...context, edges: [{ source: 'a' }] }), /有效/);

@@ -4,7 +4,7 @@ import type { UsageRecord } from './agent-api';
 export type ExecutionReceipt = { id: string; tool: string; status: 'claimed' | 'succeeded' | 'failed' | 'rejected'; result: string; at: number };
 export type AgentProject = { schema: 1; requirements: string; goal: string; progress: string; summary: string; messages: AgentMessage[]; receipts: ExecutionReceipt[]; usage?: UsageRecord[]; updatedAt: number };
 export const emptyProject = (): AgentProject => ({ schema: 1, requirements: '', goal: '', progress: '', summary: '', messages: [], receipts: [], updatedAt: 0 });
-export async function projectRequest(canvas: string, document?: AgentProject, etag: string | null = null) {
+export async function projectRequest(canvas: string, document?: AgentProject, etag: string | null = null, _request?: typeof fetch) {
   return localAgentProject(canvas, document, etag);
 }
 export function mergeMessages(previous: AgentMessage[], incoming: AgentMessage[]) {

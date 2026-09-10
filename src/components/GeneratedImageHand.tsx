@@ -33,20 +33,25 @@ export function GeneratedImageHand({ outputs, selected, en = false, onSelect, re
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
   const buttons = useRef(new Map<number, HTMLButtonElement>());
+  const gesture = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const cards = imageHandLayout(outputs, selected);
-  return <div className="generated-image-hand nodrag" role="group" data-no-interface-translation
+  return <div className="generated-image-hand" role="group" data-no-interface-translation
     aria-label={en ? 'Generated images. Hover to lift; click to bring forward.' : '生成结果：悬停抬起，点击置于最前'}>
     {cards.map((card, position) => <button type="button" key={`${outputs[card.index].mediaUrl}-${card.index}`}
       ref={button => { if (button) buttons.current.set(card.index, button); else buttons.current.delete(card.index); }}
       className={`image-hand-card${card.front ? ' is-front' : ''}${hovered === card.index || focused === card.index ? ' is-raised' : ''}`}
       style={{ '--hand-x': `${card.x}%`, '--hand-y': `${card.y}%`, '--hand-angle': `${card.angle}deg`, '--hand-z': card.z } as CSSProperties}
       aria-pressed={card.front} aria-label={en ? `Image ${position + 1} of ${cards.length}${card.front ? ', front' : ', bring forward'}` : `第 ${position + 1} 张，共 ${cards.length} 张${card.front ? '，当前前排' : '，点击置前'}`}
-      onPointerDown={event => event.stopPropagation()}
+      onPointerDown={event => { gesture.current = { x: event.clientX, y: event.clientY, moved: false }; }}
+      onPointerMove={event => {
+        const start = gesture.current;
+        if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 3) start.moved = true;
+      }}
       onPointerEnter={event => { if (event.pointerType !== 'touch') { setHovered(card.index); setFocused(null); } }}
       onPointerLeave={() => setHovered(value => value === card.index ? null : value)}
-      onPointerCancel={() => setHovered(null)}
+      onPointerCancel={() => { gesture.current = null; setHovered(null); }}
       onFocus={() => { setFocused(card.index); setHovered(null); }} onBlur={() => setFocused(null)}
-      onClick={event => { event.stopPropagation(); setHovered(null); setFocused(null); onSelect(card.index); }}
+      onClick={event => { event.stopPropagation(); const dragged = event.detail !== 0 && gesture.current?.moved; gesture.current = null; if (dragged) return; setHovered(null); setFocused(null); onSelect(card.index); }}
       onDoubleClick={event => event.stopPropagation()}
       onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', ' ', 'Enter'].includes(event.key)) return;

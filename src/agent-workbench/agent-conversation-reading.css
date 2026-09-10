@@ -1,0 +1,125 @@
+/* Hallmark component scope: modern-minimal; inherit HEIYAN theme, no page redesign.
+ * Review: philosophy 4 / hierarchy 4 / execution 4 / specificity 4 / restraint 5 / variety 4.
+ * Conversation text never animates. Permissions and execution receipts retain their controls. */
+.canvas-agent-dock {
+  --cad-reading-size: .875rem;
+  --cad-reading-line: 22px;
+  --cad-reading-gap: 12px;
+  --cad-assistant-surface: color-mix(in oklch, var(--canvas-text) 9%, var(--cad-rail));
+  --cad-user-surface: #87f394;
+  --cad-user-ink: #18251b;
+  --cad-user-meta: #35533b;
+  --cad-input-surface: color-mix(in oklch, var(--canvas-text) 5%, var(--cad-rail));
+  --cad-chat-meta-size: .8125rem;
+  --cad-tool-size: 18px;
+  --cad-tool-stroke: 1.35;
+}
+.app-shell[data-theme="day"] .canvas-agent-dock { --cad-assistant-surface: #eeeef0; }
+.canvas-agent-dock .canvas-agent-conversation { padding: 20px 24px 28px; scrollbar-gutter: stable; }
+.canvas-agent-dock .canvas-agent-head.agent-header-refined { min-height: 60px; padding-block: 8px; }
+.canvas-agent-dock .agent-header-refined .canvas-agent-title { font-size: var(--cad-text-label); }
+.canvas-agent-dock .agent-context-toolbar { display: flex; flex: 0 0 auto; flex-wrap: wrap; min-height: 0; max-height: 40%; overflow-y: auto; border-bottom: 1px solid var(--cad-rule); }
+.canvas-agent-dock .agent-context-toolbar > details { flex: 1 1 50%; min-width: 0; max-height: none; overflow: visible; border: 0; }
+.canvas-agent-dock .agent-context-toolbar > details[open] { flex-basis: 100%; }
+.canvas-agent-dock .agent-context-toolbar > details > summary { min-height: 36px; padding: 8px 12px; font-size: var(--cad-text-meta); color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-context-toolbar > details:not([open]) > summary { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.canvas-agent-dock .agent-context-toolbar .agent-project-panel:not([open]) > summary small { display: none; }
+.canvas-agent-dock .agent-context-toolbar .agent-project-panel[data-error=true] > summary small { display: inline; color: var(--canvas-danger); }
+.canvas-agent-dock[data-connection-open=true] .agent-context-toolbar { display: none; }
+.canvas-agent-dock .agent-process-group > summary:active { color: var(--canvas-text); }
+.canvas-agent-dock .canvas-agent-model-controls select:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .canvas-agent-model-controls select:disabled { cursor: not-allowed; opacity: .55; }
+.canvas-agent-dock .agent-conversation-turn { gap: var(--cad-reading-gap); padding-bottom: 16px; }
+.canvas-agent-dock .agent-conversation-turn + .agent-conversation-turn { padding-top: 8px; border-top: 0; }
+.canvas-agent-dock .agent-conversation-turn .canvas-agent-message { font: 400 var(--cad-reading-size)/var(--cad-reading-line) var(--canvas-font-ui); min-width: 0; }
+.canvas-agent-dock .canvas-agent-message > small { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.canvas-agent-dock .agent-conversation-turn .canvas-agent-message[data-role=user] { position: relative; align-self: flex-end; max-width: 88%; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--cad-user-surface); color: var(--cad-user-ink); }
+.canvas-agent-dock .agent-conversation-turn .canvas-agent-message[data-role=assistant] { position: relative; align-self: flex-start; max-width: 96%; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--cad-assistant-surface); color: var(--canvas-text); }
+.canvas-agent-dock .canvas-agent-message[data-role=user] > em { color: var(--cad-user-meta); }
+.canvas-agent-dock .canvas-agent-message:is([data-role=user],[data-role=assistant])::before { content: ''; position: absolute; top: 14px; width: 8px; height: 8px; transform: rotate(45deg); background: inherit; pointer-events: none; }
+.canvas-agent-dock .canvas-agent-message[data-role=user]::before { right: -4px; }
+.canvas-agent-dock .canvas-agent-message[data-role=assistant]::before { left: -4px; }
+.canvas-agent-dock .agent-compact-proposal { padding: 12px; border-radius: 10px; font: 400 14px/22px var(--canvas-font-ui); }
+.canvas-agent-dock .agent-compact-proposal > header strong { font: inherit; font-weight: 600; }
+.canvas-agent-dock .agent-compact-proposal > header .agent-card-kicker { display: none; }
+.canvas-agent-dock .agent-proposal-summary { margin: 8px 0 12px; font: inherit; overflow-wrap: anywhere; }
+.canvas-agent-dock .agent-proposal-summary summary { cursor: pointer; }
+.canvas-agent-dock .agent-compact-proposal .agent-change-card { padding: 0; margin: 8px 0; border: 0; border-top: 1px solid var(--cad-rule); border-radius: 0; background: transparent; }
+.canvas-agent-dock .agent-compact-proposal .agent-change-card > summary { display: flex; flex-wrap: nowrap; min-height: 44px; gap: 8px; padding: 8px 0; }
+.canvas-agent-dock .agent-compact-proposal .agent-change-card > summary b { font: inherit; font-weight: 500; }
+.canvas-agent-dock .agent-compact-proposal .agent-change-card > summary em { margin: 0; font-size: 12px; color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-compact-proposal .agent-change-field dd { display: block; }
+.canvas-agent-dock .agent-compact-proposal .agent-change-field dd > span { display: block; padding: 8px 12px; border: 0; border-radius: 6px; background: var(--cad-control); }
+.canvas-agent-dock .agent-compact-proposal .agent-change-field dt { margin: 8px 0 4px; font: inherit; font-weight: 600; }
+.canvas-agent-dock .agent-compact-proposal .agent-change-field p { max-height: none; overflow: visible; margin: 4px 0; font: inherit; white-space: pre-wrap; }
+.canvas-agent-dock .agent-proposal-before { margin: 4px 0 12px; }
+.canvas-agent-dock .agent-proposal-before > summary { min-height: 36px; padding-block: 6px; font-size: 12px; color: var(--canvas-text-soft); cursor: pointer; }
+.canvas-agent-dock .agent-compact-proposal > footer { position: sticky; bottom: 0; padding-block: 8px; background: var(--cad-rail); gap: 8px; }
+.canvas-agent-dock .agent-compact-proposal > footer button { min-height: 44px; font-size: 13px; flex: 1 1 0; }
+.canvas-agent-dock .agent-compact-proposal summary:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .canvas-agent-message[data-role=assistant] > div { white-space: normal; }
+.canvas-agent-dock .agent-message-prose { min-width: 0; overflow-wrap: anywhere; user-select: text; font: inherit; }
+.canvas-agent-dock .agent-message-prose :is(p,ul,ol,li,blockquote) { font: inherit; letter-spacing: normal; }
+.canvas-agent-dock .agent-message-prose :is(p,ul,ol,blockquote,figure) { margin: 0 0 8px; }
+.canvas-agent-dock .agent-message-prose > :last-child { margin-bottom: 0; }
+.canvas-agent-dock .agent-message-prose h3 { font: inherit; font-weight: 600; margin: 12px 0 8px; }
+.canvas-agent-dock .agent-message-prose h3:first-child { margin-top: 0; }
+.canvas-agent-dock .agent-message-prose :is(ul,ol) { padding-left: 1.6em; }
+.canvas-agent-dock .agent-message-prose li + li { margin-top: 4px; }
+.canvas-agent-dock .agent-message-prose strong { font-weight: 600; }
+.canvas-agent-dock .agent-message-prose a { color: var(--canvas-text); text-decoration: underline; text-underline-offset: 3px; }
+.canvas-agent-dock .agent-message-prose a:hover { color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-message-prose :is(a,pre):focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 3px; }
+.canvas-agent-dock .agent-message-prose code { font-size: .875em; background: var(--cad-control); padding: 2px 4px; border-radius: 4px; }
+.canvas-agent-dock .agent-message-prose blockquote { padding-left: 12px; border-left: 1px solid var(--cad-rule); color: var(--canvas-text-soft); white-space: pre-wrap; }
+.canvas-agent-dock .agent-message-code { max-width: 100%; border-radius: var(--cad-radius-md); background: var(--cad-control); overflow: hidden; }
+.canvas-agent-dock .agent-message-code figcaption { padding: 8px 12px 0; color: var(--canvas-text-soft); font-size: var(--cad-text-meta); }
+.canvas-agent-dock .agent-message-code pre { margin: 0; padding: 12px; overflow-x: auto; white-space: pre; font-size: .875em; }
+.canvas-agent-dock .agent-message-code code { padding: 0; background: transparent; font-size: inherit; }
+.canvas-agent-dock .agent-process-group { border: 0; padding: 0; }
+.canvas-agent-dock .agent-process-group > summary { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 2px 0; list-style: none; color: var(--canvas-text-soft); font-size: var(--cad-text-meta); }
+.canvas-agent-dock .agent-process-group > summary::-webkit-details-marker { display: none; }
+.canvas-agent-dock .agent-process-group > summary > span:first-child { font-weight: 400; }
+.canvas-agent-dock .agent-process-group > summary > span:last-child { display: inline; font-size: 18px; line-height: 1; }
+.canvas-agent-dock .agent-process-group[open] > summary > span:last-child { transform: rotate(90deg); }
+.canvas-agent-dock .agent-process-group > summary:hover { color: var(--canvas-text); }
+.canvas-agent-dock .agent-process-group > summary:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .agent-process-group > div { padding: 8px 0 8px 12px; border-left: 1px solid var(--cad-rule); }
+.canvas-agent-dock .agent-process-group .canvas-agent-message { font-size: var(--cad-text-label); color: var(--canvas-text-soft); }
+.canvas-agent-dock .canvas-agent-composer { margin: 12px 12px 0; padding: 10px 10px 8px; gap: 6px; border-radius: 10px; box-shadow: none; background: var(--cad-rail); }
+.app-shell .canvas-agent-dock textarea.canvas-agent-input { height: 72px; min-height: 52px; padding: 6px 8px; font: 400 var(--cad-reading-size)/var(--cad-reading-line) var(--canvas-font-ui); }
+.app-shell .canvas-agent-dock textarea.canvas-agent-input::placeholder { font: inherit; }
+.canvas-agent-dock .canvas-agent-model-controls :is(label,select), .canvas-agent-dock .canvas-agent-quote-selected { font-family: var(--canvas-font-ui); font-size: var(--cad-chat-meta-size) !important; line-height: 1.5; }
+.canvas-agent-dock .canvas-agent-progress { margin: 8px 0 16px; font: 400 var(--cad-chat-meta-size)/1.5 var(--canvas-font-ui); color: var(--canvas-text-soft); }
+.canvas-agent-dock .canvas-agent-model-controls { padding-top: 0; border-top: 0; gap: 8px; flex-wrap: nowrap; }
+.canvas-agent-dock .canvas-agent-model-controls label { flex: 1 1 0; min-width: 0; gap: 4px; white-space: nowrap; }
+.canvas-agent-dock .canvas-agent-model-controls label:first-child { flex-grow: 1.5; }
+.canvas-agent-dock .canvas-agent-model-controls select { border-color: transparent; background: transparent; }
+.canvas-agent-dock .canvas-agent-composer-footer { gap: 4px; }
+.canvas-agent-dock .canvas-agent-tools { gap: 4px; }
+.canvas-agent-dock .canvas-agent-composer-footer .canvas-agent-icon { width: 28px; height: 32px; min-width: 28px; border-radius: 6px; color: var(--canvas-text-soft); }
+.canvas-agent-dock .canvas-agent-composer-footer svg { width: var(--cad-tool-size); height: var(--cad-tool-size); stroke-width: var(--cad-tool-stroke); }
+.canvas-agent-dock .canvas-agent-composer-footer .canvas-agent-quote-selected { min-height: 32px; padding-inline: 6px; border: 0; border-radius: 6px; background: transparent; }
+.canvas-agent-dock .canvas-agent-submit-actions .canvas-agent-send { width: 36px; height: 32px; border: 0; border-radius: 6px; background: var(--cad-control); color: var(--canvas-text-muted) !important; }
+.canvas-agent-dock .canvas-agent-submit-actions .canvas-agent-send:not(:disabled) { background: var(--cad-user-surface); color: var(--cad-user-ink) !important; }
+.canvas-agent-dock .canvas-agent-submit-actions .canvas-agent-send:disabled { opacity: .55; cursor: not-allowed; }
+.canvas-agent-dock .canvas-agent-composer-footer :is(.canvas-agent-icon,.canvas-agent-quote-selected):hover:not(:disabled) { background: var(--cad-control); color: var(--canvas-text); }
+.canvas-agent-dock .canvas-agent-composer-footer button:active:not(:disabled) { transform: translateY(1px); }
+.canvas-agent-dock .canvas-agent-submit-actions .canvas-agent-send:hover:not(:disabled) { opacity: .85; }
+.canvas-agent-dock .canvas-agent-footnote { margin-block: 6px 8px; font-size: 11px; }
+.canvas-agent-dock .agent-run-panel:not([open]) > summary { min-height: 36px; padding-block: 6px; font-size: var(--cad-text-meta); color: var(--canvas-text-soft); }
+@media (max-width: 767px) {
+  .app-shell .canvas-agent-dock textarea.canvas-agent-input { font-size: 16px; line-height: 24px; }
+  .canvas-agent-dock .canvas-agent-conversation { padding-inline: 18px; }
+  .canvas-agent-dock .canvas-agent-composer { margin-inline: 8px; }
+}
+@media (pointer: coarse) {
+  .canvas-agent-dock .canvas-agent-composer-footer :is(.canvas-agent-icon,.canvas-agent-send) { width: 44px; min-width: 44px; height: 44px; }
+  .canvas-agent-dock .canvas-agent-composer-footer .canvas-agent-quote-selected { min-height: 44px; }
+  .canvas-agent-dock .agent-context-toolbar > details > summary { min-height: 44px; }
+  .canvas-agent-dock .agent-process-group > summary { min-height: 44px; }
+  .canvas-agent-dock .canvas-agent-model-controls select { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas-agent-dock .agent-process-group > summary > span { transition: none; }
+}

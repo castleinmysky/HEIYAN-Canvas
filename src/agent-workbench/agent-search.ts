@@ -3,7 +3,7 @@ import type { AgentProject } from './agent-memory';
 export type SearchDocument = { id: string; source: 'message' | 'node'; title: string; text: string; nodeIds?: string[]; role?: string };
 export type SearchHit = SearchDocument & { excerpt: string; offset: number; score: number; match: 'keyword' | 'semantic' | 'both' };
 export type SearchResult = { query: string; mode: 'hybrid' | 'keyword'; indexed: number; total: number; note?: string; hits: SearchHit[] };
-export type SemanticProfile = { provider: 'official' | 'custom'; baseUrl: string; apiKey: string; model: string };
+export type SemanticProfile = { request?: typeof fetch; provider: 'official' | 'custom'; baseUrl: string; apiKey: string; model: string };
 export type SearchChunk = { id: string; document: SearchDocument; text: string; offset: number };
 export function projectDocuments(project: AgentProject, nodes: SearchDocument[] = []): SearchDocument[] {
   return [...nodes, ...project.messages.map(m => ({ id: m.id, source: 'message' as const, title: m.role === 'user' ? '你的原话' : m.role === 'assistant' ? 'Agent 回复' : '执行记录', text: m.text, role: m.role }))];

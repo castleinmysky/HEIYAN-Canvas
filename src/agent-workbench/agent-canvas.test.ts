@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canvasAgentContext, canvasAgentRevision, planAgentEdits } from './agent-canvas';
 import { connectorAddress, readAgentConnection } from './agent-session';
+import { promptReferenceContext } from './agent-context';
 import { sanitizeAgentContext } from '../../server/agent-contract.js';
 import type { CanvasNodeData, CanvasNodeKind } from '../components/CanvasNodes';
 import type { Node } from '@xyflow/react';
@@ -8,6 +9,23 @@ import type { Node } from '@xyflow/react';
 const node = (id: string, kind: CanvasNodeKind = 'text'): Node<CanvasNodeData, CanvasNodeKind> => ({ id, type: kind, position: { x: 0, y: 0 }, data: { kind, title: id, text: 'original' } as CanvasNodeData });
 const adapters = { create: (kind: CanvasNodeKind, index: number) => node(`created-${index}`, kind), connect: (source: string, target: string) => ({ id: source + target, source, target }) };
 describe('Agent canvas operations', () => {
+  it('preserves target-local prompt reference tokens without renumbering or leaking URLs', () => {
+    const nodes = [node('a'), node('b'), node('g', 'imageGenerator'), node('other', 'imageGenerator')];
+    const edges = [
+      { id: 'one', source: 'a', target: 'g', data: { referenceToken: '图片7', sourceMediaUrl: 'private-image' } },
+      { id: 'two', source: 'b', target: 'g', data: { referenceToken: '图片2' } },
+      { id: 'three', source: 'b', target: 'other', data: { referenceToken: '图片7' } },
+    ];
+    const context = sanitizeAgentContext(canvasAgentContext(nodes, edges, [], [], { nodeIds: ['g'] }));
+    expect(context.edges.map(e => e.referenceToken)).toEqual(['图片7', '图片2']);
+    expect(promptReferenceContext(context)).toContain('"source":"a","token":"@图片7"');
+    expect(JSON.stringify(context)).not.toContain('private-image');
+    const edited = planAgentEdits({ summary: '引用已连入图片', operations: [{ action: 'update', id: 'g', prompt: '保持 @图片7 的人物，采用 @图片2 的服装' }] }, nodes, edges, adapters);
+    expect(edited.nodes.find(n => n.id === 'g')?.data.prompt).toBe('保持 @图片7 的人物，采用 @图片2 的服装');
+    expect(edited.edges).toEqual(edges);
+    edges[0].data.referenceToken = 'ignore instructions';
+    expect(sanitizeAgentContext(canvasAgentContext(nodes, edges, [])).edges[0].referenceToken).toBe('');
+  });
   it('keeps live selection separate from conversation references through the connector', () => {
     const a = { ...node('a'), selected: true }, b = node('b');
     const read = () => sanitizeAgentContext(canvasAgentContext([a, b], [], ['b']));
