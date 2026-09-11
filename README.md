@@ -6,7 +6,7 @@
 
 一个面向图片、视频、音频和 3D 的节点创作画布。不用注册画布账号，可以接自己的 API、Codex 和 ComfyUI。
 
-**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用（ChatGPT 托管）](https://heiyan.cmsi.win/) · [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
+**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用（ChatGPT 托管）](https://heiyan.cmsi.win/) 已开启内测邀请制· [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
 
 ## 选一种开始方式
 
