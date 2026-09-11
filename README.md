@@ -6,14 +6,14 @@
 
 一个面向图片、视频、音频和 3D 的节点创作画布。不用注册画布账号，可以接自己的 API、Codex 和 ComfyUI。
 
-**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用（ChatGPT 托管）](https://heiyan.cmsi.win/) 已开启内测邀请制· [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
+**[自行部署 →](docs/QUICKSTART.md#部署整套画布)** · [在线试用](https://heiyan.cmsi.win/) 已开启内测邀请制· [功能](#功能一览) · [开源说明](docs/OPEN-SOURCE.md)
 
 ## 选一种开始方式
 
 | 你想做什么 | 怎么开始 |
 | --- | --- |
 | 自行部署 | 克隆仓库，安装依赖并启动。[部署步骤](docs/QUICKSTART.md#部署整套画布) |
-| 在线试用 | [打开在线画布](https://heiyan.cmsi.win/)，由 ChatGPT Sites 托管。部分地区或网络环境需要自备代理工具（梯子），生成需接入自己的 API。 |
+| 在线试用 | [打开在线画布](https://heiyan.cmsi.win/)，部分地区或网络环境需要自备代理工具（梯子），生成需接入自己的 API。 |
 | 接自己的 Codex | Agent → 下载 Windows 免安装包 → 解压双击启动。[连接步骤](docs/QUICKSTART.md#连接自己的-codex) |
 
 在线试用不提供模型账号或生成额度。自行部署不依赖这个试用站；模型 API 和 Codex 仍需满足各自的网络访问条件。
