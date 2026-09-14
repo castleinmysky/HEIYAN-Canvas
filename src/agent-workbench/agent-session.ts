@@ -3,7 +3,7 @@ import type { SearchDocument } from './agent-search';
 import type { AgentEditPreview } from './agent-proposals';
 import type { JobSnapshot, JobTarget } from './agent-jobs';
 
-export type AgentMessage = { id: string; role: 'user' | 'assistant' | 'notice'; text: string; imageCount?: number; model?: string; effort?: string };
+export type AgentMessage = { id: string; role: 'user' | 'assistant' | 'notice'; text: string; nodeRefs?: Array<{ id: string; title: string }>; imageCount?: number; model?: string; effort?: string; question?: import('../../server/agent-questions.js').AgentQuestion };
 export type AgentPending = { id: string; tool: string; input: AgentProposal; revision: string; claimed: boolean };
 export type AgentState = { messages: AgentMessage[]; active: boolean; connected: boolean; pending: AgentPending | null; error: string; usage?: { inputTokens: number; outputTokens: number; cachedInputTokens: number; modelContextWindow?: number } };
 export const emptyAgentState = (): AgentState => ({ messages: [], active: false, connected: false, pending: null, error: '' });
@@ -16,7 +16,9 @@ export type AgentCanvasAccess = {
   jobs?: (targets: JobTarget[]) => JobSnapshot[];
   preview?: (proposal: AgentProposal) => AgentEditPreview;
   reveal?: (nodeIds: string[], label: string, automatic?: boolean) => void;
-  edit: (proposal: AgentProposal, revision: string) => string;
+  edit: (proposal: AgentProposal, revision: string) => string | Promise<string>;
+  crop?: (proposal: AgentProposal, revision: string) => Promise<string>;
+  action?: (proposal: AgentProposal, revision: string) => Promise<string>;
   generate: (request: AgentProposal, revision: string) => Promise<string>;
 };
 export type AgentModelOption = { id: string; model: string; name: string; description: string; isDefault: boolean; inputModalities: string[]; defaultEffort: string; efforts: Array<{ value: string; description: string }> };

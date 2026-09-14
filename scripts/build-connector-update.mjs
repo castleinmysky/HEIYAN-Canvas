@@ -15,6 +15,8 @@ const sources = [
   ['server/agent-connector.js', 'server/agent-connector.js'],
   ['server/agent-version.js', 'server/agent-version.js'],
   ['server/agent-contract.js', 'server/agent-contract.js'],
+  ['server/agent-capabilities.js', 'server/agent-capabilities.js'],
+  ['server/agent-questions.js', 'server/agent-questions.js'],
   ['server/codex-runtime.js', 'server/codex-runtime.js'],
   ['scripts/portable/control.js', 'portable/control.js'],
   ['scripts/portable/setup.html', 'portable/setup.html'],

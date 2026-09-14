@@ -1,4 +1,5 @@
 import type { AgentProposal } from '../../server/agent-contract.js';
+import { canvasCapability } from '../../server/agent-capabilities.js';
 
 export type AgentApprovalMode = 'ask' | 'assist' | 'full';
 export const agentApprovalModeKey = 'heiyan:agent-approval-mode:v1';
@@ -15,6 +16,13 @@ export function saveAgentApprovalMode(storage: Pick<Storage, 'setItem'>, mode: A
 
 /** Assist mode only auto-approves reversible, non-destructive canvas structure edits. */
 export function mayAutoApproveAgentProposal(mode: AgentApprovalMode, proposal: AgentProposal, tool = 'heiyan_edit_canvas') {
+  if (tool === 'heiyan_canvas_capabilities') return true;
+  if (tool === 'heiyan_canvas_action') {
+    const capability = canvasCapability(proposal.action);
+    if (!capability) return false;
+    if (['read', 'view'].includes(capability.risk)) return true;
+    return mode === 'full' && !['user', 'confirm'].includes(capability.risk);
+  }
   if (mode === 'full') return ['heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(tool);
   if (tool !== 'heiyan_edit_canvas') return false;
   const operations = proposal.operations;

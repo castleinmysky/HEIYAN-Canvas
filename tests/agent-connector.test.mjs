@@ -63,7 +63,9 @@ test('pairing does not create a model turn; sends are idempotent and canvases is
 test('new connector metadata and state cursors remain compatible with old canvas clients', async t => {
   const f = await fixture(t), paired = await f.pair();
   assert.equal(paired.data.version, connectorVersion); assert.equal(paired.data.distribution, connectorDistribution);
-  assert.equal(paired.data.protocol, 6); assert.ok(paired.data.capabilities.includes('state_delta'));
+  assert.equal(paired.data.protocol, 7); assert.ok(paired.data.capabilities.includes('state_delta'));
+  assert.ok(paired.data.capabilities.includes('user_questions'));
+  assert.ok(paired.data.capabilities.includes('web_research'));
   const first = (await f.call('/state', { canvasKey: 'task-a:main' })).data;
   assert.ok(Array.isArray(first.messages));
   const same = (await f.call('/state', { canvasKey: 'task-a:main', cursor: first.cursor })).data;
@@ -95,6 +97,22 @@ test('canvas reads return current sanitized data, not stale send snapshots', asy
   const output = JSON.parse(f.runtime.responses[0].result.contentItems[0].text);
   assert.equal(output.revision, 'rev-b'); assert.equal(output.apiKey, undefined);
 });
+test('actual connector state, prompt context and tool result serialization omit connector and provider credentials', async t => {
+  const f = await fixture(t); const paired = await f.pair();
+  const sentinels = [paired.data.token, 'test-code', 'sk-provider-sentinel', 'Bearer sk-provider-sentinel', 'heiyan_session=provider-cookie'];
+  const unsafeContext = { ...context, apiKey: 'sk-provider-sentinel', authorization: 'Bearer sk-provider-sentinel', cookie: 'heiyan_session=provider-cookie', pairingCode: 'test-code', token: paired.data.token,
+    nodes: [{ id: 'node-a', kind: 'imageGenerator', title: '安全节点', apiKey: 'sk-provider-sentinel', authorization: 'Bearer sk-provider-sentinel', cookie: 'heiyan_session=provider-cookie' }] };
+  assert.equal((await f.call('/send', { canvasKey: 'safe:main', requestId: 'safe-1', text: '读取画布', context: unsafeContext })).status, 200);
+  f.runtime.tool('heiyan_read_canvas');
+  const state = (await f.call('/state', { canvasKey: 'safe:main' })).data;
+  const stateSerialized = JSON.stringify(state);
+  const promptSerialized = JSON.stringify(f.runtime.calls[0]);
+  for (const secret of sentinels) { assert.ok(!stateSerialized.includes(secret)); assert.ok(!promptSerialized.includes(secret)); }
+  assert.equal((await f.call('/read', { canvasKey: 'safe:main', id: state.pending.id, context: { ...unsafeContext, revision: 'safe-revision' } })).status, 200);
+  const resultSerialized = JSON.stringify(f.runtime.responses.at(-1));
+  for (const secret of sentinels) assert.ok(!resultSerialized.includes(secret));
+  assert.equal(JSON.parse(f.runtime.responses.at(-1).result.contentItems[0].text).revision, 'safe-revision');
+});
 test('editing requires confirmation, rejects stale/cross-canvas IDs, claims execute only once', async t => {
   const f = await fixture(t); await f.pair(); await f.send();
   f.runtime.tool('heiyan_edit_canvas', { summary: '创建文本', operations: [{ action: 'create', id: 'x', kind: 'text', title: '故事', prompt: '开始' }] });
@@ -121,7 +139,7 @@ test('stale revisions and rejection return tool failure without applying anythin
 });
 test('generation always pauses for approval and reports a single claimed execution', async t => {
   const f = await fixture(t); const pair = await f.pair(); await f.send();
-  assert.equal(pair.data.protocol, 6);
+  assert.equal(pair.data.protocol, 7);
   assert.ok(pair.data.capabilities.includes('request_generation'));
   f.runtime.tool('heiyan_request_generation', { summary: '生成两个镜头', nodeIds: ['shot-a', 'shot-b'] });
   const { data } = await f.call('/state', { canvasKey: 'task-a:main' });
@@ -140,6 +158,37 @@ test('model, reasoning effort and pasted images are validated before a multimoda
   assert.equal(sent.status, 200);
   assert.deepEqual(f.runtime.calls[0].options, { model: 'gpt-test', effort: 'high', images: ['data:image/png;base64,YQ=='] });
   assert.equal((await f.call('/state', { canvasKey: 'vision:main' })).data.messages[0].imageCount, 1);
+});
+test('capability discovery and schema-checked ComfyUI actions use the current canvas claim', async t => {
+  const f = await fixture(t); await f.pair(); await f.send();
+  f.runtime.tool('heiyan_canvas_capabilities', { category: 'comfy' });
+  let pending = (await f.call('/state', { canvasKey: 'task-a:main' })).data.pending;
+  assert.equal(pending.tool, 'heiyan_canvas_capabilities');
+  let decision = await f.call('/decision', { canvasKey: 'task-a:main', id: pending.id, approved: true, revision: 'rev-a' });
+  assert.equal(decision.data.execute, true);
+  assert.equal((await f.call('/result', { canvasKey: 'task-a:main', id: pending.id, claim: decision.data.claim, success: true, result: '{"actions":["comfy.select"]}', revision: 'rev-b' })).status, 200);
+  f.runtime.tool('heiyan_canvas_action', { action: 'comfy.select', arguments: '{"nodeId":"video-a","modelId":"h3","workflowId":"h3-default"}', summary: '为当前视频节点选择 H3 工作流' });
+  pending = (await f.call('/state', { canvasKey: 'task-a:main' })).data.pending;
+  assert.equal(pending.revision, 'rev-b');
+  decision = await f.call('/decision', { canvasKey: 'task-a:main', id: pending.id, approved: true, revision: 'rev-b' });
+  assert.equal(decision.data.execute, true);
+  assert.equal((await f.call('/result', { canvasKey: 'task-a:main', id: pending.id, claim: decision.data.claim, success: true, result: '已选择 H3', revision: 'rev-c' })).status, 200);
+  assert.match(f.runtime.responses.at(-1).result.contentItems[0].text, /已选择 H3/);
+});
+test('question cards can wait, answer once, and never treat silence as consent', async t => {
+  const f = await fixture(t); await f.pair(); await f.send();
+  await f.call('/question-policy', { canvasKey: 'task-a:main', policy: 'wait' });
+  f.runtime.tool('heiyan_ask_question', { questions: [{ id: 'style', header: '风格', question: '保留当前风格吗？', options: [{ label: '保留', description: '保持现有视觉语言' }] }] });
+  const state = (await f.call('/state', { canvasKey: 'task-a:main' })).data;
+  const question = state.messages.find(message => message.question)?.question;
+  assert.equal(question.status, 'pending');
+  assert.equal(f.runtime.responses.length, 0);
+  const answer = await f.call('/question-answer', { canvasKey: 'task-a:main', id: question.id, answers: { style: { answers: ['保留'] } } });
+  assert.equal(answer.status, 200);
+  assert.equal(f.runtime.responses.length, 1);
+  assert.equal(JSON.parse(f.runtime.responses[0].result.contentItems[0].text).status, 'answered');
+  const duplicate = await f.call('/question-answer', { canvasKey: 'task-a:main', id: question.id, answers: { style: { answers: ['另选'] } } });
+  assert.equal(duplicate.data.duplicate, true);
 });
 test('unsupported tools are refused, stopping cancels a pending edit, disconnect revokes access', async t => {
   const f = await fixture(t); await f.pair(); await f.send();

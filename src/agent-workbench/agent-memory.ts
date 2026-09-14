@@ -1,7 +1,7 @@
 import type { AgentMessage } from './agent-session';
 import { localAgentProject } from './agent-project-store';
 import type { UsageRecord } from './agent-api';
-export type ExecutionReceipt = { id: string; tool: string; status: 'claimed' | 'succeeded' | 'failed' | 'rejected'; result: string; at: number };
+export type ExecutionReceipt = { id: string; tool: string; status: 'claimed' | 'succeeded' | 'failed' | 'rejected'; result: string; input?: string; at: number };
 export type AgentProject = { schema: 1; requirements: string; goal: string; progress: string; summary: string; messages: AgentMessage[]; receipts: ExecutionReceipt[]; usage?: UsageRecord[]; updatedAt: number };
 export const emptyProject = (): AgentProject => ({ schema: 1, requirements: '', goal: '', progress: '', summary: '', messages: [], receipts: [], updatedAt: 0 });
 export async function projectRequest(canvas: string, document?: AgentProject, etag: string | null = null, _request?: typeof fetch) {
@@ -9,8 +9,19 @@ export async function projectRequest(canvas: string, document?: AgentProject, et
 }
 export function mergeMessages(previous: AgentMessage[], incoming: AgentMessage[]) {
   const result = [...previous], index = new Map(result.map((m, i) => [m.id, i]));
-  for (const message of incoming) { const i = index.get(message.id); if (i === undefined) { index.set(message.id, result.length); result.push(message); } else result[i] = message; }
-  return result;
+  let changed = false;
+  for (const incomingMessage of incoming) {
+    const oldMessage = result[index.get(incomingMessage.id) ?? -1];
+    let message = incomingMessage.nodeRefs === undefined && oldMessage?.nodeRefs ? { ...incomingMessage, nodeRefs: oldMessage.nodeRefs } : incomingMessage;
+    if (oldMessage?.question?.status === 'cancelled' && message.question && ['pending', 'deferred'].includes(message.question.status)) message = { ...message, question: oldMessage.question };
+    const i = index.get(message.id);
+    if (i === undefined) { index.set(message.id, result.length); result.push(message); changed = true; }
+    else {
+      const old = result[i];
+      if (old.text !== message.text || old.role !== message.role || old.imageCount !== message.imageCount || old.model !== message.model || old.effort !== message.effort || JSON.stringify(old.question) !== JSON.stringify(message.question) || JSON.stringify(old.nodeRefs) !== JSON.stringify(message.nodeRefs)) { result[i] = message; changed = true; }
+    }
+  }
+  return changed ? result : previous;
 }
 export function searchProjectHistory(project: AgentProject, query = '', offset = 0, textOffset = 0) {
   const needle = query.toLocaleLowerCase();

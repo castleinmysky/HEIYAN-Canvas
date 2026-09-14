@@ -16,7 +16,9 @@ export const isolatedConfig = {
   'features.code_mode_host': true,
   'features.view_image': false, 'features.memories': false,
   'features.skip_host_skill_discovery': true, 'features.skill_search': false,
-  web_search: 'disabled', project_doc_max_bytes: 0, notify: [],
+  // Public web search is the only external research capability. Browser
+  // control, apps, MCP, shell and local files remain isolated below.
+  web_search: 'live', project_doc_max_bytes: 0, notify: [],
 };
 
 export class CodexRuntime extends EventEmitter {

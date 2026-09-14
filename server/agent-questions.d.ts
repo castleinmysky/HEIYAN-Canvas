@@ -1,0 +1,12 @@
+export type Question = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; options: { label: string; description: string }[] };
+export type QuestionAnswers = Record<string, { answers: string[] }>;
+export type AgentQuestion = { id: string; questions: Question[]; status: 'pending' | 'deferred' | 'answered' | 'cancelled'; source: 'api' | 'codex'; createdAt: number; updatedAt: number; answers?: QuestionAnswers };
+export const QUESTION_WAIT_MS: number;
+export const deferredQuestionNote: string;
+export const questionTool: object;
+export function normalizeQuestions(value: unknown): Question[];
+export function questionAnswers(questions: Question[], value: unknown): QuestionAnswers;
+export function cleanQuestion(value: unknown): AgentQuestion;
+export function questionText(question: AgentQuestion): string;
+export function questionMessage(question: AgentQuestion): { id: string; role: 'notice'; text: string; question: AgentQuestion };
+export function questionResult(question: AgentQuestion, answers?: QuestionAnswers): { status: string; answers: QuestionAnswers; instruction?: string };

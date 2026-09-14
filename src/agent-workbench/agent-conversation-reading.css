@@ -15,6 +15,21 @@
   --cad-tool-stroke: 1.35;
 }
 .app-shell[data-theme="day"] .canvas-agent-dock { --cad-assistant-surface: #eeeef0; }
+.canvas-agent-dock .agent-history-page, .canvas-agent-dock .agent-chat-jump { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 auto 12px; padding: 6px 12px; min-height: 32px; max-width: 100%; border: 1px solid var(--cad-rule); border-radius: 16px; background: var(--cad-rail); color: var(--canvas-text-soft); font: 400 12px/18px var(--canvas-font-ui); white-space: nowrap; }
+.canvas-agent-dock .agent-chat-jump { position: absolute; z-index: 6; top: -48px; right: 12px; width: 36px; height: 36px; min-height: 36px; margin: 0; padding: 0; border-radius: 50%; color: var(--canvas-text); background: var(--cad-rail); }
+.canvas-agent-dock .agent-history-page svg, .canvas-agent-dock .agent-chat-jump svg { width: 14px; height: 14px; }
+.canvas-agent-dock .agent-chat-jump:hover, .canvas-agent-dock .agent-history-page:hover { color: var(--canvas-text); border-color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-chat-jump:focus-visible, .canvas-agent-dock .agent-history-page:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .agent-chat-jump:active, .canvas-agent-dock .agent-history-page:active { background: var(--cad-control); }
+.canvas-agent-dock .agent-message-references { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; max-width: 100%; }
+.canvas-agent-dock .agent-message-references > button { display: grid; justify-items: center; gap: 4px; width: 72px; min-width: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.canvas-agent-dock .agent-message-reference-thumb { display: grid; place-items: center; width: 72px; height: 64px; overflow: hidden; border-radius: 6px; background: var(--cad-control); color: var(--canvas-text); }
+.canvas-agent-dock .agent-message-reference-thumb :is(img,video) { width: 100%; height: 100%; object-fit: cover; }
+.canvas-agent-dock .agent-message-reference-thumb > span { width: 100%; height: 100%; }
+.canvas-agent-dock .agent-message-references > button > span:last-child { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 14px; }
+.canvas-agent-dock .agent-message-references button:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .agent-message-references button:disabled { opacity: .5; cursor: default; }
+.canvas-agent-dock .agent-message-references button:is(:hover,:active) { background: var(--cad-control); }
 .canvas-agent-dock .canvas-agent-conversation { padding: 20px 24px 28px; scrollbar-gutter: stable; }
 .canvas-agent-dock .canvas-agent-head.agent-header-refined { min-height: 60px; padding-block: 8px; }
 .canvas-agent-dock .agent-header-refined .canvas-agent-title { font-size: var(--cad-text-label); }
@@ -36,6 +51,10 @@
 .canvas-agent-dock .agent-conversation-turn .canvas-agent-message[data-role=user] { position: relative; align-self: flex-end; max-width: 88%; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--cad-user-surface); color: var(--cad-user-ink); }
 .canvas-agent-dock .agent-conversation-turn .canvas-agent-message[data-role=assistant] { position: relative; align-self: flex-start; max-width: 96%; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--cad-assistant-surface); color: var(--canvas-text); }
 .canvas-agent-dock .canvas-agent-message[data-role=user] > em { color: var(--cad-user-meta); }
+.canvas-agent-dock .agent-conversation-time { display: block; align-self: center; width: 100%; margin: 12px 0 8px; color: var(--canvas-text-soft); text-align: center; font: 400 12px/18px var(--canvas-font-ui); }
+.canvas-agent-dock .agent-pending-reminder { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.canvas-agent-dock .agent-pending-reminder .agent-pending-jump { flex: 1; min-width: 0; width: auto; }
+.canvas-agent-dock .agent-pending-reminder > button:last-child { flex-shrink: 0; padding: 8px; border: 0; background: transparent; color: var(--canvas-text-soft); font-size: 12px; }
 .canvas-agent-dock .canvas-agent-message:is([data-role=user],[data-role=assistant])::before { content: ''; position: absolute; top: 14px; width: 8px; height: 8px; transform: rotate(45deg); background: inherit; pointer-events: none; }
 .canvas-agent-dock .canvas-agent-message[data-role=user]::before { right: -4px; }
 .canvas-agent-dock .canvas-agent-message[data-role=assistant]::before { left: -4px; }
@@ -114,6 +133,7 @@
   .canvas-agent-dock .canvas-agent-composer { margin-inline: 8px; }
 }
 @media (pointer: coarse) {
+  .canvas-agent-dock .agent-chat-jump { width: 44px; height: 44px; top: -56px; }
   .canvas-agent-dock .canvas-agent-composer-footer :is(.canvas-agent-icon,.canvas-agent-send) { width: 44px; min-width: 44px; height: 44px; }
   .canvas-agent-dock .canvas-agent-composer-footer .canvas-agent-quote-selected { min-height: 44px; }
   .canvas-agent-dock .agent-context-toolbar > details > summary { min-height: 44px; }

@@ -6,10 +6,10 @@ import { agentComposerLimits, agentRailWidth } from './workbench-layout';
 import { useCanvasAgent } from './use-canvas-agent';
 import { consumePairingFragment, downloadPortableConnector, CONNECTOR_RELEASES_URL } from './portable-connector';
 import type { AgentCanvasAccess } from './agent-session';
-import { readAgentApprovalMode, saveAgentApprovalMode, type AgentApprovalMode } from './approval-mode';
+import { mayAutoApproveAgentProposal, readAgentApprovalMode, saveAgentApprovalMode, type AgentApprovalMode } from './approval-mode';
 import { AgentComposerOptions } from './AgentComposerOptions';
 import { AgentMessageImages } from './AgentMessageImages';
-import { addConversationReferences, CONVERSATION_LIMIT, conversationDraftKey, emptyConversationDraft, parseConversationDraft, saveConversationDraft, type ConversationDraft } from './conversation-draft';
+import { addConversationReferences, clearSubmittedDraft, CONVERSATION_LIMIT, CONVERSATION_REFERENCE_LIMIT, conversationDraftKey, conversationSubmissionText, emptyConversationDraft, hasConversationContent, parseConversationDraft, restoreSubmittedDraft, saveConversationDraft, type ConversationDraft } from './conversation-draft';
 import { AgentProjectPanel } from './AgentProjectPanel';
 import { AgentApiForm } from './AgentApiForm';
 import { AgentRunPanel, AgentCapabilities } from './AgentRunPanel';
@@ -18,6 +18,10 @@ import { AgentProposalCard } from './AgentActionCards';
 import { AgentResultCard, parseReceipt } from './AgentResultCard';
 import { generationReceipts, type JobSnapshot } from './agent-jobs';
 import { AgentConversation } from './AgentConversation';
+import { AgentMessageReferences } from './AgentMessageReferences';
+import { AgentQuestionCard } from './AgentQuestionCard';
+import { useConversationWindow } from './use-conversation-window';
+import { canvasCapability } from '../../server/agent-capabilities.js';
 import { AgentMessageBody } from './AgentMessageBody';
 import { AgentHeader, type AgentPage } from './AgentHeader';
 import './agent-navigation.css';
@@ -43,6 +47,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
 }) {
   const [approvalMode, setApprovalMode] = useState<AgentApprovalMode>(() => typeof localStorage === 'undefined' ? 'ask' : readAgentApprovalMode(localStorage, canvasKey));
   const agent = useCanvasAgent(canvasKey, access, approvalMode);
+  const automaticPending = approvalMode === 'full' && !!agent.state.pending && !agent.error && !agent.state.error && mayAutoApproveAgentProposal(approvalMode, agent.state.pending.input, agent.state.pending.tool);
   const [page, setPage] = useState<AgentPage>('chat');
   useEffect(() => { setPage('chat'); }, [canvasKey]);
   const generationRuns = useMemo(() => generationReceipts(agent.project.receipts), [agent.project.receipts]);
@@ -97,7 +102,9 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   const dragged = useRef(false);
   const composing = useRef(false);
   const messageList = useRef<HTMLElement>(null);
-  const followMessages = useRef(true);
+  const sendingDraft = useRef(false);
+  const conversation = useConversationWindow(agent.state.messages, messageList, canvasKey);
+  const unanswered = useMemo(() => agent.state.messages.filter(message => message.question && ['pending', 'deferred'].includes(message.question.status)), [agent.state.messages]);
   const draftRef = useRef(draft); draftRef.current = draft;
   // Keep the conversation mounted during dismissal: the slide can finish and
   // an in-flight reply is not lost just because the user looks at the canvas.
@@ -118,20 +125,35 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     catch { setSaveFailed(true); }
   };
   const send = async () => {
-    if ((!draft.text.trim() && !images.length) || !ready || !agent.state.connected || agent.busy) return;
+    conversation.latest();
+    if (sendingDraft.current || !hasConversationContent(draft, images.length) || !ready || !agent.state.connected || !agent.memoryReady || agent.busy) return;
+    setAttachmentError('');
+    if (draft.nodeIds.length > CONVERSATION_REFERENCE_LIMIT) { setAttachmentError('每次最多引用 12 个节点，请移除多余引用后发送。'); return; }
+    if (draft.nodeIds.some(id => !items.some(item => item.id === id))) { setAttachmentError('有引用节点已不可用，请移除后重新发送。'); return; }
     if (agent.state.active) {
       if (images.length) { setAttachmentError('执行中可补充文字；图片请在本轮结束后发送。'); return; }
-      const text = draft.text;
-      if (await agent.steer(text)) { if (draftRef.current.text === text) updateDraft({ ...draftRef.current, text: '' }); }
+      const submitted = draft;
+      sendingDraft.current = true;
+      updateDraft(clearSubmittedDraft(draftRef.current, submitted));
+      let accepted = false;
+      try { accepted = await agent.steer(submitted.text); }
+      finally { if (!accepted) updateDraft(restoreSubmittedDraft(draftRef.current, submitted)); sendingDraft.current = false; }
       return;
     }
     const submitted = draft;
     const submittedImages = images;
-    const text = submitted.text.trim() || '请分析这些图片，并结合当前画布说明可执行的下一步。';
-    if (await agent.send(text, submitted.nodeIds, submittedImages.map(image => image.url))) {
-      // Never erase the next message typed while the previous one was sending.
-      if (draftRef.current.text === submitted.text) updateDraft({ ...draftRef.current, text: '' });
-      setImages(current => current.map(image => image.id).join() === submittedImages.map(image => image.id).join() ? [] : current);
+    const text = conversationSubmissionText(submitted);
+    sendingDraft.current = true;
+    updateDraft(clearSubmittedDraft(draftRef.current, submitted));
+    setImages(current => current.filter(image => !submittedImages.some(sent => sent.id === image.id)));
+    let accepted = false;
+    try { accepted = await agent.send(text, submitted.nodeIds, submittedImages.map(image => image.url)); }
+    finally {
+      if (!accepted) {
+        updateDraft(restoreSubmittedDraft(draftRef.current, submitted));
+        setImages(current => [...submittedImages, ...current.filter(image => !submittedImages.some(sent => sent.id === image.id))]);
+      }
+      sendingDraft.current = false;
     }
   };
   const pasteImages = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -147,7 +169,6 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     })));
     setImages(current => [...current, ...loaded]);
   };
-  useEffect(() => { if (followMessages.current && messageList.current) messageList.current.scrollTop = messageList.current.scrollHeight; }, [agent.state.messages, agent.state.pending]);
   const view = (canvas: boolean) => { input.current?.blur(); setPage('chat'); setConnectionOpen(false); setPickerOpen(false); onViewChange(canvas); };
   const chooseApprovalMode = (mode: AgentApprovalMode) => { setApprovalMode(mode); saveAgentApprovalMode(localStorage, mode, canvasKey); };
   useEffect(() => { if (canvasView) setConnectionOpen(false); setPickerOpen(false); }, [canvasView]);
@@ -229,7 +250,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); setRailWidth(event.key === 'Home' ? 360 : railSize.max); }
         if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setRailWidth(agentRailWidth(railSize.width + (event.key === 'ArrowLeft' ? 1 : -1) * (event.shiftKey ? 32 : 8), window.innerWidth)); }
       }} />
-    <AgentHeader page={connectionOpen ? 'settings' : page} connected={agent.state.connected} active={agent.state.active} waiting={!!agent.state.pending && !agent.state.pending.claimed}
+    <AgentHeader page={connectionOpen ? 'settings' : page} connected={agent.state.connected} active={agent.state.active} waiting={!!agent.state.pending && !agent.state.pending.claimed} questioning={agent.questions.waiting}
       onPage={next => { input.current?.blur(); setPickerOpen(false); onViewChange(false); setPage(next); setConnectionOpen(next === 'settings'); }}
       onView={view} onClose={onClose} />
     {connectionOpen && <section className="canvas-agent-connection-panel" aria-label="Agent 连接状态">
@@ -269,30 +290,38 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     <AgentRunPanel expanded activity={agent.activity} trace={agent.trace} active={agent.state.active} usage={agent.runUsage} api={agent.api} connectorUsage={agent.state.usage} updateBudget={agent.updateBudget} focus={id => { view(true); onFocus(id); }} nodeTitle={id => items.find(item => item.id === id)?.title || id} />
     </div></section>
     {page === 'skills' && !connectionOpen && <section className="agent-function-page agent-skill-placeholder" aria-label="Skill"><UiIcon name="toolbox" /><h2>Skill</h2><p>入口已预留，尚未接入技能。</p><button type="button" onClick={() => setPage('chat')}>返回会话</button></section>}
-    <section ref={messageList} className="canvas-agent-conversation" aria-label="会话消息" onScroll={event => { const el = event.currentTarget; followMessages.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
+    <section ref={messageList} className="canvas-agent-conversation" aria-label="会话消息" onScroll={conversation.onScroll}>
+      {conversation.from > 0 && <button type="button" className="agent-history-page" onClick={conversation.older}><UiIcon name="up" />查看更早消息 · 前面还有 {conversation.from} 条</button>}
       {!agent.state.messages.length && <div className="canvas-agent-quiet-state">
         <span className="canvas-agent-emblem"><UiIcon name="robot" /></span>
         <h2>从一个想法开始</h2>
         <p>描述你的创作目标，<br />也可以引用画布中的素材与节点。</p>
         <span className="canvas-agent-scope">图像 · 视频 · 声音 · 3D · 短片</span>
       </div>}
-      <AgentConversation messages={agent.state.messages} renderMessage={message => <article className="canvas-agent-message" data-role={message.role} id={'agent-message-' + message.id} tabIndex={-1} key={message.id}><small>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Agent' : '画布'}</small><div>{message.role === 'notice' && message.id.startsWith('execution:') && receiptById.has(message.id.slice(10)) ? <AgentResultCard receipt={receiptById.get(message.id.slice(10))!} jobs={liveJobs} receipts={agent.project.receipts} items={items} connected={agent.state.connected} active={agent.busy || agent.state.active} focus={(ids, label) => { view(true); if (access?.reveal) access.reveal(ids, label); else if (ids[0]) onFocus(ids[0]); }} followup={(text, ids) => { view(false); void agent.send(text, ids); }} /> : message.role === 'assistant' ? <AgentMessageBody text={message.text} /> : message.text}</div>{message.imageCount ? <><AgentMessageImages canvasKey={canvasKey} messageId={message.id} /><em>附图 {message.imageCount} 张 · {message.model}{message.effort ? ` · ${message.effort}` : ''}</em></> : null}</article>} />
-      {agent.state.pending?.tool === 'heiyan_edit_canvas' && <AgentProposalCard pending={agent.state.pending} items={items} access={access} ready={ready} busy={agent.busy} focus={id => { view(true); onFocus(id); }} decide={approved => void agent.decide(approved)} revise={agent.api || agent.connection?.capabilities?.includes('steering') ? () => void agent.steer('请重新读取当前画布，核对并修正待确认的方案。之前尚未执行的方案作废。') : undefined} />}
-      {agent.state.pending?.tool === 'heiyan_request_generation' && <section id="agent-pending-proposal" tabIndex={-1} className="canvas-agent-proposal canvas-agent-generation-proposal" aria-label="待确认的真实生成">
+      <AgentConversation canvasKey={canvasKey} receipts={agent.project.receipts} messages={conversation.messages} reveal={conversation.focusTarget} renderMessage={message => <article className="canvas-agent-message" data-role={message.role} id={'agent-message-' + message.id} tabIndex={-1} key={message.id}><small>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Agent' : '画布'}</small><div>{message.question ? <AgentQuestionCard question={message.question} connected={agent.state.connected} onAnswer={agent.questions.reply} onTouch={agent.questions.touch} /> : message.role === 'notice' && message.id.startsWith('execution:') && receiptById.has(message.id.slice(10)) ? <AgentResultCard receipt={receiptById.get(message.id.slice(10))!} jobs={liveJobs} receipts={agent.project.receipts} items={items} connected={agent.state.connected} active={agent.busy || agent.state.active} focus={(ids, label) => { view(true); if (access?.reveal) access.reveal(ids, label); else if (ids[0]) onFocus(ids[0]); }} followup={(text, ids) => { view(false); void agent.send(text, ids); }} /> : message.role === 'assistant' ? <AgentMessageBody text={message.text} /> : message.text}<AgentMessageReferences references={message.nodeRefs} items={items} locate={id => { view(true); onFocus(id); }} /></div>{message.imageCount ? <><AgentMessageImages canvasKey={canvasKey} messageId={message.id} /><em>附图 {message.imageCount} 张 · {message.model}{message.effort ? ` · ${message.effort}` : ''}</em></> : null}</article>} />
+      {!automaticPending && agent.state.pending?.tool === 'heiyan_edit_canvas' && <AgentProposalCard pending={agent.state.pending} items={items} access={access} ready={ready} busy={agent.busy} focus={id => { view(true); onFocus(id); }} decide={approved => void agent.decide(approved)} revise={agent.api || agent.connection?.capabilities?.includes('steering') ? () => void agent.steer('请重新读取当前画布，核对并修正待确认的方案。之前尚未执行的方案作废。') : undefined} />}
+      {!automaticPending && agent.state.pending?.tool === 'heiyan_request_generation' && <section id="agent-pending-proposal" tabIndex={-1} className="canvas-agent-proposal canvas-agent-generation-proposal" aria-label="待确认的真实生成">
         <strong>确认真实生成</strong><p>{agent.state.pending.input.summary}</p>
         <div className="agent-generation-plan">{agent.state.pending.input.nodeIds?.map(id => { const item = items.find(n => n.id === id), node = generationPreview?.nodes.find(n => n.id === id); return <article key={id}><header>{item && <span className="canvas-agent-thumb"><ItemPreview item={item} /></span>}<strong>{item?.title || '原节点不可用'}</strong>{item && <button type="button" onClick={() => { view(true); onFocus(id); }}>定位</button>}</header><p>{generationPreview?.availableModels?.find(m => m.id === node?.model)?.name || node?.model || '尚未配置模型'}</p><p>{[node?.settings?.ratio, node?.settings?.resolution, node?.settings?.count ? `${node.settings.count} 个` : '', node?.settings?.duration ? `${node.settings.duration} 秒` : ''].filter(Boolean).join(' · ')}</p><details><summary>查看描述与输入</summary><p>{node?.prompt || '无文字描述'}</p><p>输入：{generationPreview?.edges.filter(e => e.target === id).map(e => items.find(n => n.id === e.source)?.title || '来源节点').join('、') || '无节点引用'}</p></details></article>; })}</div>
         {generationPreview?.revision !== agent.state.pending.revision && <p role="alert">画布已变化，请重新读取并核对本次生成配置。</p>}
         <p>将使用各节点当前的模型、规格和输入，可能产生资源消耗。</p>
         {agent.state.pending.claimed ? <p>生成请求已领取，正在提交；不会重复执行。</p> : <footer><button type="button" disabled={agent.busy} onClick={() => void agent.decide(false)}>取消本次操作</button><button type="button" className="agent-confirm-action" disabled={agent.busy || !ready || generationPreview?.revision !== agent.state.pending.revision} onClick={() => void agent.decide(true)}>确认并生成</button></footer>}
       </section>}
-      {agent.state.pending && ['heiyan_read_images', 'heiyan_project_checkpoint'].includes(agent.state.pending.tool) && <section id="agent-pending-proposal" tabIndex={-1} className="canvas-agent-proposal">
+      {!automaticPending && agent.state.pending && ['heiyan_read_images', 'heiyan_project_checkpoint'].includes(agent.state.pending.tool) && <section id="agent-pending-proposal" tabIndex={-1} className="canvas-agent-proposal">
         <strong>{agent.state.pending.tool === 'heiyan_read_images' ? '确认读取图片' : '确认保存项目记忆'}</strong>
         {agent.state.pending.tool === 'heiyan_read_images' ? <><p>将以下节点图片发送给当前模型：</p><ul>{agent.state.pending.input.nodeIds?.map((id, i) => { const item = items.find(n => n.id === id), output = imageReadPreview[i]?.outputs[agent.state.pending?.input.outputIndexes?.[i] || 0]; return <li className="agent-image-permission" key={id + ':' + i}><span className="canvas-agent-thumb">{agent.state.pending?.input.jobIds ? output?.mediaUrl && imageReadPreview[i]?.type === 'image' ? <img src={output.previewUrl || output.mediaUrl} alt="待发送的指定结果" /> : '不可用' : item ? <ItemPreview item={item} /> : null}</span><span>{item?.title || id}{agent.state.pending?.input.jobIds ? ` · 任务 ${agent.state.pending.input.jobIds[i].slice(-6)} · 第 ${(agent.state.pending.input.outputIndexes?.[i] || 0) + 1} 个结果` : ''}</span></li>; })}</ul></> : <>{(['goal', 'requirements', 'progress', 'summary'] as const).map(key => agent.state.pending?.input[key] !== undefined ? <div key={key}><b>{({ goal: '目标', requirements: '明确要求', progress: '进度', summary: '摘要' })[key]}</b><p>{agent.state.pending?.input[key]}</p></div> : null)}</>}
         {agent.state.pending.tool === 'heiyan_read_images' && <p>检查图会按传输上限缩小，原始素材保留在节点中。</p>}
         {agent.state.pending.tool === 'heiyan_read_images' && !agent.state.pending.claimed && <label className="agent-api-check"><input type="checkbox" checked={rememberImages} onChange={e => setRememberImages(e.target.checked)} />本轮允许再次读取以上指定图片，结束后失效</label>}
         {agent.state.pending.claimed ? <p>操作已领取，请等待结果。</p> : <footer><button type="button" disabled={agent.busy} onClick={() => void agent.decide(false)}>取消本次操作</button><button type="button" className="agent-confirm-action" disabled={agent.busy || !ready || !agent.memoryReady} onClick={() => void agent.decide(true, rememberImages)}>{agent.state.pending.tool === 'heiyan_read_images' ? '允许读取图片' : '确认保存记忆'}</button></footer>}
       </section>}
-      {agent.state.active && <p className="canvas-agent-progress" role="status">{!agent.state.connected ? '状态连接中断，执行结果待核实；请勿重复发送。' : agent.state.pending?.tool === 'heiyan_request_generation' ? '等待生成确认…' : agent.state.pending?.tool === 'heiyan_read_generation' ? '等待素材生成，仍可补充要求或停止等待…' : agent.state.pending?.tool === 'heiyan_review_result' ? '正在记录结果检查…' : agent.state.pending ? '等待画布操作…' : 'Agent 正在处理…'}</p>}
+      {!automaticPending && agent.state.pending?.tool === 'heiyan_canvas_action' && <section id="agent-pending-proposal" tabIndex={-1} className="canvas-agent-proposal">
+        <strong>{canvasCapability(agent.state.pending.input.action)?.label || agent.state.pending.input.action}</strong>
+        <p>{agent.state.pending.input.summary}</p>
+        {canvasCapability(agent.state.pending.input.action)?.risk === 'generate' && <p>会提交真实生成或处理任务，提交不代表生成完成。</p>}
+        <details><summary>查看操作参数</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 180, overflow: 'auto' }}>{agent.state.pending.input.arguments}</pre></details>
+        {agent.state.pending.claimed ? <p>正在执行并核实结果，请勿重复提交。</p> : <footer><button type="button" disabled={agent.busy} onClick={() => void agent.decide(false)}>取消</button><button type="button" disabled={agent.busy || !ready} onClick={() => void agent.decide(true)}>允许本次操作</button></footer>}
+      </section>}
+      {agent.state.active && <p className="canvas-agent-progress" role="status">{!agent.state.connected ? '状态连接中断，执行结果待核实；请勿重复发送。' : automaticPending ? '正在按完全授权执行操作…' : agent.questions.waiting ? '等待你的回答…' : agent.state.pending?.tool === 'heiyan_request_generation' ? '等待生成确认…' : agent.state.pending?.tool === 'heiyan_read_generation' ? '等待素材生成，仍可补充要求或停止等待…' : agent.state.pending?.tool === 'heiyan_review_result' ? '正在记录结果检查…' : agent.state.pending ? '等待画布操作…' : 'Agent 正在处理…'}</p>}
       {(agent.error || agent.state.error) && <p className="canvas-agent-error" role="alert">{agent.error || agent.state.error}</p>}
     </section>
     {pickerOpen && <div ref={popup} className="canvas-agent-popup" role="dialog" aria-label="引用画布节点">
@@ -309,7 +338,9 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
       <footer><span>仅作为会话引用，不会连线</span><button type="button" disabled={!chosen.length} onClick={() => addReferences(chosen)}>添加引用{chosen.length ? ' · ' + chosen.length : ''}</button></footer>
     </div>}
     <form ref={composer} className="canvas-agent-composer" data-collapsed={collapsed} data-resizing={composerResizing || undefined} onSubmit={event => { event.preventDefault(); void send(); }} style={!collapsed && height ? { '--agent-resized-height': height + 'px' } as CSSProperties : undefined}>
-      {agent.state.pending && !agent.state.pending.claimed && ['heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(agent.state.pending.tool) && <button type="button" className="agent-pending-jump" onClick={() => { const card = document.getElementById('agent-pending-proposal'); card?.scrollIntoView({ block: 'start', behavior: 'instant' }); card?.focus({ preventScroll: true }); }}><span>有一项操作等待你确认</span><span>查看方案 ↑</span></button>}
+      {!!unanswered.length && <div className="agent-pending-reminder"><button type="button" className="agent-pending-jump" onClick={() => { view(false); conversation.focus(unanswered[0].id); }}><span>{unanswered.length} 项问题待回答</span><span>查看问题 ↑</span></button><button type="button" disabled={agent.busy} title="忽略这些问题，不会替你选择或授权" onClick={() => { void agent.questions.dismiss(unanswered.map(message => message.question!.id)).catch(error => setAttachmentError(error instanceof Error ? error.message : '清除失败，请重试')); }}>清除提醒</button></div>}
+      {conversation.away && <button type="button" className="agent-chat-jump" aria-label="回到最新消息" title="回到最新消息" onClick={conversation.latest}><UiIcon name="down" /></button>}
+      {agent.state.pending && !agent.state.pending.claimed && ['heiyan_canvas_action', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(agent.state.pending.tool) && <button type="button" className="agent-pending-jump" onClick={() => { const card = document.getElementById('agent-pending-proposal'); card?.scrollIntoView({ block: 'start', behavior: 'instant' }); card?.focus({ preventScroll: true }); }}><span>有一项操作等待你确认</span><span>查看方案 ↑</span></button>}
       <button type="button" className="canvas-agent-grip" aria-label="拖动调整输入面板，向下滑动收起" aria-expanded={!collapsed} title="调节高度 · 双击复原"
         onDoubleClick={() => { setHeight(undefined); setCollapsed(false); }}
         onPointerDown={event => {
@@ -357,7 +388,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
 
             <AgentComposerOptions mode={approvalMode} onMode={chooseApprovalMode} models={agent.models} model={agent.model} effort={agent.effort} onModel={agent.setModel} onEffort={agent.setEffort} active={agent.state.active} />
             <div className="canvas-agent-submit-actions">{agent.state.active && !!draft.text.trim() && <button type="submit" className="agent-steer-button" disabled={agent.busy || !(agent.api || agent.connection?.capabilities?.includes('steering'))}>补充要求</button>}
-            {agent.state.active ? <button type="button" className="canvas-agent-send" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : <button type="submit" className="canvas-agent-send" aria-label={agent.state.connected ? '发送消息' : '发送消息（需先连接 Agent）'} title={agent.state.connected ? '发送 · Enter，换行 · Shift+Enter' : '请先连接 Agent'} disabled={!agent.state.connected || !agent.memoryReady || (!draft.text.trim() && !images.length) || !ready || agent.busy}><UiIcon name="arrowUp" /></button>}
+            {agent.state.active ? <button type="button" className="canvas-agent-send" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : <button type="submit" className="canvas-agent-send" aria-label={agent.state.connected ? '发送消息' : '发送消息（需先连接 Agent）'} title={agent.state.connected ? '发送 · Enter，换行 · Shift+Enter' : '请先连接 Agent'} disabled={!agent.state.connected || !agent.memoryReady || !hasConversationContent(draft, images.length) || !ready || agent.busy}><UiIcon name="arrowUp" /></button>}
             </div>
           </footer>
           {attachmentError && <p className="canvas-agent-attachment-error" role="alert">{attachmentError}</p>}

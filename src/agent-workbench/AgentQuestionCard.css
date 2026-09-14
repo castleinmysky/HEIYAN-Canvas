@@ -1,0 +1,33 @@
+/* Hallmark · component: conversational questions · inherited HEIYAN monochrome
+ * modern-minimal · compact creator workbench · P4 H4 E4 S4 R5 V4 */
+.canvas-agent-dock .agent-question { border: 1px solid var(--cad-rule); border-radius: var(--cad-radius-md); background: var(--cad-rail); padding: var(--cad-space-sm); color: var(--canvas-text); font: 13px/1.5 var(--canvas-font-ui); min-width: 0; overflow-wrap: anywhere; }
+.agent-question > header { display: flex; align-items: center; gap: 7px; color: var(--canvas-text-soft); font-size: 12px; margin-bottom: 12px; }
+.agent-question svg { width: 16px; height: 16px; flex: 0 0 16px; }
+.canvas-agent-dock .agent-question fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 16px; }
+.canvas-agent-dock .agent-question legend { padding: 0; margin-bottom: 10px; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.agent-question-options { display: grid; gap: 6px; }
+.canvas-agent-dock .agent-question-options label { display: flex; align-items: flex-start; gap: 9px; padding: 10px; border: 1px solid var(--cad-rule); border-radius: 7px; cursor: pointer; background: var(--canvas-bg); transition: background-color 150ms cubic-bezier(.16,1,.3,1); }
+.agent-question-options label > span { min-width: 0; }
+.canvas-agent-dock .agent-question-options strong { display: block; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.canvas-agent-dock .agent-question-options small { display: block; margin-top: 3px; font-size: 12px; line-height: 1.5; color: var(--canvas-text-soft); }
+.canvas-agent-dock .agent-question input[type=radio] { width: 15px; height: 15px; flex: 0 0 15px; margin: 3px 0 0; accent-color: var(--canvas-primary); }
+.canvas-agent-dock .agent-question-options label[data-selected=true] { border-color: var(--canvas-primary); background: var(--cad-control); }
+.canvas-agent-dock .agent-question-other { display: flex; gap: 9px; align-items: center; margin: 10px 0; font-size: 13px; cursor: pointer; }
+.canvas-agent-dock .agent-question-text { width: 100%; box-sizing: border-box; min-height: 66px; padding: 10px; border: 1px solid var(--cad-rule); border-radius: 7px; resize: vertical; background: var(--canvas-bg); color: var(--canvas-text); font: inherit; }
+.canvas-agent-dock .agent-question footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.canvas-agent-dock .agent-question button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; min-height: 36px; border: 1px solid var(--cad-rule); border-radius: 7px; font: inherit; white-space: nowrap; cursor: pointer; color: var(--canvas-text); background: transparent; }
+.canvas-agent-dock .agent-question .agent-question-submit { background: var(--cad-control); }
+.canvas-agent-dock .agent-question :is(button,input,textarea):focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .agent-question label:has(input:focus-visible) { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock .agent-question button:active:not(:disabled) { transform: translateY(1px); }
+.canvas-agent-dock .agent-question button:disabled { opacity: .45; cursor: not-allowed; }
+.canvas-agent-dock .agent-question :is(.agent-question-hint,.agent-question-answer,.agent-question-error) { margin: 8px 0; font: inherit; }
+.canvas-agent-dock .agent-question .agent-question-hint { color: var(--canvas-text-soft); font-size: 12px; }
+.agent-question-error { display: flex; gap: 6px; }
+.canvas-agent-dock .canvas-agent-message:has(.agent-question) { max-width: 100%; width: 100%; }
+.canvas-agent-dock .canvas-agent-message:has(.agent-question) > div { background: none; padding: 0; border: 0; }
+.canvas-agent-dock .canvas-agent-message:has(.agent-question) > div::before { display: none; }
+.canvas-agent-dock .agent-question[data-status=answered] { border-color: transparent; background: var(--cad-control); }
+@media (hover: hover) { .canvas-agent-dock .agent-question-options label:hover, .canvas-agent-dock .agent-question button:hover:not(:disabled) { background: var(--cad-control); } }
+@media (pointer: coarse) { .canvas-agent-dock .agent-question button, .canvas-agent-dock .agent-question-other { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .canvas-agent-dock .agent-question-options label { transition: none; } .canvas-agent-dock .agent-question button:active:not(:disabled) { transform: none; } }

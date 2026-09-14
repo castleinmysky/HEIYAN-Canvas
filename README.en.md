@@ -38,7 +38,7 @@ Text + reference images → generated assets → inputs for the next step
 
 Click a thumbnail to view it at full size. These screenshots show the Chinese interface with demo assets; the connection panels contain no account credentials.
 
-Configure official APIs and compatible third-party endpoints separately. Agent asks before generation by default. Opting into full access allows automatic operations, including paid generation, on the current canvas. This choice is saved per canvas and can be revoked at any time. [1.2 release notes](docs/releases-1.2.md)
+Configure official APIs and compatible third-party endpoints separately. Public web search can be explicitly enabled per Responses API connection; it is off by default and unavailable in Chat Completions mode. Agent can discover and call the canvas's existing node, ComfyUI/H3 and job capabilities. Agent asks before generation by default. Opting into full access allows automatic operations, including paid generation, on the current canvas. This choice is saved per canvas and can be revoked at any time. [1.3 release notes](docs/releases-1.3.0.md)
 
 ## Features
 

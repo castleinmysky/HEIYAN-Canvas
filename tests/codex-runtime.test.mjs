@@ -37,10 +37,11 @@ test('Codex wire handshake isolates inherited capabilities without account/confi
   assert.equal(start.config['features.code_mode_host'], true);
   assert.equal(start.config['features.code_mode'], undefined);
   for (const feature of ['shell_tool', 'unified_exec', 'apps', 'plugins', 'computer_use', 'browser_use', 'image_generation']) assert.equal(start.config['features.' + feature], false);
+  assert.equal(start.config.web_search, 'live');
   assert.deepEqual(start.environments, []); assert.deepEqual(start.selectedCapabilityRoots, []);
   assert.deepEqual(start.config.mcp_servers, { 'exact.server-name': { enabled: false } });
   assert.ok(!JSON.stringify(start).includes('do-not-forward'));
-  assert.deepEqual(start.dynamicTools.map(t => t.name), ['heiyan_search_history', 'heiyan_read_images', 'heiyan_project_checkpoint', 'heiyan_read_canvas', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_generation', 'heiyan_review_result']);
+  assert.deepEqual(start.dynamicTools.map(t => t.name), ['heiyan_ask_question', 'heiyan_canvas_capabilities', 'heiyan_canvas_action', 'heiyan_search_history', 'heiyan_read_images', 'heiyan_project_checkpoint', 'heiyan_read_canvas', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_generation', 'heiyan_review_result']);
   assert.ok(start.dynamicTools.every(t => t.type === 'function'));
   assert.equal(f.requests.find(r => r.method === 'mcpServerStatus/list').params.threadId, thread);
   assert.equal(f.launch.options.shell, false); assert.equal(f.launch.options.windowsHide, true);

@@ -1,11 +1,12 @@
 import { agentInstructions, contextInstructions, agentTools } from '../../server/agent-contract.js';
 import { contextLimits, estimateTokens, messageTokens } from './agent-context';
-import { readAgentResponse } from './agent-stream';
+import { readAgentResponse, sanitizeProviderText, sanitizeResponseItems } from './agent-stream';
 import { awaitAbortable } from './agent-abort';
 export type ApiProfile = {
   request?: typeof fetch;
   provider: 'official' | 'custom'; baseUrl: string; apiKey: string; model: string; protocol: 'responses' | 'chat'; vision: boolean; effort: string; contextChars: number;
   contextTokens?: number; outputTokens?: number; stream?: boolean; strict?: boolean; nativeCompaction?: boolean; countTokens?: boolean;
+  webSearch?: boolean;
   helperModel?: string; embeddingModel?: string; tokenBudget?: number; callLimit?: number;
   prices?: { input?: number; output?: number; cached?: number; helperInput?: number; helperOutput?: number };
 };
@@ -47,30 +48,36 @@ export function omitNullArguments(value: unknown): unknown {
 }
 export function apiPayload(profile: ApiProfile, messages: ApiMessage[], instructions = agentInstructions + contextInstructions, tools = true) {
   const common = { model: profile.model, stream: profile.stream === true };
+  const providerSecrets = [profile.apiKey.trim(), `Bearer ${profile.apiKey.trim()}`].filter(Boolean);
+  const safeToolCalls = (calls: ToolCall[] = []) => calls.filter(call => !providerSecrets.some(secret => secret && (call.id.includes(secret) || call.name.includes(secret) || call.arguments.includes(secret))));
   const specs = toolSpecs.map(t => ({ type: 'function', name: t.name, description: t.description, parameters: profile.strict ? strictSchema(t.inputSchema) : t.inputSchema, strict: !!profile.strict }));
+  const responseTools = profile.protocol === 'responses' && profile.webSearch === true ? [...specs, { type: 'web_search' }] : specs;
   if (profile.protocol === 'responses') {
     const input: object[] = [];
     for (const m of messages) {
-      if (m.role === 'assistant' && m.responseItems?.length) { input.push(...m.responseItems.filter((item: any) => item.type !== 'reasoning' || item.encrypted_content)); continue; }
+      if (m.role === 'assistant' && m.responseItems?.length) { input.push(...sanitizeResponseItems(m.responseItems, providerSecrets).filter((item: any) => item.type !== 'reasoning' || item.encrypted_content)); continue; }
       if (m.role === 'tool') {
         input.push({ type: 'function_call_output', call_id: m.callId, output: m.content });
         if (m.images?.length) input.push({ role: 'user', content: [{ type: 'input_text', text: '已批准读取的画布图片，与上一条工具结果对应。' }, ...m.images.map(image_url => ({ type: 'input_image', image_url }))] });
       } else {
-        if (m.content || m.images?.length) input.push({ role: m.role, content: m.role === 'user' ? [{ type: 'input_text', text: m.content }, ...(m.images || []).map(image_url => ({ type: 'input_image', image_url }))] : [{ type: 'output_text', text: m.content }] });
-        for (const call of m.toolCalls || []) input.push({ type: 'function_call', call_id: call.id, name: call.name, arguments: call.arguments });
+        if (m.content || m.images?.length) input.push({ role: m.role, content: m.role === 'user' ? [{ type: 'input_text', text: m.content }, ...(m.images || []).map(image_url => ({ type: 'input_image', image_url }))] : [{ type: 'output_text', text: sanitizeProviderText(m.content, providerSecrets) }] });
+        for (const call of safeToolCalls(m.toolCalls)) input.push({ type: 'function_call', call_id: call.id, name: call.name, arguments: call.arguments });
       }
     }
     return { ...common, instructions, input, store: false, max_output_tokens: contextLimits(profile).output,
       ...(profile.provider === 'official' ? { include: ['reasoning.encrypted_content'] } : {}),
-      ...(profile.effort ? { reasoning: { effort: profile.effort } } : {}), ...(tools ? { parallel_tool_calls: true, tools: specs } : {}) };
+      ...(profile.effort ? { reasoning: { effort: profile.effort } } : {}), ...(tools ? { parallel_tool_calls: true, tools: responseTools } : {}) };
   }
   const history: object[] = [{ role: 'system', content: instructions }];
   for (const m of messages) {
     if (m.role === 'tool') {
       history.push({ role: 'tool', tool_call_id: m.callId, content: m.content });
       if (m.images?.length) history.push({ role: 'user', content: [{ type: 'text', text: '已批准读取的画布图片。' }, ...m.images.map(url => ({ type: 'image_url', image_url: { url } }))] });
-    } else history.push({ role: m.role, content: m.images?.length ? [{ type: 'text', text: m.content }, ...m.images.map(url => ({ type: 'image_url', image_url: { url } }))] : m.content || null,
-      ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map(c => ({ id: c.id, type: 'function', function: { name: c.name, arguments: c.arguments } })) } : {}) });
+    } else {
+      const content = m.role === 'assistant' ? sanitizeProviderText(m.content, providerSecrets) : m.content;
+      history.push({ role: m.role, content: m.images?.length ? [{ type: 'text', text: content }, ...m.images.map(url => ({ type: 'image_url', image_url: { url } }))] : content || null,
+      ...(safeToolCalls(m.toolCalls).length ? { tool_calls: safeToolCalls(m.toolCalls).map(c => ({ id: c.id, type: 'function', function: { name: c.name, arguments: c.arguments } })) } : {}) });
+    }
   }
   return { ...common, messages: history, max_completion_tokens: contextLimits(profile).output, ...(profile.stream ? { stream_options: { include_usage: true } } : {}),
     ...(profile.effort ? { reasoning_effort: profile.effort } : {}), ...(tools ? { parallel_tool_calls: true, tools: specs.map(({ type, ...fn }) => ({ type, function: fn })) } : {}) };
@@ -102,7 +109,8 @@ export async function apiStep(profile: ApiProfile, messages: ApiMessage[], signa
   if (!profile.model.trim()) throw Error('请填写模型名称');
   const timed = AbortSignal.any([signal, AbortSignal.timeout(180000)]);
   const response = await apiTransport(profile, apiPayload(profile, messages, options?.instructions, options?.tools), timed);
-  return readAgentResponse(response, profile.protocol, options?.onText, timed);
+  const key = profile.apiKey.trim();
+  return readAgentResponse(response, profile.protocol, options?.onText, timed, [key, `Bearer ${key}`]);
 }
 export async function countApiTokens(profile: ApiProfile, messages: ApiMessage[], signal: AbortSignal) {
   const payload = apiPayload(profile, messages) as { model: string; input?: object[]; instructions?: string; tools?: object[] };
@@ -116,8 +124,11 @@ export async function compactApi(profile: ApiProfile, messages: ApiMessage[], si
   const response = await apiTransport(profile, { model: profile.model, input: payload.input, instructions: payload.instructions }, AbortSignal.any([signal, AbortSignal.timeout(180000)]), 'responses/compact');
   const data = await response.json();
   if (!Array.isArray(data.output) || !data.output.some((item: any) => item.type === 'compaction' && typeof item.encrypted_content === 'string')) throw Error('该接口未返回可继续使用的原生压缩结果。');
+  const key = profile.apiKey.trim();
+  const output = sanitizeResponseItems(data.output, [key, `Bearer ${key}`]);
+  if (!output.some((item: any) => item.type === 'compaction' && item.encrypted_content)) throw Error('压缩结果包含不可安全保存的提供方数据。');
   // The ENTIRE canonical compacted window must be replayed, not just its opaque item.
-  return { message: { role: 'assistant', content: '', responseItems: data.output } as ApiMessage, usage: data.usage };
+  return { message: { role: 'assistant', content: '', responseItems: output } as ApiMessage, usage: data.usage };
 }
 export function helperProfile(profile: ApiProfile): ApiProfile {
   return profile.helperModel ? { ...profile, model: profile.helperModel, effort: '', strict: false, stream: false, outputTokens: 2048,

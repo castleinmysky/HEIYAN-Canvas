@@ -3,14 +3,16 @@ import { apiStep, apiPayload, compactApi, countApiTokens, helperProfile, omitNul
 import { buildProjectContext, clipTokens, contextLimits, estimateTokens, messageTokens } from './agent-context';
 import type { AgentProject } from './agent-memory';
 import type { AgentPending } from './agent-session';
-export type ToolResult = { success: boolean; result: string; images?: string[] };
+import { normalizeQuestions, type Question } from '../../server/agent-questions.js';
+export type ToolResult = { success: boolean; result: string; images?: string[]; revision?: string };
 export type AgentActivity = { phase: string; detail: string; step?: number; input?: number; limit?: number; measured?: boolean; nodeIds?: string[]; at: number };
-export const toolLabels: Record<string, string> = { heiyan_read_canvas: '读取画布', heiyan_search_history: '检索项目资料', heiyan_read_images: '读取图片', heiyan_edit_canvas: '修改画布', heiyan_request_generation: '提交素材生成', heiyan_project_checkpoint: '保存项目进度', heiyan_read_generation: '跟踪生成结果', heiyan_review_result: '记录结果评估' };
+export const toolLabels: Record<string, string> = { heiyan_canvas_capabilities: '查询画布能力', heiyan_canvas_action: '执行画布操作', heiyan_read_canvas: '读取画布', heiyan_search_history: '检索项目资料', heiyan_read_images: '读取图片', heiyan_edit_canvas: '修改画布', heiyan_request_generation: '提交素材生成', heiyan_project_checkpoint: '保存项目进度', heiyan_read_generation: '跟踪生成结果', heiyan_review_result: '记录结果评估' };
 export type RunnerCallbacks = {
   project: () => AgentProject; task: () => string; notes: () => string[]; hasNotes: () => boolean;
   read: (request?: AgentProposal) => Promise<AgentContext>;
   search: (request: AgentProposal) => Promise<string>;
   inspect?: (tool: string, request: AgentProposal, id: string, signal: AbortSignal) => Promise<string>;
+  ask?: (questions: Question[], id: string, signal: AbortSignal) => Promise<string>;
   decide: (pending: AgentPending) => Promise<ToolResult>;
   message: (id: string, text: string, partial?: boolean) => Promise<void>;
   draft: (id: string, text: string) => void;
@@ -94,7 +96,14 @@ export async function runApiAgent(profile: ApiProfile, initial: ApiMessage[], id
       check(); let result: ToolResult;
       try {
         if (callbacks.hasNotes()) throw Error('用户补充了要求，本次操作未执行；请重新读取后调整方案。');
-        const proposal = validateAgentTool(call.name, omitNullArguments(JSON.parse(call.arguments)));
+        const raw = omitNullArguments(JSON.parse(call.arguments));
+        if (call.name === 'heiyan_ask_question') {
+          validateAgentTool(call.name, raw);
+          if (!callbacks.ask) throw Error('当前客户端尚不支持选择卡片，请更新画布');
+          const answer = await callbacks.ask(normalizeQuestions((raw as { questions: unknown }).questions), `${id}:${call.id}`, signal);
+          return { role: 'tool', callId: call.id, content: answer };
+        }
+        const proposal = validateAgentTool(call.name, raw);
         status('tool', toolLabels[call.name] || '处理画布操作', { step: step + 1, nodeIds: proposal.nodeIds });
         if (call.name === 'heiyan_read_canvas') { const fresh = await callbacks.read(proposal); revision = fresh.revision; result = { success: true, result: JSON.stringify(fresh) }; }
         else if (call.name === 'heiyan_search_history') result = { success: true, result: await callbacks.search(proposal) };
@@ -104,7 +113,10 @@ export async function runApiAgent(profile: ApiProfile, initial: ApiMessage[], id
           if (call.name === 'heiyan_read_generation') { const fresh = JSON.parse(inspected); if (typeof fresh.revision === 'string') revision = fresh.revision; }
           result = { success: true, result: inspected };
         }
-        else result = await callbacks.decide({ id: `${id}:${call.id}`, tool: call.name, input: proposal, revision, claimed: false });
+        else {
+          result = await callbacks.decide({ id: `${id}:${call.id}`, tool: call.name, input: proposal, revision, claimed: false });
+          if (result.success && result.revision) revision = result.revision;
+        }
         if (call.name === 'heiyan_request_generation' && result.success && callbacks.inspect) {
           const submitted = JSON.parse(result.result);
           const jobs = (submitted.submitted || []).map((j: { id: string; jobId: string }) => ({ nodeId: j.id, jobId: j.jobId }));

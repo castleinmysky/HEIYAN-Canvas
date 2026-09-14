@@ -12,6 +12,15 @@ export function AgentResultCard({ receipt, jobs, receipts, items, focus, connect
   const data = parseReceipt(receipt);
   if (receipt.status !== 'succeeded' || !data) return <div>{receipt.status === 'failed' ? '操作未完成：' : ''}{receipt.result}</div>;
   if (receipt.tool === 'heiyan_review_result') return <div className="agent-assessment" data-verdict={data.verdict}><b>{labels[data.verdict as keyof typeof labels] || 'Agent 评估'}</b><p>{data.reason}</p><small>基于已读取的结果与本次要求，仍可由你确认或提出调整。</small><button type="button" onClick={() => focus([data.nodeId], '查看评估结果')}>定位结果</button></div>;
+  if (receipt.tool === 'heiyan_canvas_action') {
+    const ids: string[] = Array.isArray(data.affected) ? data.affected : Object.values(data.created || {});
+    const kicker = data.status === 'submitted' ? '任务已提交' : data.status === 'needs_user' ? '等待你在画布操作' : '画布操作已完成';
+    return <section className="agent-edit-result" data-action={data.action || undefined}>
+      <span className="agent-card-kicker">{kicker}</span><strong>{data.summary || data.action || '画布能力已执行'}</strong>
+      {!!ids.length && <><p>{ids.length} 个节点受影响</p><div className="agent-source-chips">{ids.slice(0, 12).map(id => <button type="button" key={id} disabled={!items.some(node => node.id === id)} onClick={() => focus([id], '查看操作结果')}>{items.find(node => node.id === id)?.title || data.titles?.[id] || id}</button>)}</div><button type="button" onClick={() => focus(ids, '查看本次操作')}>定位相关节点</button></>}
+      <small>{data.status === 'submitted' ? '提交不代表处理完成；请继续核实任务状态。' : data.status === 'needs_user' ? '已打开对应入口，但没有替你完成浏览器操作。' : '可继续在画布中检查；修改仍沿用现有撤销记录。'}</small>
+    </section>;
+  }
   if (receipt.tool === 'heiyan_edit_canvas') {
     const ids: string[] = data.affected || [...Object.values(data.created || {}), ...(data.changed || [])];
     return <section className="agent-edit-result"><span className="agent-card-kicker">画布已更新</span><strong>{data.summary || '已应用画布方案'}</strong><p>{Object.keys(data.created || {}).length ? `新增 ${Object.keys(data.created).length} 个节点 · ` : ''}{data.affectedCount ?? ids.length} 个节点受影响{data.deleted?.length ? ` · 移除 ${data.deleted.length} 个节点` : ''}</p><div className="agent-source-chips">{ids.slice(0, 12).map(id => <button type="button" key={id} disabled={!items.some(n => n.id === id)} onClick={() => focus([id], '查看修改结果')}>{items.find(n => n.id === id)?.title || data.titles?.[id] || '原节点已移除'}</button>)}</div>{!!ids.length && <button type="button" onClick={() => focus(ids, '查看本次修改')}>查看本次变化</button>}<small>已保留画布撤销记录；生成任务另行确认。</small></section>;

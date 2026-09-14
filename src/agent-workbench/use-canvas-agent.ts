@@ -11,6 +11,9 @@ import { buildProjectContext, contextLimits, promptReferenceContext } from './ag
 import { runApiAgent, toolLabels, type AgentActivity } from './agent-runner';
 import { SemanticIndex, embedTexts, projectDocuments, serializeSearch, type SemanticProfile, type SearchResult } from './agent-search';
 import { generationReceipts, imageScope, validateAssessment, safeJobReport, waitForJobs, waitingJob } from './agent-jobs';
+import { discoverCanvasCapabilities } from '../../server/agent-capabilities.js';
+import { messageTime } from './conversation-time';
+import { useAgentQuestions } from './use-agent-questions';
 
 export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, approvalMode: AgentApprovalMode = 'ask') {
   const agentConnectionKey = agentConnectionStorageKey(canvasKey);
@@ -46,7 +49,7 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
   const apiRef = useRef(api); apiRef.current = api;
   const controller = useRef<AbortController | null>(null);
   const apiDecision = useRef<((value: { success: boolean; result: string; images?: string[] }) => void) | null>(null);
-  const pendingDelivery = useRef<{ id: string; claim: string; success: boolean; result: string; images?: string[] } | null>(null);
+  const pendingDelivery = useRef<{ id: string; claim: string; success: boolean; result: string; images?: string[]; revision?: string } | null>(null);
   const updateState = useCallback((next: Partial<AgentState>) => { if (mounted.current) { stateRef.current = { ...stateRef.current, ...next }; setState(stateRef.current); } }, []);
   const report = (e: unknown) => { if (mounted.current) setError(e instanceof Error ? e.message : '连接暂时不可用'); };
   const loadProject = useCallback(async () => {
@@ -80,6 +83,7 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
   }, [canvasKey]);
   const receipt = (id: string, tool: string, status: ExecutionReceipt['status'], result = '') => commit(p => ({ ...p, receipts: [...p.receipts.filter(r => r.id !== id), { id, tool, status, result, at: Date.now() }] }));
   const recordMessage = async (message: AgentProject['messages'][number]) => {
+    if (!stateRef.current.messages.some(item => item.id === message.id)) messageTime(canvasKey, message.id, true);
     unsavedMessages.current = mergeMessages(unsavedMessages.current, [message]);
     updateState({ messages: mergeMessages(stateRef.current.messages, [message]) });
     const p = await commit(p => ({ ...p, messages: mergeMessages(p.messages, [message]) })); updateState({ messages: p.messages });
@@ -150,7 +154,7 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
     await recordMessage({ id: `execution:${id}`, role: 'notice', text: result });
     return result;
   };
-  const execute = async (pending: AgentPending, approved: boolean): Promise<{ success: boolean; result: string; images?: string[] }> => {
+  const execute = async (pending: AgentPending, approved: boolean): Promise<{ success: boolean; result: string; images?: string[]; revision?: string }> => {
     const old = projectRef.current.receipts.find(r => r.id === pending.id);
     if (old) return { success: old.status === 'succeeded', result: old.status === 'claimed' ? '此操作已领取，结果未知；先核实画布，不得自动重放。' : old.result };
     if (!approved) { await receipt(pending.id, pending.tool, 'rejected', '用户拒绝了此操作'); return { success: false, result: '用户拒绝了此操作，不要重复申请' }; }
@@ -163,7 +167,12 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
       const canvas = currentAccess();
       if (pendingNotes.current.length) throw Error('用户已补充要求，请重新读取画布并调整方案');
       if (canvas.read(refs.current).revision !== pending.revision) throw Error('画布已变化，请重新读取后提出方案');
-      if (pending.tool === 'heiyan_read_images') {
+      if (pending.tool === 'heiyan_canvas_capabilities') {
+        result = JSON.stringify(discoverCanvasCapabilities(pending.input));
+      } else if (pending.tool === 'heiyan_canvas_action') {
+        if (!canvas.action) throw Error('当前画布尚未安装这项能力，请更新后重试');
+        result = await canvas.action(pending.input, pending.revision);
+      } else if (pending.tool === 'heiyan_read_images') {
         if (apiRef.current && !apiRef.current.vision) throw Error('该连接未启用图片输入');
         if (!canvas.images) throw Error('图片读取未启用');
         const p = pending.input;
@@ -176,14 +185,14 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
         await commit(p => ({ ...p, summary: v.summary || '', ...(v.requirements !== undefined ? { requirements: v.requirements } : {}), ...(v.goal !== undefined ? { goal: v.goal } : {}), ...(v.progress !== undefined ? { progress: v.progress } : {}) }));
         result = '项目记忆和进度已按确认内容保存';
       } else if (pending.tool === 'heiyan_request_generation') result = JSON.stringify({ ...JSON.parse(await canvas.generate(pending.input, pending.revision)), taskId: task.current.id });
-      else result = canvas.edit(pending.input, pending.revision);
+      else result = await canvas.edit(pending.input, pending.revision);
       success = true;
     } catch (e) { result = e instanceof Error ? e.message : '操作未执行'; }
     // If acknowledgement storage fails, leave the durable claim in place. Never
     // retry the mutation after a crash or uncertain result.
     await receipt(pending.id, pending.tool, success ? 'succeeded' : 'failed', result);
     await recordMessage({ id: `execution:${pending.id}`, role: 'notice', text: result });
-    return { success, result, images };
+    return { success, result, images, ...(success ? { revision: currentAccess().read(refs.current).revision } : {}) };
   };
   const lastProgress = useRef('');
   const recoveryDelivered = useRef(false);
@@ -275,13 +284,25 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
     automaticDecision.current = pending.id; // Never replay an uncertain decision on the next poll.
     void lock(() => decidePending(true));
   }, [approvalMode, state.pending?.id, state.pending?.claimed, busy, memoryReady, state.active]);
+  const questions = useAgentQuestions({ canvasKey, messages: state.messages, connection, api: !!api,
+    record: recordMessage, refresh,
+    activity: detail => setProgress({ phase: 'question', detail, at: Date.now() }),
+    followup: async (text, requestId) => {
+      if (!stateRef.current.connected) throw Error('请先恢复 Agent 连接，回答仍保留在会话中');
+      if (!stateRef.current.active) throw Error('原任务已经结束，请将回答作为新消息发送；问题仍保留');
+      if (apiRef.current) {
+        await recordMessage({ id: requestId, role: 'user', text });
+        pendingNotes.current.push(text); task.current.notes.push(text);
+      } else if (connection) await agentRequest(connection, '/steer', { canvasKey, requestId, text });
+    },
+  });
   const runApi = async (profile: ApiProfile, messages: ApiMessage[], turnId: string, observedRevision: string) => {
     const abort = new AbortController(); controller.current = abort;
     try {
       apiHistory.current = await runApiAgent(profile, messages, turnId, observedRevision, abort.signal, {
         project: () => projectRef.current, task: () => task.current.text + (task.current.notes.length ? '\n补充要求：\n' + task.current.notes.join('\n') : ''),
         notes: () => pendingNotes.current.splice(0), hasNotes: () => pendingNotes.current.length > 0,
-        read: readCanvas, search: searchTool, inspect,
+        read: readCanvas, search: searchTool, inspect, ask: questions.ask,
         decide: pending => new Promise(resolve => { apiDecision.current = resolve; updateState({ pending }); setProgress({ phase: 'approval', detail: `等待确认：${toolLabels[pending.tool] || '画布操作'}`, nodeIds: pending.input.nodeIds, at: Date.now() }); }),
         message: (id, text, partial) => recordMessage({ id, role: 'assistant', text: (partial ? '[回复未完成，相关操作未执行]\n' : '') + text, model: profile.model }),
         draft: (id, text) => { if (controller.current === abort && mounted.current) updateState({ messages: mergeMessages(stateRef.current.messages, [{ id, role: 'assistant', text, model: profile.model }]) }); },
@@ -299,6 +320,11 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
   return {
     connection: api ? { url: api.baseUrl, token: '', capabilities: api.vision ? ['image_input'] : [], device: api.provider === 'official' ? '官方 API' : '自定义 API' } : connection,
     state, busy, error, activity, trace, capabilities, runUsage, indexState, models: api ? [] : models, model, effort, setModel, setEffort,
+    questions: { ...questions, reply: async (id: string, answers?: import('../../server/agent-questions.js').QuestionAnswers) => {
+      let failure: unknown;
+      const ok = await lock(async () => { try { await questions.reply(id, answers); } catch (error) { failure = error; throw error; } });
+      if (!ok) throw failure || Error('另一项操作正在处理，请稍后再回答');
+    } },
     project, memoryReady, memoryError, api, reloadMemory: () => lock(loadProject),
     saveMemory: (fields: Pick<AgentProject, 'requirements' | 'goal' | 'progress' | 'summary'>) => lock(async () => { await commit(p => ({ ...p, ...fields })); }),
     search,
@@ -364,7 +390,17 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
       const recovery = buildProjectContext(projectRef.current, budget, text, recovered ? serializeSearch(recovered) : '', apiRef.current ? apiHistory.current.length > 0 : recoveryDelivered.current) + promptReferenceContext(context);
       await receipt(id, 'model_turn', 'claimed', '消息已准备提交；断线后不会自动重发');
       await writeMessageImages(canvasKey, id, images);
-      await recordMessage({ id, role: 'user', text, imageCount: images.length, model: apiRef.current?.model || model });
+      await recordMessage({
+        id,
+        role: 'user',
+        text,
+        nodeRefs: nodeIds.map(nodeId => {
+          const node = context.nodes.find(item => item.id === nodeId);
+          return { id: nodeId, title: node?.title || node?.kind || '画布节点' };
+        }),
+        imageCount: images.length,
+        model: apiRef.current?.model || model,
+      });
       updateState({ active: true, pending: null, error: '' });
       if (apiRef.current) {
         const profile = apiRef.current;

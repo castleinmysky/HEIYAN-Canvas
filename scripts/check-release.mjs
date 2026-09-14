@@ -53,6 +53,13 @@ try {
 }
 const errors = [];
 const report = (file, issue) => errors.push(`${file}: ${issue}`);
+const packageManifest = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
+const connectorManifest = JSON.parse(await fs.readFile(path.join(root, "server/agent-package.json"), "utf8"));
+for (const file of ["docs/QUICKSTART.md", "docs/QUICKSTART.en.md"]) {
+  const source = await fs.readFile(path.join(root, file), "utf8");
+  if (!source.includes(String(packageManifest.version))) report(file, `canvas version drift: expected ${packageManifest.version}`);
+  if (!source.includes(String(connectorManifest.version))) report(file, `connector version drift: expected ${connectorManifest.version}`);
+}
 const forbiddenPath =
   /(^|\/)(?:\.openai|\.codex|\.codex-runtime|\.runtime[^/]*|node_modules|dist|private|data|outputs|logs|auth\.json|config\.toml|instance\.json)(\/|$)|(?:^|\/)\.env(?:\.|$)(?!example$)|\.(?:exe|zip|7z|ckpt|safetensors|pth|pt|onnx|gguf|pem|key)$/i;
 const textExtensions = new Set([

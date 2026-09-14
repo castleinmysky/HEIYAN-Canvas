@@ -8,6 +8,7 @@ import { canvasAgentContext, planAgentEdits } from './agent-workbench/agent-canv
 import { nodeBounds } from './agent-workbench/agent-spatial';
 import { editPreview } from './agent-workbench/agent-proposals';
 import { jobSnapshot } from './agent-workbench/agent-jobs';
+import { executeCanvasAction, requireCanvasJobActionOutcome, type CanvasActionHost, type CanvasJobActionOutcome } from './agent-workbench/agent-canvas-actions';
 import type { AgentCanvasAccess } from './agent-workbench/agent-session';
 import { validateAgentTool } from '../server/agent-contract.js';
 import { agentCompactLayout, toggleAgentWorkspace, type AgentWorkspace } from './agent-workbench/workbench-layout';
@@ -1725,6 +1726,12 @@ const nodeRunShortcutKinds = new Set<CanvasNodeData['kind']>(['imageGenerator', 
 export function isEditableEventTarget(target: EventTarget | null): boolean {
   const element = target as { closest?: (selector: string) => unknown } | null;
   return Boolean(element?.closest?.(editableEventTargetSelector));
+}
+
+export function hasNativeTextSelection(selection: Pick<Selection, 'isCollapsed' | 'toString'> | null | undefined): boolean {
+  if (!selection || selection.isCollapsed) return false;
+  try { return selection.toString().length > 0; }
+  catch { return false; }
 }
 
 export function isNodeRunShortcutBlockedTarget(target: EventTarget | null): boolean {
@@ -4340,16 +4347,20 @@ function Studio() {
     }
   }, [activeCanvasId, apiFetch, applyJob, collectInputs, pollJob, publicMode, shareMode, task.taskId, task.title, updateNode]);
 
-  const jobAction = useCallback(async (id: string, action: 'cancel' | 'retry' | 'resume' | 'retryPaid') => {
+  const jobAction = useCallback(async (id: string, action: 'cancel' | 'retry' | 'resume' | 'retryPaid'): Promise<CanvasJobActionOutcome> => {
     const node = nodesRef.current.find((item) => item.id === id);
-    if (!node?.data.jobId) return;
+    const outcomeAction = action === 'retryPaid' ? 'retry' : action;
+    const previousJobId = String(node?.data.jobId || '');
+    const previousState = String(node?.data.jobState || '');
+    const failure = (reason: CanvasJobActionOutcome['reason'], message: string): CanvasJobActionOutcome => ({ ok: false, action: outcomeAction, previousJobId, previousState, changed: false, reason, message });
+    if (!node?.data.jobId) return failure('missing', '当前节点没有可操作的任务');
     const paidRetry = action === 'retryPaid' || action === 'retry';
     if (paidRetry) {
       const confirmed = await requestCanvasConfirmation({
         eyebrow: 'EXTERNAL RETRY', title: '新建远端任务', tone: 'paid', confirmLabel: '确认新建任务',
         message: canvasLanguage === 'en' ? 'This creates a new task at your cloud provider and may incur a new charge. To retrieve an existing task, cancel and choose Resume.' : '这会调用你配置的云服务创建新任务，可能产生新的费用。仅恢复已有任务时，请取消并选择恢复远端任务。',
       });
-      if (!confirmed) return;
+      if (!confirmed) return failure('declined', '用户已取消新建付费任务');
     }
     const requestController = new AbortController();
     const requestTimeout = window.setTimeout(() => requestController.abort(), 8_000);
@@ -4361,6 +4372,25 @@ function Studio() {
       const response = await apiFetch(`/api/v1/jobs/${encodeURIComponent(node.data.jobId)}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: task.taskId, ...(paidRetry ? { confirmNewPaidSubmission: true } : {}) }), signal: requestController.signal });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || '操作失败');
+      if (!payload?.job || typeof payload.job.id !== 'string' || typeof payload.job.status !== 'string') throw new Error('服务未返回可核实的任务状态');
+      const nextJobId = payload.job.id;
+      const nextState = payload.job.status;
+      const changed = paidRetry ? nextJobId !== previousJobId : nextJobId === previousJobId && nextState !== previousState;
+      if (!changed) {
+        const message = paidRetry ? '重试没有取得新的任务编号' : '任务状态没有变化';
+        updateNode(id, { ...(action === 'cancel' ? { cancelling: false } : {}), status: message }, 'runtime'); setToast(message);
+        return failure('unchanged', message);
+      }
+      if (action === 'cancel' && !['cancelling', 'cancelled'].includes(nextState)) {
+        const message = `任务未进入取消状态（${nextState}）`;
+        updateNode(id, { cancelling: false, status: message }, 'runtime'); setToast(message);
+        return failure('failed', message);
+      }
+      if (paidRetry && !['queued', 'running'].includes(nextState)) {
+        const message = `新任务未进入执行队列（${nextState}）`;
+        updateNode(id, { status: message }, 'runtime'); setToast(message);
+        return failure('failed', message);
+      }
       applyJob(payload.job);
       if (action === 'cancel') {
         pollFailures.current.delete(node.data.jobId);
@@ -4376,12 +4406,14 @@ function Studio() {
         pollFailures.current.delete(payload.job.id);
         pollJob(payload.job.id);
       }
+      return { ok: true, action: outcomeAction, previousJobId, jobId: nextJobId, previousState, state: nextState, changed: true };
     } catch (error) {
       const message = error instanceof DOMException && error.name === 'AbortError'
         ? action === 'cancel' ? '取消等待超时，任务可能仍在继续；请稍后刷新状态' : '操作等待超时，请刷新任务状态'
         : error instanceof Error ? error.message : '操作失败';
       if (action === 'cancel') updateNode(id, { cancelling: false, status: `无法取消：${message}` }, 'runtime');
       setToast(message);
+      return failure('failed', message);
     } finally {
       window.clearTimeout(requestTimeout);
     }
@@ -4782,6 +4814,7 @@ function Studio() {
       return next;
     });
     setToast('已添加高清放大，确认后开始');
+    return id;
   }, [publicMode, pushHistory, setEdges, setNodes, setToast, shareMode]);
 
   const confirmVideoUpscale = useCallback(async (id: string) => {
@@ -6408,7 +6441,7 @@ function Studio() {
   }, []);
   useEffect(() => {
     const onCanvasCopy = (event: ClipboardEvent) => {
-      if (isEditableEventTarget(event.target)) return;
+      if (isEditableEventTarget(event.target) || hasNativeTextSelection(window.getSelection())) return;
       const selected = nodesRef.current.filter((node) => node.selected);
       if (!selected.length) return;
       const copyAsComposite = selected.length >= 2 && selected.every((node) => Boolean(clipboardImageForNode(node)));
@@ -6883,6 +6916,66 @@ function Studio() {
         images.push(data);
       }
       return images;
+    }, action: async (proposal, revision) => {
+      const actionNode = (id: string) => {
+        const node = nodesRef.current.find(item => item.id === id);
+        if (!node) throw Error('节点已不在当前画布');
+        return node;
+      };
+      const host: CanvasActionHost = {
+        nodes: () => nodesRef.current,
+        edges: () => edgesRef.current,
+        models: () => models,
+        check: expected => { ensureReady(); if (expected && read([]).revision !== expected) throw Error('画布已变化，请重新读取后执行'); },
+        commit: (nextNodes, nextEdges) => {
+          pushHistory(); nodesRef.current = nextNodes; edgesRef.current = nextEdges;
+          setNodes(nextNodes); setEdges(nextEdges);
+        },
+        save: async () => {
+          if (!saveCanvasNowRef.current || !await saveCanvasNowRef.current(true)) throw Error('画布修改尚未保存，请保留页面并核实，勿重复执行');
+        },
+        perform: {
+          'comfy.select': args => {
+            const node = actionNode(args.nodeId);
+            const model = models.find(candidate => candidate.id === args.modelId);
+            const modelWorkflows = model?.workflows?.length ? model.workflows : model?.workflow ? [model.workflow] : [];
+            const workflow = modelWorkflows.find(candidate => candidate.id === args.workflowId);
+            if (node.data.kind !== 'comfyUiWorkflow' || !model || !workflow || !comfyUiWorkflowIsSelectable(workflow)) throw Error('此 ComfyUI 模型或工作流当前不可执行');
+            selectComfyUiWorkflow(args.nodeId, args.modelId, args.workflowId);
+          },
+          'comfy.pose_preview': async args => {
+            await previewComfyUiPose(args.nodeId);
+            const node = actionNode(args.nodeId);
+            if (node.data.posePreviewState !== 'ready') throw Error(node.data.posePreviewError || node.data.status || '未生成姿势预览');
+            return { ready: true };
+          },
+          'comfy.editor': args => {
+            const node = actionNode(args.nodeId);
+            if (!node.data.modelId || !node.data.workflowId) throw Error('请先选择 ComfyUI 模型与工作流');
+            void openComfyUiEditor(node.id, node.data.modelId, node.data.workflowId);
+            return { opened: true, completed: false };
+          },
+          'job.cancel': async args => { if (actionNode(args.nodeId).data.jobId !== args.jobId) throw Error('任务已经变化'); return requireCanvasJobActionOutcome(await jobAction(args.nodeId, 'cancel'), 'cancel'); },
+          'job.resume': async args => { if (actionNode(args.nodeId).data.jobId !== args.jobId) throw Error('任务已经变化'); return requireCanvasJobActionOutcome(await jobAction(args.nodeId, 'resume'), 'resume'); },
+          'job.retry': async args => { if (actionNode(args.nodeId).data.jobId !== args.jobId) throw Error('任务已经变化'); return requireCanvasJobActionOutcome(await jobAction(args.nodeId, 'retry'), 'retry'); },
+          'video.upscale_prepare': args => {
+            const id = createVideoUpscaleNode(args.nodeId);
+            if (!id) throw Error('未能创建视频高清放大节点');
+            return { id };
+          },
+          'video.upscale_run': async args => {
+            const before = actionNode(args.nodeId).data.jobId;
+            await confirmVideoUpscale(args.nodeId);
+            const after = actionNode(args.nodeId).data.jobId;
+            if (!after || after === before) throw Object.assign(Error('没有取得新的增强任务编号，请核实节点状态，不要重复提交'), { uncertain: true });
+            return { jobId: after };
+          },
+          'canvas.focus': args => revealAgentNodes(args.nodeIds, 'Agent 已定位节点', true),
+          'canvas.fit': () => flow.fitView({ padding: 0.12, duration: 180, minZoom: canvasMinimumZoom, maxZoom: 1.15 }),
+          'canvas.save': async () => { if (!saveCanvasNowRef.current || !await saveCanvasNowRef.current(true)) throw Error('画布尚未保存'); },
+        },
+      };
+      return executeCanvasAction(host, proposal, revision);
     }, edit: (proposal, revision) => {
       if (read([]).revision !== revision) throw Error('画布已变化，请重新确认方案');
       const planned = prepare(proposal);
@@ -6910,7 +7003,7 @@ function Studio() {
       revealAgentNodes(submitted.map(n => n.id), '已提交生成，等待素材返回', true);
       return JSON.stringify({ summary: request.summary, submitted, failed, generated: false });
     } };
-  }, [activeCanvasKey, attachActions, flow, models, pushHistory, ready, revealAgentNodes, runGenerator, setEdges, setNodes, setToast, shareMode]);
+  }, [activeCanvasKey, attachActions, confirmVideoUpscale, createVideoUpscaleNode, flow, jobAction, models, openComfyUiEditor, previewComfyUiPose, pushHistory, ready, revealAgentNodes, runGenerator, selectComfyUiWorkflow, setEdges, setNodes, setToast, shareMode]);
   const selectedCharacterGenerator = selectedNodes.length === 1 && selectedNodes[0].data.kind === 'characterAnimator' ? selectedNodes[0] : null;
   const focusMobileNode = useCallback((nodeId: string) => {
     if (!mobileCanvas.mobile || Date.now() < agentRevealUntil.current) return;

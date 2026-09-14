@@ -9,11 +9,11 @@ const pages: { id: AgentPage; label: string; icon: UiIconName }[] = [
   { id: 'settings', label: '连接与设置', icon: 'settings' },
   { id: 'skills', label: 'Skill（预留）', icon: 'toolbox' },
 ];
-export function AgentHeader({ page, connected, active, waiting, onPage, onView, onClose }: {
-  page: AgentPage; connected: boolean; active: boolean; waiting: boolean;
+export function AgentHeader({ page, connected, active, waiting, questioning = false, onPage, onView, onClose }: {
+  page: AgentPage; connected: boolean; active: boolean; waiting: boolean; questioning?: boolean;
   onPage: (page: AgentPage) => void; onView: (canvas: boolean) => void; onClose: () => void;
 }) {
-  const status = !connected ? '尚未连接' : waiting ? '等待确认' : active ? '处理中' : '已连接';
+  const status = !connected ? '尚未连接' : questioning ? '等待回答' : waiting ? '等待确认' : active ? '处理中' : '已连接';
   return <header className="canvas-agent-head agent-header-compact">
     <nav className="agent-top-navigation" aria-label="Agent 功能">
       {pages.map(item => <button key={item.id} type="button" className="canvas-agent-icon" aria-label={item.label} title={item.label} aria-pressed={page === item.id} onClick={() => onPage(item.id)}>

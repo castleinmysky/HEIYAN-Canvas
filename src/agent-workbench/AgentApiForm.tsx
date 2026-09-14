@@ -20,6 +20,7 @@ export function AgentApiForm({ busy, testing, progress, connect, cancel }: { bus
     <p>上限请按所选模型的说明填写。支持时使用服务端输入计数，否则显示保守估算；图片与工具也计入预算。</p>
     <label>思考程度<select disabled={busy} value={profile.effort} onChange={e => patch({ effort: e.target.value })}><option value="">模型默认</option>{['low', 'medium', 'high', 'xhigh', 'max'].map(v => <option key={v}>{v}</option>)}</select></label>
     <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.vision} onChange={e => patch({ vision: e.target.checked })} />启用图片输入并检测实际看图能力</label>
+    {profile.protocol === 'responses' && <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.webSearch === true} onChange={e => patch({ webSearch: e.target.checked })} />允许 Agent 按需查找公开网页并附来源</label>}
     <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.stream} onChange={e => patch({ stream: e.target.checked })} />逐步显示回复</label>
     {profile.protocol === 'responses' && <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.nativeCompaction} onChange={e => patch({ nativeCompaction: e.target.checked })} />检测并优先使用原生上下文压缩</label>}
     <details><summary>辅助模型、语义检索与费用</summary><div className="agent-settings-fields">

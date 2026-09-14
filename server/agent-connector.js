@@ -4,6 +4,7 @@ import os from 'node:os';
 import { CodexRuntime } from './codex-runtime.js';
 import { connectorVersion, connectorDistribution } from './agent-version.js';
 import { sanitizeAgentContext, sanitizeGenerationReport, validateAgentTool } from './agent-contract.js';
+import { normalizeQuestions, questionAnswers, cleanQuestion, questionMessage, questionResult, QUESTION_WAIT_MS } from './agent-questions.js';
 
 const random = () => crypto.randomBytes(24).toString('base64url');
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -27,16 +28,48 @@ const imageData = values => {
 };
 
 /** One connector, one explicitly paired browser. No website accounts or credentials. */
-export function createAgentConnector({ origin, runtimeFactory = () => new CodexRuntime(), pairingCode = random(), pairingTtl = 10 * 60_000, localHandler } = {}) {
+export function createAgentConnector({ origin, runtimeFactory = () => new CodexRuntime(), pairingCode = random(), pairingTtl = 10 * 60_000, localHandler, questionWaitMs = QUESTION_WAIT_MS } = {}) {
   const allowed = new URL(origin);
   if (allowed.origin !== origin || !['http:', 'https:'].includes(allowed.protocol)) throw Error('请提供准确的画布网页来源');
   let runtime, token, pairedAccount, initializing, pairing = false, attempts = 0;
   let pairExpires = Date.now() + pairingTtl;
   const conversations = new Map();
+  const timers = new Set();
   const append = (conversation, message) => { conversation.messages.push(message); conversation.messages = conversation.messages.slice(-200); };
+  const finishQuestion = (conversation, status, answers, respond = true) => {
+    const pending = conversation.question;
+    if (!pending) return;
+    clearTimeout(pending.timer); timers.delete(pending.timer);
+    const message = conversation.messages.find(item => item.question?.id === pending.id);
+    if (message) {
+      const next = cleanQuestion({ ...message.question, status, answers, updatedAt: Date.now() });
+      if (respond && runtime && !runtime.closed) runtime.respond(pending.rpcId, pending.native ? { answers: answers || {} } : toolResult(true, questionResult(next, answers)));
+      Object.assign(message, questionMessage(next));
+    }
+    conversation.question = null;
+  };
+  const scheduleQuestion = conversation => {
+    const pending = conversation.question;
+    if (!pending) return;
+    clearTimeout(pending.timer); timers.delete(pending.timer);
+    if (conversation.questionPolicy === 'wait') return;
+    pending.timer = setTimeout(() => finishQuestion(conversation, 'deferred'), questionWaitMs);
+    pending.timer.unref?.(); timers.add(pending.timer);
+  };
+  const askQuestion = (conversation, message, questions) => {
+    const now = Date.now(), id = random();
+    const question = { id, questions: normalizeQuestions(questions), source: 'codex', status: conversation.question ? 'deferred' : 'pending', createdAt: now, updatedAt: now };
+    append(conversation, questionMessage(question));
+    if (conversation.question) {
+      runtime.respond(message.id, message.method === 'item/tool/requestUserInput' ? { answers: {} } : toolResult(true, questionResult(question)));
+      return;
+    }
+    conversation.question = { id, rpcId: message.id, native: message.method === 'item/tool/requestUserInput' };
+    scheduleQuestion(conversation);
+  };
   const state = conversation => ({ messages: conversation.messages, active: !!conversation.active, error: conversation.error, usage: conversation.usage, pending: conversation.pending ? { id: conversation.pending.id, tool: conversation.pending.tool, input: conversation.pending.input, revision: conversation.pending.revision, claimed: !!conversation.pending.claim } : null });
   const terminate = message => {
-    for (const conversation of conversations.values()) { conversation.active = null; conversation.pending = null; conversation.error = message; }
+    for (const conversation of conversations.values()) { finishQuestion(conversation, 'deferred', undefined, false); conversation.active = null; conversation.pending = null; conversation.error = message; }
   };
   const cancelPending = (conversation, message) => {
     if (conversation.pending && runtime) runtime.respond(conversation.pending.rpcId, toolResult(false, { error: message }));
@@ -52,16 +85,24 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         const conversation = [...conversations.values()].find(item => item.threadId === p.threadId);
         if (message.method === 'account/updated' && token) { token = null; terminate('Codex 登录状态已变化，请重新启动连接器并配对'); runtime.close(); return; }
         if ('id' in message) {
+          if (conversation && conversation.active && !conversation.steering && !p.namespace
+            && p.turnId && (conversation.active === 'starting' || p.turnId === conversation.active)
+            && (message.method === 'item/tool/requestUserInput' || message.method === 'item/tool/call' && p.tool === 'heiyan_ask_question')) {
+            try { askQuestion(conversation, message, message.method === 'item/tool/requestUserInput' ? p.questions : p.arguments?.questions); }
+            catch (error) { runtime.respond(message.id, message.method === 'item/tool/requestUserInput' ? { answers: {} } : toolResult(false, { error: error.message })); }
+            return;
+          }
           if (!conversation || message.method !== 'item/tool/call' || !conversation.active || conversation.pending || conversation.steering || p.namespace) return runtime.deny(message.id);
           if (!p.turnId || (conversation.active !== 'starting' && p.turnId !== conversation.active)) return runtime.deny(message.id);
           try {
-            if (!['heiyan_read_canvas', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_search_history', 'heiyan_project_checkpoint', 'heiyan_read_generation', 'heiyan_review_result'].includes(p.tool)) throw Error('这项工具尚未开放');
+            if (!['heiyan_read_canvas', 'heiyan_canvas_capabilities', 'heiyan_canvas_action', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_search_history', 'heiyan_project_checkpoint', 'heiyan_read_generation', 'heiyan_review_result'].includes(p.tool)) throw Error('这项工具尚未开放');
             const input = validateAgentTool(p.tool, p.arguments);
             conversation.pending = { id: random(), rpcId: message.id, tool: p.tool, input, revision: conversation.context.revision };
           } catch (error) { runtime.respond(message.id, toolResult(false, { error: error.message })); }
           return;
         }
         if (!conversation) return;
+        if (message.method === 'serverRequest/resolved' && conversation.question?.rpcId === p.requestId) { finishQuestion(conversation, 'deferred', undefined, false); return; }
         const eventTurn = p.turnId || p.turn?.id;
         if (eventTurn && conversation.active !== 'starting' && conversation.active !== eventTurn) return;
         if (message.method === 'thread/tokenUsage/updated') {
@@ -79,6 +120,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
           if (!item) { item = { id: p.item.id, role: 'assistant' }; append(conversation, item); }
           item.text = String(p.item.text || '').slice(0, 32000);
         } else if (message.method === 'turn/completed') {
+          finishQuestion(conversation, 'deferred', undefined, false);
           conversation.active = null; cancelPending(conversation, '本轮已结束');
           if (p.turn?.status === 'failed') conversation.error = '本轮 Codex 执行失败，请检查自己的 Codex 状态后重试';
         }
@@ -120,7 +162,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         if (!same(input.code, pairingCode)) throw fault('配对码不正确', 401);
         pairing = true;
         try { const account = await connect(); const models = await runtime.models(); pairedAccount = identity(account); token = random();
-          reply(200, { token, protocol: 6, version: connectorVersion, distribution: connectorDistribution, device: os.hostname(), capabilities: ['conversation', 'read_canvas', 'edit_canvas', 'request_generation', 'model_selection', 'image_input', 'project_context', 'steering', 'usage_events', 'spatial_layout', 'generation_results', 'durable_receipts', 'state_delta'], models }); return;
+          reply(200, { token, protocol: 7, version: connectorVersion, distribution: connectorDistribution, device: os.hostname(), capabilities: ['conversation', 'read_canvas', 'edit_canvas', 'request_generation', 'model_selection', 'image_input', 'project_context', 'steering', 'usage_events', 'spatial_layout', 'generation_results', 'durable_receipts', 'user_questions', 'state_delta', 'web_research'], models }); return;
         } finally { pairing = false; }
       }
       if (!token || !same(req.headers.authorization, `Bearer ${token}`)) throw fault('连接已失效，请重新配对', 401);
@@ -139,6 +181,31 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         reply(200, input.cursor === cursor ? { unchanged: true, cursor, connected: value.connected } : { ...value, cursor }); return;
       }
       if (!runtime || runtime.closed) throw fault('连接器已断开，请重新配对', 409);
+      if (req.url === '/question-policy') {
+        if (!['wait', 'continue'].includes(input.policy)) throw fault('等待方式无效');
+        conversation.questionPolicy = input.policy; scheduleQuestion(conversation); reply(200, { ok: true }); return;
+      }
+      if (req.url === '/question-touch') {
+        if (conversation.question?.id === input.id) scheduleQuestion(conversation);
+        reply(200, { ok: true }); return;
+      }
+      if (req.url === '/question-answer') {
+        const saved = conversation.messages.find(item => item.question?.id === input.id)?.question;
+        if (!saved) throw fault('问题已不在当前连接中；保留回答后可作为新消息继续', 409);
+        if (saved.status === 'answered') { reply(200, { ok: true, duplicate: true, question: saved }); return; }
+        if (saved.status === 'cancelled') throw fault('此问题已取消', 409);
+        const answers = input.defer === true ? undefined : questionAnswers(saved.questions, input.answers);
+        if (input.followupDelivered === true && answers && conversation.question?.id !== saved.id) {
+          const next = cleanQuestion({ ...saved, answers, status: 'answered', updatedAt: Date.now() });
+          Object.assign(conversation.messages.find(item => item.question?.id === saved.id), questionMessage(next));
+          reply(200, { ok: true, question: next }); return;
+        }
+        if (conversation.question?.id === saved.id) {
+          finishQuestion(conversation, answers ? 'answered' : 'deferred', answers);
+          reply(200, { ok: true, question: conversation.messages.find(item => item.question?.id === saved.id).question }); return;
+        }
+        reply(200, { ok: true, needsFollowup: true }); return;
+      }
       if (req.url === '/send') {
         if (identity(await runtime.account()) !== pairedAccount) throw fault('Codex 账号已变化，请重新启动连接器', 409);
         if (!key(input.requestId) || typeof input.text !== 'string' || !input.text.trim() || input.text.length > 8000) throw fault('请输入 1–8000 字的会话描述');
@@ -192,6 +259,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
       if (req.url === '/stop') {
         if (conversation.active === 'starting') throw fault('正在建立会话，请稍后停止', 409);
         cancelPending(conversation, '用户停止了本轮');
+        finishQuestion(conversation, 'cancelled');
         if (conversation.active) await runtime.request('turn/interrupt', { threadId: conversation.threadId, turnId: conversation.active });
         conversation.active = null; append(conversation, { id: random(), role: 'notice', text: '已停止本轮。已确认的画布改动仍保留。' });
         reply(200, state(conversation)); return;
@@ -214,7 +282,7 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         runtime.respond(pending.rpcId, toolResult(input.success !== false, value)); conversation.pending = null;
         reply(200, { ok: true }); return;
       }
-      if (req.url === '/decision' && ['heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(pending.tool)) {
+      if (req.url === '/decision' && ['heiyan_canvas_capabilities', 'heiyan_canvas_action', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(pending.tool)) {
         if (pending.claim) throw fault('操作已被领取，不会重复执行', 409);
         if (input.approved !== true || input.revision !== pending.revision) {
           cancelPending(conversation, input.approved ? '画布已变化，请重新读取后提出方案' : '用户拒绝了此操作');
@@ -223,12 +291,13 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
         }
         pending.claim = random(); reply(200, { execute: true, claim: pending.claim, input: pending.input }); return;
       }
-      if (req.url === '/result' && ['heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(pending.tool) && same(pending.claim, input.claim)) {
-        const result = typeof input.result === 'string' ? input.result.slice(0, 12000) : '客户端未返回执行结果';
+      if (req.url === '/result' && ['heiyan_canvas_capabilities', 'heiyan_canvas_action', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(pending.tool) && same(pending.claim, input.claim)) {
+        const result = typeof input.result === 'string' ? input.result.slice(0, 24000) : '客户端未返回执行结果';
         const images = pending.tool === 'heiyan_read_images' && input.success === true ? imageData(input.images) : [];
         const output = toolResult(input.success === true, { result });
         for (const imageUrl of images) output.contentItems.push({ type: 'inputImage', imageUrl });
         runtime.respond(pending.rpcId, output);
+        if (input.success === true && typeof input.revision === 'string' && input.revision.length > 0 && input.revision.length <= 100) conversation.context = { ...conversation.context, revision: input.revision };
         const generation = pending.tool === 'heiyan_request_generation';
         const information = ['heiyan_read_images', 'heiyan_project_checkpoint'].includes(pending.tool);
         append(conversation, { id: random(), role: 'notice', text: information ? result : input.success === true ? generation ? '生成请求已提交，可在节点中查看进度。' : '画布修改已执行，可在画布中撤销。' : (generation ? '生成请求未执行：' : '画布修改未执行：') + result });
@@ -238,6 +307,6 @@ export function createAgentConnector({ origin, runtimeFactory = () => new CodexR
     } catch (error) { if (!res.headersSent) reply(error.status || 503, { error: error.message || '连接器暂时不可用' }); }
   });
   server.requestTimeout = 30000; server.headersTimeout = 10000;
-  server.on('close', () => runtime?.close());
+  server.on('close', () => { for (const timer of timers) clearTimeout(timer); timers.clear(); runtime?.close(); });
   return { server, pairingCode, close: () => { runtime?.close(); server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); } };
 }

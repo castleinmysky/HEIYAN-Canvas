@@ -8,7 +8,7 @@ export const PROBE_LIMITS = { total: 120000, required: 45000, optional: 20000 } 
 export async function probeApi(profile: ApiProfile, signal: AbortSignal, report: (capability: Capability) => void, record?: (usage: UsageRecord) => void, progress?: (value: ProbeProgress) => void) {
   validateApiProfile(profile);
   const deadline = Date.now() + PROBE_LIMITS.total;
-  const tested: ApiProfile = { ...profile, vision: false, helperModel: '', embeddingModel: '', stream: false, strict: false, nativeCompaction: false, countTokens: false };
+  const tested: ApiProfile = { ...profile, vision: false, helperModel: '', embeddingModel: '', stream: false, strict: false, nativeCompaction: false, countTokens: false, webSearch: false };
   const row = (key: string, label: string, status: Capability['status'], detail: string) => report({ key, label, status, detail });
   const stage = async <T,>(label: string, optional: boolean, work: (signal: AbortSignal) => Promise<T>): Promise<T> => {
     signal.throwIfAborted();
@@ -110,6 +110,20 @@ export async function probeApi(profile: ApiProfile, signal: AbortSignal, report:
     if (!reply.streamed || !reply.text.trim()) throw Error('流式工具结果回传未完成');
     tested.stream = true;
     row('stream', '流式回复', 'passed', '流式工具调用与结果回传已完成，已启用逐步显示');
+  });
+  if (profile.protocol !== 'responses') {
+    tested.webSearch = false;
+    row('webSearch', '外部参考检索', 'untested', '当前协议不启用托管检索');
+  } else if (profile.webSearch !== true) {
+    tested.webSearch = false;
+    row('webSearch', '外部参考检索', 'untested', '按设置保持关闭');
+  } else await optional('webSearch', '外部参考检索', async signal => {
+    const input = [{ role: 'user' as const, content: '请使用网页检索查找 OpenAI 官方网站，并用一句中文回答，同时附上来源链接。' }];
+    const result = await apiStep({ ...tested, webSearch: true, stream: false }, input, signal, { instructions: '必须使用可用的网页检索工具，只引用检索到的公开来源。' });
+    record?.(usageRecord(tested, result.usage, input, result.text, '联网能力检测'));
+    if (!result.responseItems?.some((item: any) => item.type === 'web_search_call') || !/https?:\/\//.test(result.text)) throw Error('接口没有返回可验证的联网检索与来源链接');
+    tested.webSearch = true;
+    row('webSearch', '外部参考检索', 'passed', '模型可按需检索公开网页并在回答中附来源');
   });
   return tested;
 }

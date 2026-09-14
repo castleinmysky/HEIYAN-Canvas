@@ -104,11 +104,13 @@ describe('protected context and protocol fidelity', () => {
     expect(() => validateAgentTool('heiyan_edit_canvas', omitNullArguments({ summary: 'bad', operations: [{ action: 'delete', id: 'a', apiKey: 'x' }] }))).toThrow();
   });
   it('replays the entire native compaction window with no key in its model payload', async () => {
-    const output = [{ role: 'user', content: '必须保留的消息' }, { type: 'compaction', encrypted_content: 'opaque' }, { role: 'assistant', content: '保留结果' }];
-    vi.stubGlobal('fetch', vi.fn(async () => json({ output, usage: { input_tokens: 100, output_tokens: 10 } })));
+    const output = [{ role: 'user', content: '必须[凭据已移除]保留的消息' }, { type: 'compaction', encrypted_content: 'opaque' }, { role: 'assistant', content: '保留[凭据已移除]结果' }];
+    const providerOutput = [{ role: 'user', content: `必须${profile.apiKey}保留的消息` }, { type: 'compaction', encrypted_content: 'opaque' }, { role: 'assistant', content: `保留${profile.apiKey}结果` }].map(item => ({ ...item, authorization: `Bearer ${profile.apiKey}`, cookie: 'provider-cookie' }));
+    vi.stubGlobal('fetch', vi.fn(async () => json({ output: providerOutput, usage: { input_tokens: 100, output_tokens: 10 } })));
     const result = await compactApi(profile, [{ role: 'user', content: '原始上下文' }], signal());
     const payload = apiPayload(profile, [result.message]) as { input: object[] };
-    expect(payload.input).toEqual(output); expect(JSON.stringify(payload)).not.toContain(profile.apiKey);
+    expect(result.message.responseItems).toEqual(output); expect(payload.input).toEqual(output);
+    expect(JSON.stringify(result.message)).not.toContain(profile.apiKey); expect(JSON.stringify(result.message)).not.toContain('provider-cookie'); expect(JSON.stringify(payload)).not.toContain(profile.apiKey);
   });
 });
 describe('hybrid project retrieval', () => {
