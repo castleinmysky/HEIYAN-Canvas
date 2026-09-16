@@ -6,6 +6,7 @@ import './styles.css';
 import './mobile-canvas.css';
 import './mobile-pages.css';
 import './viewport-shell.css';
+import './canvas-visual-parity.css';
 
 // Agent mode is another view of the same canvas, not a second fixture workspace.
 const App = lazy(() => import('./App'));

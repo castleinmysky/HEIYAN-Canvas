@@ -108,6 +108,15 @@ describe('exact task results and assessments', () => {
     expect(() => validateAgentTool('heiyan_read_generation', { jobs: [{ nodeId: 'n', jobId: 'new' }], waitSeconds: 61 })).toThrow();
     expect(() => validateAgentTool('heiyan_edit_canvas', { summary: '布局', operations: [{ action: 'layout', nodeIds: ['n'], layout: 'row', gap: -10 }] })).toThrow();
   });
+  it('does not impose arbitrary batch caps on canvas work or generation status reads', () => {
+    const ids = Array.from({ length: 24 }, (_, index) => `node-${index}`);
+    const jobs = ids.map((nodeId, index) => ({ nodeId, jobId: `job-${index}` }));
+    expect(validateAgentTool('heiyan_read_canvas', { nodeIds: ids }).nodeIds).toHaveLength(24);
+    expect(validateAgentTool('heiyan_request_generation', { summary: '批量生成', nodeIds: ids }).nodeIds).toHaveLength(24);
+    expect(validateAgentTool('heiyan_edit_canvas', { summary: '批量整理', operations: ids.map(id => ({ action: 'delete', id })) }).operations).toHaveLength(24);
+    expect(validateAgentTool('heiyan_read_generation', { jobs }).jobs).toHaveLength(24);
+    expect(sanitizeGenerationReport(jobs.map(item => ({ ...item, state: 'running' })))).toHaveLength(24);
+  });
   it('renders the exact result card, objective checks and explicit follow-up controls', () => {
     const receipt: ExecutionReceipt = { id: 'r', tool: 'heiyan_request_generation', status: 'succeeded', at: 1, result: JSON.stringify({ summary: '生成角色', submitted: [{ id: 'n', jobId: 'new', expected: target.expected }] }) };
     expect(generationReceipts([receipt])[0].targets[0].jobId).toBe('new');

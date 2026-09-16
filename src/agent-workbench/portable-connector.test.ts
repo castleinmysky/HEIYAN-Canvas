@@ -16,10 +16,12 @@ describe('portable connector onboarding', () => {
   });
   it('download manifest restricts paths, part sizes, hashes and total size', () => {
     const part = { path: '/downloads/heiyan-windows/0123456789abcdef/part-000.bin', bytes: 42, sha256: 'a'.repeat(64) };
-    const manifest = { filename: 'HEIYAN-Connector-Windows-x64.zip', bytes: 42, parts: [part] };
+    const manifest = { filename: 'HEIYAN-Connector-Windows-x64-v1.6.2.zip', distribution: 'heiyan-standalone', version: '1.6.2', bytes: 42, parts: [part] };
     expect(validatePortableManifest(manifest)).toEqual(manifest);
     for (const patch of [{ path: 'https://evil.test/file' }, { path: '/downloads/heiyan-windows/../../private' }, { bytes: 24 * 1024 * 1024 }, { sha256: 'bad' }]) expect(() => validatePortableManifest({ ...manifest, parts: [{ ...part, ...patch }] })).toThrow();
     expect(() => validatePortableManifest({ ...manifest, parts: [part, part], bytes: 84 })).toThrow();
     expect(() => validatePortableManifest({ ...manifest, bytes: 43 })).toThrow();
+    expect(() => validatePortableManifest({ ...manifest, filename: 'HEIYAN-Connector-Windows-x64-v1.6.1.zip' })).toThrow();
+    expect(() => validatePortableManifest({ ...manifest, distribution: 'heiyan-online' })).toThrow();
   });
 });

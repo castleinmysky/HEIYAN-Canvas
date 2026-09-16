@@ -53,7 +53,7 @@ Seedance 等视频服务同样使用用户自己的 API 权限，不包含作者
 
 ### Windows 免安装包
 
-1. 从 [Releases](https://github.com/castleinmysky/HEIYAN-Canvas/releases/latest) 下载 `HEIYAN-Connector-Windows-x64.zip`。
+1. 从 [Releases](https://github.com/castleinmysky/HEIYAN-Canvas/releases/latest) 下载带版本号的 `HEIYAN-Connector-Windows-x64-v1.7.1.zip`。
 2. 完整解压。需要连接其他地址时，将包内 `connector.json` 的 `siteUrl` 改为你实际使用的画布地址；可包含当前任务的完整路径和参数。
 3. 双击「启动黑岩连接器.cmd」，按引导登录自己的 Codex。
 4. 点击「打开画布并配对」，确认是自己刚启动的连接器，再在画布点击「配对并连接」。
@@ -72,7 +72,7 @@ npm run agent:connector -- --origin http://127.0.0.1:8792
 
 把终端显示的地址和配对码填入 Agent。不要把配对码发给其他人。见 [手动连接说明](codex-connector.md)。
 
-Agent 使用自己的 Codex 或会话 API 额度。支持模型与推理强度选择、图片输入、项目记忆、历史检索、节点编排，以及生成与结果检查。默认在付费生成前确认；主动开启「完全访问权限」后，当前画布可自动执行，包括付费生成。可随时切回请求批准。不承诺自动完成整部短片。当前 HEIYAN Canvas 版本为 1.3.0，开源 Codex 连接器为 1.7.0；不支持手机跨设备连接。[画布 1.3.0 与连接器更新说明](releases-1.3.0.md)
+Agent 使用自己的 Codex 或会话 API 额度。支持模型与推理强度选择、图片输入、项目记忆、历史检索、节点编排，以及生成与结果检查。默认在付费生成前确认；主动开启「完全访问权限」后，当前画布可自动执行，包括付费生成。可随时切回请求批准。不承诺自动完成整部短片。当前 HEIYAN Canvas 版本为 1.3.0，开源 Codex 连接器为 1.7.1；节点读取、编辑、生成提交与结果回读不再设置任意数量上限，真实队列、并发、额度、审批和稳定性保护仍然有效；不支持手机跨设备连接。[画布 1.3.0 说明](releases-1.3.0.md) · [连接器 1.7.1 说明](connector-1.7.1.md)
 
 自行部署时，项目要求、对话与执行回执按画布保存在当前浏览器的 IndexedDB 中，不需要账号或云存储。重连可载入记录，但不会重放旧操作；清除网站数据会一起清除这些记录。Agent 的 API 密钥只留在当前页面内存，不写入项目记忆。
 

@@ -1,0 +1,163 @@
+/* HEIYAN shared canvas visual contract: calm geometry at rest, colour only as feedback. */
+:root {
+  --canvas-dot-color: #17191b;
+  --canvas-dot-radius: 1px;
+  --canvas-dot-pitch: 10px;
+  --canvas-dot-pattern: radial-gradient(circle, var(--canvas-dot-color) 0 var(--canvas-dot-radius), transparent 1.25px);
+  --canvas-dot-pattern-size: var(--canvas-dot-pitch) var(--canvas-dot-pitch);
+  --canvas-signal-text: oklch(76% 0.09 248);
+  --canvas-signal-image: oklch(77% 0.13 158);
+  --canvas-signal-video: oklch(76% 0.12 318);
+  --canvas-signal-audio: oklch(80% 0.12 82);
+  --canvas-signal-model: oklch(77% 0.11 215);
+  --canvas-signal-image-set: oklch(78% 0.1 180);
+  --canvas-signal-neutral: oklch(76% 0.025 245);
+  --canvas-signal-danger: oklch(70% 0.16 25);
+  --canvas-signal-duration-micro: 120ms;
+  --canvas-signal-duration-short: 220ms;
+  --canvas-signal-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --canvas-signal-ease-in-out: cubic-bezier(.65, 0, .35, 1);
+}
+.echo-home[data-theme='day'],
+.app-shell[data-theme='day'] {
+  --canvas-dot-color: #dfe0e1;
+  --canvas-dot-pattern: radial-gradient(circle, var(--canvas-dot-color) 0 var(--canvas-dot-radius), transparent 1.25px);
+  --canvas-signal-text: oklch(55% 0.15 248);
+  --canvas-signal-image: oklch(55% 0.16 158);
+  --canvas-signal-video: oklch(56% 0.16 318);
+  --canvas-signal-audio: oklch(60% 0.15 82);
+  --canvas-signal-model: oklch(54% 0.14 215);
+  --canvas-signal-image-set: oklch(56% 0.13 180);
+  --canvas-signal-neutral: oklch(52% 0.03 245);
+  --canvas-signal-danger: oklch(56% 0.2 25);
+}
+
+.echo-home { background-image: none; }
+.flow-area { overflow: hidden; background: var(--canvas-plane-base); }
+.heiyan-dot-field {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+}
+.heiyan-dot-field::before {
+  position: absolute;
+  content: '';
+  inset: 0;
+  background-image: var(--canvas-dot-pattern);
+  background-position: 0 0;
+  background-size: var(--canvas-dot-pattern-size);
+}
+.canvas-boot-grid {
+  background-color: var(--canvas-plane-base);
+  background-image: var(--canvas-dot-pattern);
+  background-position: center;
+  background-size: var(--canvas-dot-pattern-size);
+  -webkit-mask: none;
+  mask: none;
+}
+.flow-area > .react-flow { position: relative; z-index: 1 !important; background: transparent; }
+.flow-area .react-flow__pane { background-color: transparent !important; background-image: none !important; }
+
+/* Colour is reserved for type/state feedback and never becomes a permanent edge colour. */
+.heiyan-dot-field::after {
+  position: absolute;
+  z-index: 0;
+  inset: -18%;
+  content: '';
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-2%, 2%, 0) scale(.94);
+  background:
+    radial-gradient(circle at 28% 42%, color-mix(in oklab, var(--canvas-signal-image) 15%, transparent) 0%, transparent 48%),
+    radial-gradient(circle at 72% 58%, color-mix(in oklab, var(--canvas-signal-text) 13%, transparent) 0%, transparent 52%);
+}
+.app-shell[data-agent-writing] .heiyan-dot-field::after,
+.app-shell[data-agent-operation-phase='locating'] .heiyan-dot-field::after,
+.app-shell[data-agent-operation-phase='applying'] .heiyan-dot-field::after,
+.app-shell[data-agent-operation-phase='saving'] .heiyan-dot-field::after {
+  animation: canvas-signal-field-arrive 4.8s var(--canvas-signal-ease-in-out) both;
+}
+
+.canvas-node.type-text { --canvas-node-signal: var(--canvas-signal-text); }
+.canvas-node.type-image { --canvas-node-signal: var(--canvas-signal-image); }
+.canvas-node.type-imageSet { --canvas-node-signal: var(--canvas-signal-image-set); }
+.canvas-node.type-video { --canvas-node-signal: var(--canvas-signal-video); }
+.canvas-node.type-audio { --canvas-node-signal: var(--canvas-signal-audio); }
+.canvas-node.type-model { --canvas-node-signal: var(--canvas-signal-model); }
+
+:is(.canvas-node, .collection-node)::after {
+  position: absolute;
+  z-index: 18;
+  inset: -1px;
+  content: '';
+  pointer-events: none;
+  border: 1px solid var(--canvas-node-signal, var(--canvas-signal-neutral));
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(.992);
+  transition:
+    opacity var(--canvas-signal-duration-short) var(--canvas-signal-ease-out),
+    transform var(--canvas-signal-duration-short) var(--canvas-signal-ease-out);
+}
+.react-flow__node.selected .canvas-node::after,
+.react-flow__node-collection.selected .collection-node::after,
+.canvas-node.connection-source::after,
+.canvas-node.connection-compatible::after,
+.canvas-node.connection-guide-compatible::after {
+  opacity: .64;
+  transform: none;
+}
+.canvas-node:has(.status-running, .status-queued)::after,
+.collection-node.workflow-running::after {
+  opacity: .7;
+  transform: none;
+  animation: canvas-node-signal-breathe 1.6s var(--canvas-signal-ease-in-out) 2;
+}
+
+.agent-canvas-operation-spot {
+  --canvas-operation-signal: var(--canvas-signal-text);
+  border-color: color-mix(in oklab, var(--canvas-operation-signal) 78%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--canvas-border) 52%, transparent);
+}
+.agent-canvas-operation-spot.is-applying { --canvas-operation-signal: var(--canvas-signal-image); }
+.agent-canvas-operation-spot.is-saving { --canvas-operation-signal: var(--canvas-signal-video); }
+.agent-canvas-operation-spot.is-settled { --canvas-operation-signal: var(--canvas-success); }
+.agent-canvas-operation-spot.is-error { --canvas-operation-signal: var(--canvas-signal-danger); }
+.agent-canvas-operation-spot::after {
+  inset: -1px -28%;
+  background: linear-gradient(100deg, transparent 24%, color-mix(in oklab, var(--canvas-operation-signal) 22%, transparent) 50%, transparent 76%);
+  background-size: 100% 100%;
+  animation: canvas-operation-scan 1.15s var(--canvas-signal-ease-in-out) 2;
+  transform: translate3d(-34%, 0, 0);
+}
+.agent-canvas-operation-spot > span > i {
+  background: var(--canvas-operation-signal);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--canvas-operation-signal) 14%, transparent);
+}
+
+@keyframes canvas-signal-field-arrive {
+  0% { opacity: 0; transform: translate3d(-3%, 2%, 0) scale(.94); }
+  42% { opacity: .54; }
+  100% { opacity: .3; transform: translate3d(3%, -2%, 0) scale(1.04); }
+}
+@keyframes canvas-node-signal-breathe {
+  0%, 100% { opacity: .46; transform: scale(.994); }
+  50% { opacity: .82; transform: none; }
+}
+@keyframes canvas-operation-scan {
+  from { opacity: 0; transform: translate3d(-34%, 0, 0); }
+  24%, 76% { opacity: 1; }
+  to { opacity: 0; transform: translate3d(34%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heiyan-dot-field::after,
+  :is(.canvas-node, .collection-node)::after,
+  .agent-canvas-operation-spot::after {
+    animation: none !important;
+    transition-duration: var(--canvas-signal-duration-micro) !important;
+    transform: none !important;
+  }
+}

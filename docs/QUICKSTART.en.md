@@ -71,7 +71,7 @@ Cloud requests may pass through your canvas server before reaching the provider.
 
 ### Windows portable connector
 
-1. Download `HEIYAN-Connector-Windows-x64.zip` from [Releases](https://github.com/castleinmysky/HEIYAN-Canvas/releases/latest).
+1. Download the versioned `HEIYAN-Connector-Windows-x64-v1.7.1.zip` from [Releases](https://github.com/castleinmysky/HEIYAN-Canvas/releases/latest).
 2. Extract the entire ZIP. Do not run it from inside the archive.
 3. The default canvas address is `http://127.0.0.1:8792`. For another deployment or the online demo, edit `siteUrl` in the extracted `connector.json`. You can use the full current task URL, including its query parameters. Do not include credentials in the URL.
 4. Run `启动黑岩连接器.cmd` (Start HEIYAN Connector). Follow the local setup page to sign in to your own Codex.
@@ -98,7 +98,7 @@ For another canvas address, set `--origin` to its exact origin without a path. I
 ### Scope
 
 - Uses your own Codex login and quota. Do not send login files or pairing codes to the author or other users.
-- Supports model and reasoning controls, image input, project memory, history search, node editing, approved generation and result inspection. The current HEIYAN Canvas version is 1.3.0 and the standalone Codex connector is 1.7.0. See the [1.3.0 release notes](releases-1.3.0.md).
+- Supports model and reasoning controls, image input, project memory, history search, node editing, approved generation and result inspection. The current HEIYAN Canvas version is 1.3.0 and the standalone Codex connector is 1.7.1. Node reads, edits, generation submissions, and result reads no longer have arbitrary connector-level item caps; queue, concurrency, credit, approval, and stability safeguards still apply. See the [canvas 1.3.0 release notes](releases-1.3.0.md) and [connector 1.7.1 notes](connector-1.7.1.md).
 - Paid generation asks for approval by default. Explicitly enabling full access authorizes automatic operations, including paid generation, on the current canvas. You can switch back at any time. It does not autonomously complete an entire film. See the [1.2 notes](releases-1.2.md).
 - Self-hosted project requirements, conversations and execution receipts are isolated by canvas in this browser's IndexedDB. Reconnecting can load them without replaying old operations. Clearing site data removes these records. Agent API keys remain in page memory, not project records; no account or cloud storage is required.
 - Supports a desktop browser and connector on the same computer. Cross-device mobile Codex connections are not available.

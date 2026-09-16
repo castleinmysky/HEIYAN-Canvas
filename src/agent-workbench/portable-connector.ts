@@ -19,10 +19,10 @@ export function consumePairingFragment(location: Pick<Location, 'hash' | 'pathna
   return pair;
 }
 type Part = { path: string; bytes: number; sha256: string };
-type PortableManifest = { filename: string; bytes: number; parts: Part[] };
+type PortableManifest = { filename: string; distribution: 'heiyan-standalone'; version: string; bytes: number; parts: Part[] };
 export function validatePortableManifest(value: unknown): PortableManifest {
   const item = value as PortableManifest;
-  if (!item || item.filename !== 'HEIYAN-Connector-Windows-x64.zip' || !Array.isArray(item.parts) || !item.parts.length || item.parts.length > 32) throw Error('下载清单无效');
+  if (!item || item.distribution !== 'heiyan-standalone' || !/^\d+\.\d+\.\d+$/.test(item.version) || item.filename !== `HEIYAN-Connector-Windows-x64-v${item.version}.zip` || !Array.isArray(item.parts) || !item.parts.length || item.parts.length > 32) throw Error('下载清单无效');
   if (!item.parts.every(part => /^\/downloads\/heiyan-windows\/[a-f0-9]{16}\/part-\d{3}\.bin$/.test(part.path) && /^[a-f0-9]{64}$/.test(part.sha256) && Number.isSafeInteger(part.bytes) && part.bytes > 0 && part.bytes <= 20 * 1024 * 1024)) throw Error('下载文件清单无效');
   if (new Set(item.parts.map(part => part.path)).size !== item.parts.length || item.bytes !== item.parts.reduce((sum, part) => sum + part.bytes, 0) || item.bytes > 512 * 1024 * 1024) throw Error('下载大小校验失败');
   return item;
