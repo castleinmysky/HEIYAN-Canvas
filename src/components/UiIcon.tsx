@@ -5,8 +5,8 @@ export type UiIconName =
   | 'organize' | 'collection' | 'collage' | 'download' | 'archive' | 'run'
   | 'expand' | 'collapse' | 'rename' | 'toolbox' | 'dissolve' | 'delete'
   | 'disconnect' | 'more' | 'undo' | 'redo' | 'usage' | 'model' | 'back'
-  | 'chevronDown' | 'close' | 'fit' | 'minimap' | 'view' | 'search'
-  | 'text' | 'image' | 'video' | 'audio' | 'imageGenerate' | 'videoGenerate' | 'audioGenerate' | 'play' | 'pause'
+  | 'chevronUp' | 'chevronDown' | 'chevronRight' | 'dockLeft' | 'dockRight' | 'dockBottom' | 'close' | 'fit' | 'minimap' | 'view' | 'search'
+  | 'text' | 'image' | 'video' | 'audio' | 'mic' | 'imageGenerate' | 'videoGenerate' | 'audioGenerate' | 'play' | 'pause'
   | 'model3d' | 'comfy' | 'character' | 'split' | 'result' | 'preview'
   | 'link' | 'lock' | 'unlock' | 'crop' | 'edit' | 'retry' | 'clear' | 'send' | 'candidate'
   | 'final' | 'submitted' | 'left' | 'right' | 'up' | 'down' | 'distribute'
@@ -40,7 +40,12 @@ const shapes: Record<UiIconName, ReactNode> = {
   usage: <><path d="M4 15V9M8 15V5M12 15v-3M16 15V7" /><path d="M3 17h14" /></>,
   model: <><path d="m10 2.8 6.5 3.7v7L10 17.2l-6.5-3.7v-7L10 2.8Z" /><path d="m3.8 6.7 6.2 3.6 6.2-3.6M10 10.3v6.5" /></>,
   back: <><path d="m8 4-6 6 6 6M2 10h15" /></>,
+  chevronUp: <path d="m5 12 5-5 5 5" />,
   chevronDown: <path d="m5 8 5 5 5-5" />,
+  chevronRight: <path d="m8 5 5 5-5 5" />,
+  dockLeft: <><rect x="3" y="4" width="14" height="12" rx="2.5" /><path d="M7 4v12" /></>,
+  dockRight: <><rect x="3" y="4" width="14" height="12" rx="2.5" /><path d="M13 4v12" /></>,
+  dockBottom: <><rect x="3" y="4" width="14" height="12" rx="2.5" /><path d="M3 12h14" /></>,
   close: <path d="M5 5l10 10M15 5 5 15" />,
   fit: <><path d="M8 3H3v5M12 3h5v5M8 17H3v-5M12 17h5v-5" /></>,
   minimap: <><rect x="3" y="4" width="14" height="12" rx="3" /><path d="m5.5 13 3-3 2.3 2.2 2.7-3.2 2 2.4" /><circle cx="7" cy="7.5" r="1" /></>,
@@ -50,6 +55,7 @@ const shapes: Record<UiIconName, ReactNode> = {
   image: <><rect x="3" y="3" width="14" height="14" rx="3" /><circle cx="7.5" cy="7.5" r="1.5" /><path d="m5 14 3.5-3.5 2.5 2.5 2-2 2 3" /></>,
   video: <><rect x="2.5" y="4" width="11" height="12" rx="3" /><path d="m13.5 8 4-2v8l-4-2" /></>,
   audio: <><path d="M8 15.5V5l7-1.5V14" /><circle cx="5.5" cy="15.5" r="2.5" /><circle cx="12.5" cy="14" r="2.5" /></>,
+  mic: <><rect x="7" y="2" width="6" height="10" rx="3" /><path d="M4 9v1a6 6 0 0 0 12 0V9M10 16v2M7 18h6" /></>,
   audioGenerate: <><path d="M7.5 15.5V6l6-1.3V14" /><circle cx="5.5" cy="15.5" r="2" /><circle cx="11.5" cy="14" r="2" /><path d="M16 3v4M14 5h4" /></>,
   play: <><circle cx="10" cy="10" r="7" /><path d="m8.5 7 4.5 3-4.5 3Z" /></>,
   pause: <><circle cx="10" cy="10" r="7" /><path d="M8 7v6M12 7v6" /></>,

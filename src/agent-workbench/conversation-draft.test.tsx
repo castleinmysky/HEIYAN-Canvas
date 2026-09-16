@@ -74,6 +74,9 @@ describe('Independent canvas conversation', () => {
     expect(conversationStyle).not.toContain('radial-gradient');
     expect(conversationStyle).toContain('background: var(--cad-rail)');
     expect(css).toContain('prefers-reduced-motion: reduce');
+    const livingCss = readFileSync('src/agent-workbench/HeiyanLivingDock.css', 'utf8');
+    expect(livingCss).toContain('[data-agent-dock=floating] .canvas-shortcut-guide');
+    expect(livingCss).toContain('[data-free-align=left]) .canvas-shortcut-guide');
   });
   it('does not bind conversation to a selected generator and uses a guarded canvas boundary', () => {
     const app = readFileSync('src/App.tsx', 'utf8');
@@ -106,7 +109,7 @@ describe('Independent canvas conversation', () => {
     const app = readFileSync('src/App.tsx', 'utf8');
     const source = readFileSync('src/agent-workbench/CanvasAgentDock.tsx', 'utf8');
     expect(app).toContain('canvasView={agentCanvasView}');
-    expect(app).toContain('inert={!shareMode && agentOpen && agentCompactLayout(mobileCanvas.width) && !agentCanvasView}');
+    expect(app).toContain('inert={!agentLiving && !shareMode && agentOpen && agentCompactLayout(mobileCanvas.width) && !agentCanvasView}');
     expect(source).not.toContain('setCanvasView');
     expect(app).not.toContain('if (nodeId) focusAgentNode(nodeId)');
     const css = readFileSync('src/agent-workbench/CanvasAgentDock.css', 'utf8');

@@ -12,6 +12,8 @@ import { executeCanvasAction, requireCanvasJobActionOutcome, type CanvasActionHo
 import type { AgentCanvasAccess } from './agent-workbench/agent-session';
 import { validateAgentTool } from '../server/agent-contract.js';
 import { agentCompactLayout, toggleAgentWorkspace, type AgentWorkspace } from './agent-workbench/workbench-layout';
+import { effectiveBotDockPlacement, readBotDockPlacement, saveBotDockPlacement, type BotDockPlacement } from './agent-workbench/bot-docking';
+import { constrainPanelToBot } from './agent-workbench/bot-overlay-layout';
 import {
   MiniMap, ReactFlow as ReactFlowBase, ReactFlowProvider, SelectionMode, reconnectEdge,
   useEdgesState, useNodesState, useReactFlow, useUpdateNodeInternals, type Connection, type Edge, type IsValidConnection, type OnConnectEnd, type OnReconnect, type ReactFlowProps, type Viewport,
@@ -3097,6 +3099,16 @@ export function CanvasBootLoader({ leaving = false, failed = false, taskTitle = 
 function Studio() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const [agentWorkspace, setAgentWorkspace] = useState<AgentWorkspace>(() => window.location.pathname.replace(/\/$/, '') === '/agent-preview' || params.get('view') === 'agent' ? 'conversation' : 'closed');
+  const [agentLiving] = useState(() => params.get('agent_ui') !== 'classic');
+  const [botDockPlacement, setBotDockPlacement] = useState<BotDockPlacement>(() => { try { return readBotDockPlacement(localStorage); } catch { return 'floating'; } });
+  const [botBounds, setBotBounds] = useState<Pick<DOMRectReadOnly, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height'> | null>(null);
+  const reportBotBounds = useCallback((next: typeof botBounds) => {
+    setBotBounds(current => current && next && current.left === next.left && current.top === next.top && current.width === next.width && current.height === next.height ? current : next);
+  }, []);
+  const placeBot = useCallback((placement: BotDockPlacement) => {
+    setBotDockPlacement(placement);
+    try { saveBotDockPlacement(localStorage, placement); } catch { /* Keep the in-memory placement usable. */ }
+  }, []);
   const agentOpen = agentWorkspace !== 'closed';
   const agentCanvasView = agentWorkspace === 'canvas';
   const studioMode = resolveStudioMode(window.location.pathname, window.location.search);
@@ -3214,6 +3226,7 @@ function Studio() {
   useEffect(() => () => viewportPublisher.cancel(), [viewportPublisher, task.taskId, activeCanvasId]);
   const [viewportSize, setViewportSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const mobileCanvas = useMobileCanvas();
+  const effectiveBotDock = agentLiving ? effectiveBotDockPlacement(botDockPlacement, mobileCanvas.width) : 'floating';
   const [touchSelecting, setTouchSelecting] = useState(false);
   const [mobilePresetsOpen, setMobilePresetsOpen] = useState(false);
   const flowAreaRef = useRef<HTMLDivElement>(null);
@@ -6777,7 +6790,7 @@ function Studio() {
       ...(output.type && output.value ? { reference: { sourceId: node.id, type: output.type, label: node.data.title || '未命名节点', token: `node-${node.id}`, previewUrl: output.previewUrl, ...(output.type === 'text' ? { text: String(output.value) } : { mediaUrl: String(output.value) }), duration: output.duration } } : {}),
     };
   })), []);
-  const agentItems = useMemo<CanvasAgentItem[]>(() => !agentOpen ? [] : agentItemsCache(nodes, edges), [agentOpen, nodes, edges, agentItemsCache]);
+  const agentItems = useMemo<CanvasAgentItem[]>(() => !agentOpen && !agentLiving ? [] : agentItemsCache(nodes, edges), [agentOpen, agentLiving, nodes, edges, agentItemsCache]);
   const [agentFollow, setAgentFollow] = useState(() => { try { return localStorage.getItem('heiyan:agent-follow') !== 'off'; } catch { return true; } });
   const agentRevealUntil = useRef(0);
   const agentFollowRef = useRef(agentFollow); agentFollowRef.current = agentFollow;
@@ -6791,13 +6804,13 @@ function Studio() {
     setAgentFeedback({ ids: live, label, at: Date.now() });
     if (!live.length || automatic && (!agentFollowRef.current || !agentOpenRef.current)) return;
     agentRevealUntil.current = Date.now() + 500;
-    if (!automatic || agentCompactLayout(window.innerWidth)) setAgentWorkspace('canvas');
+    if ((!automatic || agentCompactLayout(window.innerWidth)) && (!agentLiving || effectiveBotDock === 'floating')) setAgentWorkspace(agentLiving ? 'closed' : 'canvas');
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (loadedCanvasKeyRef.current !== activeCanvasKey) return;
       const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260;
       void flow.fitView({ nodes: live.map(id => ({ id })), padding: .22, duration, minZoom: canvasMinimumZoom, maxZoom: 1 });
     }));
-  }, [activeCanvasKey, flow]);
+  }, [activeCanvasKey, agentLiving, effectiveBotDock, flow]);
   const focusAgentNode = useCallback((nodeId: string) => {
     selectNode(nodeId);
     // Mobile selection tracking owns the viewport after the surface switch.
@@ -7078,14 +7091,28 @@ function Studio() {
       top: bounds.top + viewport.y + selectedGenerator.position.y * viewport.zoom,
       bottom: bounds.top + viewport.y + (selectedGenerator.position.y + nodeHeight) * viewport.zoom,
     };
-    const position = generatorPanelDockPosition({
+    const panelPositionInput = {
       bounds: { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom, width: bounds.width, height: bounds.height },
       nodeBounds: screenNodeBounds || fallbackNodeBounds,
-      preferredDock: preferredGeneratorPanelDock,
       panelWidth: generatorEditorPanelWidth,
       panelHeight: generatorPanelMeasuredHeight,
       viewportHeight,
-    });
+    };
+    const requestedPosition = generatorPanelDockPosition({ ...panelPositionInput, preferredDock: preferredGeneratorPanelDock });
+    let position = requestedPosition;
+    if (agentLiving) {
+      const floatingBot = effectiveBotDock === 'floating' ? botBounds : null;
+      let fitted = constrainPanelToBot({ panel: requestedPosition, canvas: bounds, bot: floatingBot, measuredHeight: generatorPanelMeasuredHeight });
+      if (floatingBot && fitted.compact) {
+        const candidates = ([preferredGeneratorPanelDock, 'left', 'right', 'top', 'bottom'] as GeneratorPanelDock[])
+          .map((dock) => generatorPanelDockPosition({ ...panelPositionInput, preferredDock: dock }))
+          .filter((candidate, index, values) => values.findIndex((value) => value.dock === candidate.dock) === index)
+          .map((candidate) => constrainPanelToBot({ panel: candidate, canvas: bounds, bot: floatingBot, measuredHeight: generatorPanelMeasuredHeight }));
+        fitted = candidates.sort((left, right) => Number(left.compact) - Number(right.compact)
+          || Math.min(generatorPanelMeasuredHeight, right.panel.maxHeight) * right.panel.width - Math.min(generatorPanelMeasuredHeight, left.panel.maxHeight) * left.panel.width)[0] || fitted;
+      }
+      position = fitted.panel;
+    }
     setGeneratorPanelPosition((current) => current
       && Math.abs(current.left - position.left) < .5
       && Math.abs(current.top - position.top) < .5
@@ -7095,7 +7122,7 @@ function Studio() {
       && current.panelPlacement === position.panelPlacement
       ? current
       : { left: position.left, top: position.top, ...(position.width ? { width: position.width } : {}), maxHeight: position.maxHeight, dock: position.dock, panelPlacement: position.panelPlacement });
-  }, [generatorPanelMeasuredHeight, preferredGeneratorPanelDock, selectedGenerator, viewport, viewportSize, mobileCanvas.mobile, mobileCanvas.width, mobileCanvas.sheetHeight]);
+  }, [generatorPanelMeasuredHeight, preferredGeneratorPanelDock, selectedGenerator, viewport, viewportSize, mobileCanvas.mobile, mobileCanvas.width, mobileCanvas.sheetHeight, agentLiving, effectiveBotDock, botBounds]);
   useLayoutEffect(() => {
     if (!selectedGenerator || !generatorPanelPosition) return;
     const element = generatorPanelLayerRef.current;
@@ -7122,8 +7149,13 @@ function Studio() {
       },
       viewportSize,
     });
-    return { left: position.left, top: position.top, width: position.width, height: position.height };
-  }, [selectedCharacterGenerator, viewport, viewportSize]);
+    if (!agentLiving || mobileCanvas.mobile) return { left: position.left, top: position.top, width: position.width, height: position.height };
+    const safe = constrainPanelToBot({
+      panel: { left: position.left + position.width / 2, top: position.top, width: position.width, maxHeight: position.height, dock: 'bottom' },
+      canvas: bounds, bot: effectiveBotDock === 'floating' ? botBounds : null, measuredHeight: position.height,
+    }).panel;
+    return { left: safe.left - safe.width / 2, top: safe.top, width: safe.width, height: safe.maxHeight };
+  }, [selectedCharacterGenerator, viewport, viewportSize, agentLiving, effectiveBotDock, botBounds, mobileCanvas.mobile]);
   const createCollageFromSelection = useCallback(async (nodeIds: readonly string[]) => {
     if (collageCreatingRef.current) { setToast('正在制作上一张拼图，请稍候'); return; }
     const selectedIds = new Set(nodeIds);
@@ -7649,7 +7681,7 @@ function Studio() {
   const contextMenuCollection = contextMenu && contextMenuNode?.data.kind !== 'collection' ? workflows.collectionForNode(contextMenu.nodeId) : undefined;
   const contextMenuHasConnections = Boolean(contextMenu && edges.some((edge) => edge.source === contextMenu.nodeId || edge.target === contextMenu.nodeId));
   const contextMenuOpensLeft = Boolean(contextMenu && contextMenu.clientX > window.innerWidth - 440);
-  return <main data-agent-open={agentOpen && !shareMode || undefined} data-agent-canvas={agentCanvasView || undefined} data-theme={canvasTheme} data-language={canvasLanguage} data-mobile={mobileCanvas.mobile || undefined} data-mobile-keyboard={mobileCanvas.mobile && mobileCanvas.keyboard || undefined} style={mobileCanvas.mobile ? { '--mobile-visible-height': `${mobileCanvas.height}px`, '--mobile-bottom-inset': `${mobileCanvas.bottom}px`, '--mobile-sheet-height': `${mobileCanvas.sheetHeight}px` } as CSSProperties : undefined} className={`app-shell${hasTaskContext ? '' : ' is-task-unbound'}${publicMode ? ' is-public' : ''}${comfyUiEditor ? ' is-comfyui-editor-open' : ''}`}>
+  return <main data-agent-dock={!shareMode ? effectiveBotDock : 'floating'} data-agent-living={agentLiving || undefined} data-agent-open={agentOpen && !shareMode || undefined} data-agent-canvas={agentCanvasView || undefined} data-theme={canvasTheme} data-language={canvasLanguage} data-mobile={mobileCanvas.mobile || undefined} data-mobile-keyboard={mobileCanvas.mobile && mobileCanvas.keyboard || undefined} style={mobileCanvas.mobile ? { '--mobile-visible-height': `${mobileCanvas.height}px`, '--mobile-bottom-inset': `${mobileCanvas.bottom}px`, '--mobile-sheet-height': `${mobileCanvas.sheetHeight}px` } as CSSProperties : undefined} className={`app-shell${hasTaskContext ? '' : ' is-task-unbound'}${publicMode ? ' is-public' : ''}${comfyUiEditor ? ' is-comfyui-editor-open' : ''}`}>
     <GlobalTooltip />
     {showCanvasLoader && <CanvasBootLoader leaving={canvasLoaderLeaving} failed={!ready && saveState === '保存失败'} taskTitle={task.title} />}
     <header className="topbar">
@@ -7718,7 +7750,7 @@ function Studio() {
     {!shareMode && platformAdmin && showSettingsCenter && <Suspense fallback={null}><SettingsCenter open={showSettingsCenter} initialSection={settingsCenterSection} onClose={() => setShowSettingsCenter(false)} request={apiFetch} onModelsChanged={reloadModels} version={canvasAppVersionLabel} language={canvasLanguage} /></Suspense>}
     {!shareMode && showGeneratedAssetHistory && <Suspense fallback={null}><GeneratedAssetHistory key={activeCanvasKey} canvasId={activeCanvasId} open={showGeneratedAssetHistory} taskId={task.taskId} request={apiFetch} language={canvasLanguage} modelNames={generatedAssetModelNames} nodeNames={new Map(nodes.map(node => [JSON.stringify([activeCanvasId, node.id]), node.data.title || '']))} onClose={() => setShowGeneratedAssetHistory(false)} onAddToCanvas={addGeneratedAssetToCanvas} /></Suspense>}
     {!shareMode && comfyUiEditor && <ComfyUiEditorDialog state={comfyUiEditor} apiFetch={apiFetch} onClose={closeComfyUiEditor} onRetry={retryComfyUiEditor} onRun={runComfyUiWorkflow} onCanvasSync={syncComfyUiEditorCanvasState} />}
-    <section className="studio-layout" inert={!shareMode && agentOpen && agentCompactLayout(mobileCanvas.width) && !agentCanvasView} aria-hidden={!shareMode && agentOpen && agentCompactLayout(mobileCanvas.width) && !agentCanvasView || undefined}><div ref={flowAreaRef} className="flow-area" onClickCapture={(event) => {
+    <section className="studio-layout" inert={!agentLiving && !shareMode && agentOpen && agentCompactLayout(mobileCanvas.width) && !agentCanvasView} aria-hidden={!agentLiving && !shareMode && agentOpen && agentCompactLayout(mobileCanvas.width) && !agentCanvasView || undefined}><div ref={flowAreaRef} className="flow-area" onClickCapture={(event) => {
       if (!mobileCanvas.mobile || !(event.target instanceof Element) || !event.target.closest('.image-hand-card')) return;
       const nodeId = event.target.closest<HTMLElement>('.react-flow__node')?.dataset.id;
       if (nodeId) { if (nodeId !== singleSelectedNodeId) selectNode(nodeId); else focusMobileNode(nodeId); }
@@ -7897,9 +7929,9 @@ function Studio() {
       </div>}
       {selectionToolbarPosition && <div className="selection-toolbar" data-placement={selectionToolbarPosition.placement} style={{ left: selectionToolbarPosition.left, top: selectionToolbarPosition.top }}><strong><span>{selectedNodes.length}</span> 个节点</strong><div className="selection-toolbar-group"><button title="向左紧密排列 · Ctrl + ←" aria-label="向左紧密排列" onClick={() => arrangeSelected('left')}><UiIcon name="left" /></button><button title="向右紧密排列 · Ctrl + →" aria-label="向右紧密排列" onClick={() => arrangeSelected('right')}><UiIcon name="right" /></button><button title="向上紧密排列 · Ctrl + ↑" aria-label="向上紧密排列" onClick={() => arrangeSelected('top')}><UiIcon name="up" /></button><button title="向下紧密排列 · Ctrl + ↓" aria-label="向下紧密排列" onClick={() => arrangeSelected('bottom')}><UiIcon name="down" /></button><button title="均匀分布" aria-label="均匀分布" disabled={selectedNodes.length < 3} onClick={() => arrangeSelected('spaceX')}><UiIcon name="distribute" /></button><button title="自动排列" aria-label="自动排列" onClick={() => arrangeSelected('auto')}><UiIcon name="autoArrange" /></button></div></div>}
     </div></section>
-    {!shareMode && <CanvasAgentDock key={activeCanvasKey} canvasKey={activeCanvasKey} open={agentOpen} canvasView={agentCanvasView} items={agentItems} selectedId={singleSelectedNodeId} ready={ready} access={agentCanvasAccess}
+    {!shareMode && <CanvasAgentDock key={activeCanvasKey} canvasKey={activeCanvasKey} living={agentLiving} dockPlacement={effectiveBotDock} onDockPlacement={placeBot} onBoundsChange={reportBotBounds} observationKey={`${activeCanvasId}:${nodes.length}:${edges.length}:${selectedNodes.map(node => node.id).join(',')}`} open={agentOpen} canvasView={agentCanvasView} items={agentItems} selectedId={singleSelectedNodeId} selectedIds={nodes.filter(node => node.selected).map(node => node.id)} ready={ready} access={agentCanvasAccess}
       followCanvas={agentFollow} onFollowCanvas={value => { setAgentFollow(value); try { localStorage.setItem('heiyan:agent-follow', value ? 'on' : 'off'); } catch { /* Current-page setting still applies. */ } }}
-      onClose={() => switchAgentWorkspace('closed')} onViewChange={canvas => switchAgentWorkspace(canvas ? 'canvas' : 'conversation')}
+      onClose={() => switchAgentWorkspace('closed')} onViewChange={canvas => switchAgentWorkspace(canvas && agentLiving ? effectiveBotDock === 'floating' ? 'closed' : 'conversation' : canvas ? 'canvas' : 'conversation')}
       onFocus={focusAgentNode} onUpload={() => openUpload()} />}
     {canvasConfirmation && <div className="canvas-confirmation-layer" role="presentation" data-tone={canvasConfirmation.tone} onPointerDown={(event) => {
       event.stopPropagation();

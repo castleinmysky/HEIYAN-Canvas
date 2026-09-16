@@ -1,0 +1,248 @@
+/* Hallmark · component: living conversation · genre: modern-minimal · theme: HEIYAN inherited
+ * Pre-emit critique: P5 H5 E5 S5 R5 V5 · Width belongs to content, never activity. */
+@import './living-tokens.css';
+.heiyan-classic-content { display: contents; }
+.canvas-agent-composer-body { display: contents; }
+.app-shell[data-agent-living] { background: var(--canvas-plane-base); }
+.app-shell[data-agent-living]::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: var(--canvas-dot-pattern); background-position: 0 0; background-size: var(--canvas-dot-pattern-size); }
+.app-shell[data-agent-living] .flow-area { background: transparent; }
+.app-shell[data-agent-living] .flow-area > .heiyan-dot-field::before { display: none; }
+.agent-steer-button > .ui-icon { display: none; }
+.app-shell[data-agent-living] > .canvas-immersive-tools { display: grid; }
+@media (min-width:960px) { .app-shell[data-agent-living][data-agent-dock=left] > .canvas-immersive-tools { left: calc(var(--canvas-agent-width) + 36px); } }
+.canvas-agent-dock:not([data-page=chat]) > .heiyan-classic-content > :is(.canvas-agent-conversation,.canvas-agent-composer,.canvas-agent-footnote) { display: none; }
+.app-shell[data-agent-living] > .studio-layout { margin-right: 0 !important; transition: none !important; }
+.app-shell[data-agent-living] > .topbar { right: var(--canvas-top-chrome-inset,12px) !important; transition: none !important; visibility: visible !important; pointer-events: none !important; }
+.app-shell[data-agent-living] #canvas-agent-toggle { display: none; }
+.app-shell .canvas-agent-dock[data-living] {
+  position: fixed; inset: auto auto var(--bot-bottom) 50%; width: min(var(--living-width),calc(100% - 32px));
+  max-width: calc(100% - 32px); min-width: 0; height: auto; max-height: calc(var(--mobile-visible-height,100dvh) - 96px);
+  transform: translateX(-50%); translate: none; visibility: visible; pointer-events: auto;
+  border: 0; border-radius: 28px; background: var(--bot-clear); color: var(--canvas-text);
+  transition: none; container-type: normal; overflow: visible; isolation: isolate; opacity: 1;
+}
+.canvas-agent-dock[data-living] .heiyan-living-skin { position: absolute; inset: 0; z-index: -1; border: 1px solid var(--cad-rule); border-radius: inherit; background: var(--cad-rail); color: var(--canvas-text); pointer-events: none; transform-origin: 0 0; box-shadow: 0 8px 28px var(--bot-shadow); overflow: clip; will-change: transform; }
+.canvas-agent-dock[data-living][data-surface-mode=closed] { border-radius: 32px; }
+.canvas-agent-dock[data-living]:is([data-surface-mode=history],[data-surface-mode=settings]) { border-radius: 24px; }
+.canvas-agent-dock[data-living][data-surface-mode=decision] .heiyan-living-skin { border-color: color-mix(in oklch,var(--canvas-focus) 42%,var(--cad-rule)); }
+.canvas-agent-dock[data-living][data-bot-pose=error] .heiyan-living-skin { border-color: color-mix(in oklch,var(--canvas-danger) 58%,var(--cad-rule)); }
+.canvas-agent-dock[data-living][data-working] .heiyan-living-skin::after { content: ''; position: absolute; top: 0; left: -25%; width: 25%; height: 2px; background: linear-gradient(90deg,var(--bot-clear),var(--canvas-focus),var(--bot-clear)); opacity: .65; animation: heiyan-edge 3s linear infinite; }
+.canvas-agent-dock[data-living][data-living-visible=false] .heiyan-living-skin::after { animation-play-state: paused; }
+.canvas-agent-dock[data-living][data-open=false] { min-height: 64px; }
+.canvas-agent-dock[data-living][data-open=false]:not(:has(.heiyan-living-compact)):not(:has(.heiyan-living-quick)) { min-height: 72px; }
+.canvas-agent-dock[data-living][data-open=false]:not([data-working]):not(:has(.heiyan-living-compact)):not(:has(.heiyan-living-quick)) .heiyan-living-skin { background: var(--bot-clear); border-color: var(--bot-clear); box-shadow: none; }
+.canvas-agent-dock[data-living] .heiyan-living-anchor { position: absolute; left: 6px; bottom: 18px; z-index: 2; }
+.canvas-agent-dock[data-living][data-open=false] .heiyan-living-anchor { bottom: 4px; left: 4px; }
+.canvas-agent-dock[data-living] .heiyan-living-content { display: flex; flex-direction: column; min-height: 0; max-height: inherit; border-radius: inherit; }
+.canvas-agent-dock[data-living][data-open=false] .heiyan-living-content { display: none; }
+.canvas-agent-dock[data-living] .canvas-agent-resizer { display: none; }
+.canvas-agent-dock[data-living] .heiyan-living-compact,
+.canvas-agent-dock[data-living] .heiyan-living-quick { display: grid; grid-template-columns: minmax(0,1fr); align-items: center; gap: 4px; min-height: 64px; padding: 8px 10px 8px 68px; border: 0; background: var(--bot-clear); color: var(--canvas-text-soft); border-radius: inherit; }
+.canvas-agent-dock[data-living] .heiyan-living-compact:has(:is(.heiyan-living-stop,.heiyan-living-expand)) { grid-template-columns: minmax(0,1fr) 36px; }
+.canvas-agent-dock[data-living] .heiyan-living-compact:has(.heiyan-living-stop):has(.heiyan-living-expand) { grid-template-columns: minmax(0,1fr) 36px 36px; }
+.canvas-agent-dock[data-living] .heiyan-living-quick { grid-template-columns: minmax(0,1fr) 36px; }
+.canvas-agent-dock[data-living] .heiyan-living-quick:has(:is(.heiyan-living-stop,.heiyan-living-expand)) { grid-template-columns: minmax(0,1fr) 36px 36px; }
+.canvas-agent-dock[data-living] .heiyan-living-quick:has(.heiyan-living-stop):has(.heiyan-living-expand) { grid-template-columns: minmax(0,1fr) 36px 36px 36px; }
+.canvas-agent-dock[data-living] .heiyan-living-compact-main { display: flex; min-width: 0; min-height: 44px; align-items: center; padding: 0 8px; border: 0; border-radius: 14px; background: transparent; color: inherit; text-align: left; }
+.heiyan-living-compact-main span { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; white-space: nowrap; }
+.heiyan-living-status-float { position: absolute; z-index: 4; left: 50%; bottom: calc(100% + 8px); display: flex; align-items: center; justify-content: center; gap: 7px; max-width: min(360px,calc(100vw - 32px)); min-height: 30px; padding: 5px 11px; translate: -50% 0; border: 1px solid color-mix(in srgb,var(--canvas-text) 11%,transparent); border-radius: 12px; background: color-mix(in srgb,var(--cad-rail) 96%,transparent); box-shadow: 0 4px 14px color-mix(in srgb,var(--bot-shadow) 62%,transparent); color: var(--canvas-text-soft); font-size: 11px; line-height: 1.35; pointer-events: none; white-space: nowrap; }
+.heiyan-living-status-float > i { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--canvas-focus); box-shadow: 0 0 0 3px color-mix(in srgb,var(--canvas-focus) 14%,transparent); }
+.heiyan-living-status-float > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.heiyan-living-status-float[data-pose=done] > i { background: var(--canvas-primary); box-shadow: 0 0 0 3px color-mix(in srgb,var(--canvas-primary) 14%,transparent); }
+.heiyan-living-status-float:is([data-pose=error],[data-pose=offline]) > i { background: var(--canvas-danger); box-shadow: 0 0 0 3px color-mix(in srgb,var(--canvas-danger) 14%,transparent); }
+.canvas-agent-dock[data-living] .heiyan-living-expand,
+.canvas-agent-dock[data-living] .heiyan-living-quick-send,
+.canvas-agent-dock[data-living] .heiyan-living-stop { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--canvas-text-soft); }
+.canvas-agent-dock[data-living] .heiyan-living-stop:not(:disabled) { color: color-mix(in srgb,var(--canvas-danger) 72%,var(--canvas-text-soft)); }
+.canvas-agent-dock[data-living] .heiyan-living-quick-send:not(:disabled) { background: var(--canvas-primary); color: var(--canvas-primary-ink); }
+.canvas-agent-dock[data-living] .heiyan-living-quick input { width: 100%; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid color-mix(in srgb,var(--canvas-text) 14%,transparent); border-radius: 14px; outline: 0; background: color-mix(in srgb,var(--cad-rail) 96%,var(--canvas-text)); color: var(--canvas-text); font: 13px/1.4 var(--canvas-font-ui); }
+.canvas-agent-dock[data-living] .heiyan-living-quick input:focus { border-color: color-mix(in srgb,var(--canvas-focus) 58%,var(--cad-rule)); }
+.heiyan-living-header { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; min-width: 0; min-height: 44px; padding: 4px 12px 0 24px; gap: 8px; }
+.heiyan-living-header nav { display: flex; }
+.heiyan-living-status { display: inline-grid; min-width: 0; font-size: 12px; color: var(--canvas-text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.heiyan-living-status > span { grid-area: 1 / 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-agent-dock[data-living] .canvas-agent-icon { width: 36px; height: 36px; border-radius: 50%; }
+.canvas-agent-dock[data-living] .ui-icon { stroke-width: 1.5; }
+.canvas-agent-dock[data-living] button { transition: transform 120ms var(--bot-ease); }
+.canvas-agent-dock[data-living] button:active:not(:disabled) { transform: translateY(1px); }
+.canvas-agent-dock[data-living] button:focus-visible { outline: 2px solid var(--canvas-focus); outline-offset: 2px; }
+.canvas-agent-dock[data-living] .heiyan-bot { width: 56px; height: 56px; background: var(--bot-clear); }
+.canvas-agent-dock[data-living] .heiyan-bot svg { width: 56px; height: 56px; }
+.canvas-agent-dock[data-living][data-open=false]:not(:has(.heiyan-living-compact)):not(:has(.heiyan-living-quick)) .heiyan-bot,
+.canvas-agent-dock[data-living][data-open=false]:not(:has(.heiyan-living-compact)):not(:has(.heiyan-living-quick)) .heiyan-bot svg { width: 64px; height: 64px; }
+.canvas-agent-dock[data-living] .canvas-agent-conversation { flex: 1 1 auto; min-height: 0; max-height: min(420px,48dvh); margin: 0; padding: 12px 24px 8px; background: var(--bot-clear); scrollbar-gutter: stable; }
+.canvas-agent-dock[data-living][data-panel=history] .canvas-agent-conversation { height: min(560px,60dvh); max-height: min(560px,60dvh); }
+.canvas-agent-dock[data-living]:not([data-has-messages]) .canvas-agent-conversation { display: none; }
+.canvas-agent-dock[data-living] .canvas-agent-quiet-state { display: none; }
+.canvas-agent-dock[data-living][data-panel=settings] :is(.canvas-agent-conversation,.canvas-agent-composer,.canvas-agent-footnote) { display: none; }
+.canvas-agent-dock[data-living][data-panel=settings] .heiyan-living-anchor { bottom: 8px; left: 12px; }
+.canvas-agent-dock[data-living] .canvas-agent-connection-panel { flex: 1 1 auto; min-height: 0; max-height: min(600px,70dvh); overflow: auto; border: 0; padding: 12px 24px 24px; background: var(--bot-clear); }
+.canvas-agent-dock[data-living][data-panel=settings] .heiyan-living-content { padding-bottom: 64px; }
+.canvas-agent-dock[data-living] .canvas-agent-composer { flex: 0 1 auto; min-height: 0; margin: 0; padding: 8px 16px 12px 68px; gap: 8px; border: 0; border-radius: 0 0 28px 28px; box-shadow: none; background: var(--bot-clear); color: var(--canvas-text); max-height: min(320px,45dvh); }
+.canvas-agent-dock[data-living] .heiyan-offline-composer { grid-template-columns: 56px minmax(0,1fr) auto; padding: 8px 10px; background: var(--cad-rail); }
+.canvas-agent-dock[data-living] .heiyan-offline-composer .heiyan-living-anchor { position: relative; inset: auto; grid-column: 1; }
+.canvas-agent-dock[data-living] .heiyan-offline-composer > span { grid-column: 2; }
+.canvas-agent-dock[data-living] .heiyan-offline-composer > button { grid-column: 3; }
+.canvas-agent-dock[data-living] .canvas-agent-composer-body { display: flex; flex-direction: column; flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; gap: 8px; padding: 8px 12px; border: 1px solid color-mix(in srgb,var(--canvas-text) 14%,transparent); border-radius: 16px; background: color-mix(in srgb,var(--cad-rail) 96%,var(--canvas-text)); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+.canvas-agent-dock[data-living] .canvas-agent-composer-body:focus-within { border-color: color-mix(in srgb,var(--canvas-focus) 55%,var(--cad-rule)); }
+.canvas-agent-dock[data-living] .canvas-agent-grip { top: -12px; height: 24px; width: 60px; left: calc(50% - 30px); }
+.canvas-agent-dock[data-living] .canvas-agent-grip i { width: 26px; height: 3px; opacity: 0; }
+.canvas-agent-dock[data-living] .canvas-agent-grip:focus-visible i,.canvas-agent-dock[data-living] .canvas-agent-grip:hover i { opacity: .65; }
+.app-shell .canvas-agent-dock[data-living] textarea.canvas-agent-input { flex: 0 0 auto; height: var(--agent-resized-height,56px); min-height: 44px; max-height: 200px; padding: 4px 0; border: 0; border-radius: 0; outline: none; box-shadow: none; background: transparent; font-size: 14px; font-weight: 400; line-height: 1.6; resize: vertical; }
+.app-shell .canvas-agent-dock[data-living] textarea.canvas-agent-input::placeholder { color: color-mix(in srgb,var(--canvas-text-soft) 85%,var(--cad-rail)); font-size: 13px; font-weight: 400; opacity: 1; }
+.app-shell[data-theme=day] .canvas-agent-dock[data-living] textarea.canvas-agent-input::placeholder { color: color-mix(in srgb,var(--canvas-text-soft) 70%,var(--cad-rail)); }
+.app-shell .canvas-agent-dock[data-living] textarea.canvas-agent-input:focus-visible { outline: none; box-shadow: none; }
+.canvas-agent-dock[data-living] .canvas-agent-composer-footer { flex: 0 0 auto; flex-wrap: wrap; min-height: 36px; gap: 4px; }
+.canvas-agent-dock[data-living] .canvas-agent-submit-actions { margin-left: auto; }
+.canvas-agent-dock[data-living] .agent-composer-options { flex: 1 1 auto; min-width: 0; max-width: 100%; }
+.canvas-agent-dock[data-living] .canvas-agent-tools { flex: 0 0 auto; }
+.canvas-agent-dock[data-living] .canvas-agent-footnote { margin: 0; width: 1px; height: 1px; position: absolute; overflow: clip; clip-path: inset(50%); }
+.canvas-agent-dock[data-living] .canvas-agent-footnote[role=alert] { position: static; width: auto; height: auto; clip-path: none; padding: 0 16px 8px 68px; }
+.canvas-agent-dock[data-living] .canvas-agent-popup { left: 16px; right: 16px; bottom: calc(var(--agent-composer-height,140px) + 8px); max-height: min(360px,45dvh); }
+.canvas-agent-dock[data-living] .agent-option-panel { max-height: min(400px,50dvh); }
+.canvas-agent-dock[data-living] .agent-pending-reminder { gap: 4px; }
+.canvas-agent-dock[data-living] .canvas-agent-progress { display: none; }
+.canvas-agent-dock[data-living] .heiyan-voice-note { font-size: 12px; line-height: 1.6; color: var(--canvas-text-soft); margin: 0; }
+.canvas-agent-dock[data-living] .canvas-agent-send:not(:disabled) { background: var(--canvas-primary); color: var(--canvas-primary-ink) !important; }
+.heiyan-attachment-tray { display: flex; flex: 0 0 auto; gap: 12px; padding: 6px; overflow-x: auto; }
+.heiyan-attachment-tray figure { position: relative; flex: 0 0 68px; width: 68px; height: 64px; margin: 0; }
+.heiyan-attachment-preview { position: relative; width: 68px; height: 64px; padding: 0; overflow: clip; border: 1px solid var(--cad-rule); border-radius: 12px; background: var(--cad-control); color: var(--canvas-text); }
+.heiyan-attachment-preview img { width: 100%; height: 100%; object-fit: cover; }
+.heiyan-attachment-preview span { position: absolute; inset: auto 0 0; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; background: var(--cad-rail); color: var(--canvas-text); }
+.heiyan-attachment-remove { position: absolute; top: -6px; right: -6px; width: 28px; height: 28px; padding: 5px; border: 1px solid var(--cad-rule); border-radius: 50%; background: var(--cad-rail); color: var(--canvas-text); }
+.heiyan-attachment-caption { margin: 0; color: var(--canvas-text-soft); font-size: 12px; line-height: 1.5; }
+.heiyan-attachment-dialog { position: fixed; inset: 0; margin: auto; width: min(880px,calc(100% - 32px)); max-height: 85dvh; padding: 16px; border: 1px solid var(--cad-rule); border-radius: 20px; background: var(--cad-rail); color: var(--canvas-text); }
+.heiyan-attachment-dialog::backdrop { background: var(--bot-shadow); }
+.heiyan-attachment-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.heiyan-attachment-dialog header span { min-width: 0; overflow-wrap: anywhere; }
+.heiyan-attachment-dialog header button { width: 44px; height: 44px; flex: 0 0 44px; padding: 10px; border: 0; border-radius: 50%; background: var(--cad-control); color: var(--canvas-text); }
+.heiyan-attachment-dialog :is(img,video) { display: block; width: 100%; max-height: calc(85dvh - 100px); object-fit: contain; }
+/* A queued interjection is status inside the editor, never a second editor that can resize it. */
+.heiyan-supplement-queue { display: grid; flex: 0 0 auto; width: 100%; min-width: 0; max-width: 100%; max-height: 76px; gap: 4px; padding: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.heiyan-supplement-queue article { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; width: 100%; min-width: 0; max-width: 100%; min-height: 32px; gap: 7px; padding: 3px 4px 3px 8px; overflow: hidden; border: 1px solid color-mix(in srgb,var(--canvas-text) 12%,transparent); border-radius: 9px; background: color-mix(in srgb,var(--cad-control) 66%,transparent); }
+.heiyan-supplement-queue article[data-failed] { border-color: color-mix(in srgb,var(--canvas-danger) 42%,var(--cad-rule)); }
+.heiyan-supplement-state { flex: 0 0 auto; color: var(--canvas-text-muted); font-size: 11px; line-height: 1; white-space: nowrap; }
+.heiyan-supplement-queue article[data-failed] .heiyan-supplement-state { color: var(--canvas-danger); }
+.heiyan-supplement-copy { display: block; min-width: 0; max-width: 100%; overflow: hidden; color: var(--canvas-text-soft); font-size: 12px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.heiyan-supplement-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 1px; }
+.heiyan-supplement-actions > button { display: grid; place-items: center; min-width: 28px; height: 28px; min-height: 28px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--canvas-text); font-size: 11px; white-space: nowrap; }
+.heiyan-supplement-actions > button:last-child { width: 28px; padding: 6px; color: var(--canvas-text-muted); }
+.heiyan-supplement-actions > button:last-child .ui-icon { width: 13px; height: 13px; }
+@media (hover:hover) { .heiyan-supplement-actions > button:hover { background: var(--cad-control); } }
+/* Rest mode is spatial: the whole compact surface follows the Bot, then snaps without overlays. */
+.canvas-agent-dock[data-living] .heiyan-bot[aria-keyshortcuts] { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.app-shell .canvas-agent-dock[data-living][data-bot-dragging] { z-index: 110; }
+.app-shell .canvas-agent-dock[data-living][data-bot-dragging][data-magnetic-target] { transition: left 150ms var(--bot-ease),top 150ms var(--bot-ease); }
+.canvas-agent-dock[data-living][data-bot-dragging] .heiyan-bot { cursor: grabbing; }
+.canvas-agent-dock[data-living][data-bot-dragging] .heiyan-living-anchor { pointer-events: auto; }
+.app-shell .canvas-agent-dock[data-living][data-open=false][data-free-position][data-free-align=left] .heiyan-living-anchor { left: 4px; right: auto; }
+.app-shell .canvas-agent-dock[data-living][data-open=false][data-free-position][data-free-align=right] .heiyan-living-anchor { left: auto; right: 4px; }
+.app-shell .canvas-agent-dock[data-living][data-open=false][data-free-position][data-free-align=right] :is(.heiyan-living-compact,.heiyan-living-quick) { padding-left: 10px; padding-right: 68px; }
+.app-shell .canvas-agent-dock[data-living][data-open=false][data-free-position][data-free-align=left] :is(.heiyan-living-compact,.heiyan-living-quick) { padding-left: 68px; padding-right: 10px; }
+.app-shell[data-agent-living][data-node-editor]:not([data-mobile]) .canvas-agent-dock[data-living][data-dock-placement=floating] { max-height: min(max(200px,calc(100dvh - 344px)),calc(var(--mobile-visible-height,100dvh) - 96px)); }
+@media (min-width:960px) {
+  .canvas-agent-dock[data-living] .canvas-agent-composer-footer { flex-wrap: nowrap; min-height: 56px; }
+  .canvas-agent-dock[data-living] .agent-composer-options { order: initial; flex: 1 1 0; }
+  .canvas-agent-dock[data-living] .agent-approval-label,
+  .canvas-agent-dock[data-living] .agent-option-menu:not(.agent-model-menu) > summary > .ui-icon:last-child { display: none; }
+  .canvas-agent-dock[data-living] .agent-steer-button { display: grid; place-items: center; width: 32px; min-width: 32px; height: 32px; padding: 0; }
+  .canvas-agent-dock[data-living] .agent-steer-button > span { display: none; }
+  .canvas-agent-dock[data-living] .agent-steer-button > .ui-icon { display: block; }
+  .app-shell[data-agent-living] .generator-panel-layer { transition: none; }
+  .app-shell[data-agent-living][data-agent-open][data-agent-dock=left] > .studio-layout { margin-left: calc(var(--canvas-agent-width) + 24px); }
+  .app-shell[data-agent-living][data-agent-open][data-agent-dock=right] > .studio-layout { margin-right: calc(var(--canvas-agent-width) + 24px) !important; }
+  .app-shell[data-agent-living][data-agent-open][data-agent-dock=left] > .topbar { left: calc(var(--canvas-agent-width) + 36px) !important; }
+  .app-shell[data-agent-living][data-agent-open][data-agent-dock=right] > .topbar { right: calc(var(--canvas-agent-width) + 36px) !important; }
+  .app-shell .canvas-agent-dock[data-living][data-dock-placement=left] { left: 12px; right: auto; transform: none; }
+  .app-shell .canvas-agent-dock[data-living][data-dock-placement=right] { right: 12px; left: auto; transform: none; }
+  .app-shell .canvas-agent-dock[data-living]:not([data-dock-placement=floating])[data-open=true] { top: 12px; bottom: 12px; height: calc(100dvh - 24px); max-height: calc(100dvh - 24px); width: var(--canvas-agent-width); }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating])[data-open=true] .heiyan-living-content { height: 100%; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-resizer { display: block; }
+  .canvas-agent-dock[data-living][data-dock-placement=left] .canvas-agent-resizer { left: auto; right: -6px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-conversation { flex: 1 1 0; height: auto; max-height: none; padding-inline: 20px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer { flex: 0 0 auto; margin-top: auto; padding: 12px 20px; max-height: min(420px,55dvh); }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-body { padding: 8px 12px; }
+  .app-shell .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-body textarea.canvas-agent-input { flex: 0 0 auto; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-footer { position: relative; display: flex; flex-wrap: nowrap; gap: 4px; min-height: 48px; border: 0; box-shadow: none; background: var(--bot-clear); }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-option-menu { position: static; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-option-menu .agent-option-panel { left: 0; right: 0; width: auto; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-footer .heiyan-living-anchor { position: relative; inset: auto; grid-area: bot; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-footer .heiyan-living-anchor { flex: 0 0 48px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-footer .heiyan-bot,
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-footer .heiyan-bot svg { width: 48px; height: 48px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer-footer .agent-steer-button { display: grid; place-items: center; width: 32px; min-width: 32px; height: 32px; padding: 0; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-steer-button > span { display: none; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-steer-button > .ui-icon { display: block; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-approval-label,
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-option-menu:not(.agent-model-menu) > summary > .ui-icon:last-child { display: none; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-model-menu { flex: 1 1 auto; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-model-menu > summary { font-size: 11px; gap: 2px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-tools { grid-area: tools; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-quote-selected { min-width: 0; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-quote-selected > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-submit-actions { grid-area: actions; margin-left: 0; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .heiyan-living-anchor { left: 12px; bottom: 12px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating])[data-open=false] .heiyan-living-anchor { left: 4px; bottom: 4px; }
+  .canvas-agent-dock[data-living][data-dock-placement=right][data-open=false] .heiyan-living-anchor { left: auto; right: 4px; }
+  .canvas-agent-dock[data-living][data-dock-placement=right][data-open=false] :is(.heiyan-living-compact,.heiyan-living-quick) { padding-left: 10px; padding-right: 68px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-connection-panel { max-height: none; padding-inline: 20px; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .agent-composer-options { order: initial; width: auto; flex: 1 1 0; }
+  .canvas-agent-dock[data-living]:not([data-dock-placement=floating]) .canvas-agent-composer .agent-option-panel { max-width: calc(var(--canvas-agent-width) - 40px); }
+  /* A collapsed side Bot shares the canvas again. Reserve its measured corner footprint. */
+  .app-shell[data-agent-living][data-agent-dock=right]:not([data-agent-open]) .view-controls { right: calc(var(--bot-corner-width,64px) + 28px); }
+  .app-shell[data-agent-living][data-agent-dock=left]:not([data-agent-open]) .asset-library-trigger { left: calc(var(--bot-corner-width,64px) + 28px); }
+  .app-shell[data-agent-living] .react-flow__minimap { bottom: 58px; }
+  .app-shell[data-agent-living][data-agent-dock=right]:not([data-agent-open]) .react-flow__minimap { right: calc(var(--bot-corner-width,64px) + 13px); }
+  .app-shell[data-agent-living]:is([data-agent-dock=left],[data-agent-dock=right]) > .toast { top: 80px; bottom: auto; max-width: min(380px,calc(100vw - 32px)); }
+  .app-shell[data-agent-living][data-agent-open]:is([data-agent-dock=left],[data-agent-dock=right]) > .toast { max-width: min(380px,calc(100vw - var(--canvas-agent-width) - 56px)); }
+  .app-shell[data-agent-living][data-agent-open][data-agent-dock=right] > .toast { right: calc(var(--canvas-agent-width) + 40px); }
+}
+@media (hover:hover) {
+  .canvas-agent-dock[data-living] .canvas-agent-icon:hover { background: var(--cad-control); color: var(--canvas-text); }
+  .canvas-agent-dock[data-living] .heiyan-living-stop:not(:disabled):hover { background: color-mix(in srgb,var(--canvas-danger) 10%,transparent); color: var(--canvas-danger); }
+}
+/* The avatar occupies only the action row, never an empty gutter beside the draft. */
+@media (min-width:768px) {
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer { display: grid; grid-template-columns: 56px auto minmax(160px,1fr) minmax(150px,auto) auto; grid-template-areas: 'bot tools input options actions'; align-items: center; gap: 6px; padding: 8px 12px 12px; max-height: min(260px,36dvh); }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .heiyan-offline-composer { grid-column: 1 / -1; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer-footer { display: contents; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer-body { grid-area: input; width: 100%; min-width: 0; max-width: 100%; max-height: 220px; padding: 4px 10px; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer-footer .heiyan-living-anchor { position: relative; inset: auto; grid-area: bot; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer-footer .canvas-agent-tools { grid-area: tools; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer-footer .agent-composer-options { grid-area: options; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer-footer .canvas-agent-submit-actions { grid-area: actions; margin-left: 0; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating] .canvas-agent-composer > :is(.heiyan-voice-note,.canvas-agent-attachment-error,.heiyan-attachment-caption) { grid-column: 1 / -1; }
+  .app-shell .canvas-agent-dock[data-living][data-dock-placement=floating] textarea.canvas-agent-input { height: 48px; min-height: 48px; max-height: 112px; resize: none; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating][data-open=true] .heiyan-bot,
+  .canvas-agent-dock[data-living][data-dock-placement=floating][data-open=true] .heiyan-bot svg { width: 56px; height: 56px; }
+  .canvas-agent-dock[data-living][data-dock-placement=floating][data-panel=settings] .heiyan-living-content { padding-bottom: 88px; }
+}
+@keyframes heiyan-edge { to { transform: translateX(500%); } }
+/* The Bot points to real nodes; the node answers with a restrained, non-blocking outline. */
+.app-shell[data-agent-living] .react-flow__node::after { content: ''; position: absolute; inset: -6px; z-index: 0; pointer-events: none; border: 1px solid var(--canvas-focus); border-radius: var(--canvas-radius-panel); opacity: 0; transform: scale(.985); transition: opacity 180ms var(--bot-ease),transform 220ms var(--bot-ease); }
+.app-shell[data-agent-living] .react-flow__node[data-heiyan-bot-target]::after { opacity: .42; transform: none; }
+.app-shell[data-agent-living] .react-flow__node[data-heiyan-bot-target=act]::after { opacity: .72; }
+.app-shell[data-agent-living] .react-flow__node[data-heiyan-bot-target=result]::after { border-color: var(--canvas-primary); opacity: .82; }
+.app-shell[data-agent-living] .react-flow__node[data-heiyan-bot-target=error]::after { border-color: var(--canvas-danger); opacity: .86; }
+/* Keep the shortcut launcher available without stacking it under the floating Bot. */
+.app-shell[data-agent-living][data-agent-dock=floating] .canvas-shortcut-guide { left: max(16px,env(safe-area-inset-left)); right: auto; transform: none; }
+.app-shell[data-agent-living][data-agent-dock=floating]:has(.canvas-agent-dock[data-free-align=left]) .canvas-shortcut-guide { left: auto; right: max(16px,env(safe-area-inset-right)); }
+.app-shell[data-agent-living][data-agent-dock=floating]:has(.canvas-agent-dock[data-free-align=right]) .canvas-shortcut-guide { left: max(16px,env(safe-area-inset-left)); right: auto; }
+@media (max-width:767px), (pointer:coarse) and (max-width:959px) {
+  .app-shell .canvas-agent-dock[data-living] { bottom: max(12px,env(safe-area-inset-bottom)); width: min(var(--living-width),calc(100% - 16px)); max-width: calc(100% - 16px); max-height: calc(var(--mobile-visible-height,100dvh) - 88px); }
+  .canvas-agent-dock[data-living] .canvas-agent-composer { padding-left: 60px; padding-right: 12px; }
+  .canvas-agent-dock[data-living] .canvas-agent-composer:has(.heiyan-offline-composer) { padding-left: 12px; }
+  .canvas-agent-dock[data-living] .heiyan-offline-composer { grid-template-columns: 48px minmax(0,1fr) auto; }
+  .canvas-agent-dock[data-living] .heiyan-offline-composer small { display: none; }
+  .canvas-agent-dock[data-living] .heiyan-offline-composer > button { width: 36px; padding: 0; font-size: 0; }
+  .canvas-agent-dock[data-living] .heiyan-living-anchor { left: 2px; bottom: 18px; }
+  .canvas-agent-dock[data-living] .canvas-agent-icon { width: 44px; height: 44px; }
+  .canvas-agent-dock[data-living] .heiyan-living-header { padding-left: 16px; }
+  .canvas-agent-dock[data-living] .canvas-agent-conversation { padding-inline: 16px; }
+  .canvas-agent-dock[data-living] .agent-composer-options { order: 3; flex: 1 1 100%; }
+  .canvas-agent-dock[data-living] .canvas-agent-composer .agent-option-panel { position: fixed; left: 12px; right: 12px; bottom: 80px; width: auto; }
+  .canvas-agent-dock[data-living] .agent-option-menu > summary { min-height: 44px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .canvas-agent-dock[data-living] *, .canvas-agent-dock[data-living] *::after { animation: none !important; transition: none !important; }
+}

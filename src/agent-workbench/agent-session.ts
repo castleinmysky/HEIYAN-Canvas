@@ -5,7 +5,7 @@ import type { JobSnapshot, JobTarget } from './agent-jobs';
 
 export type AgentMessage = { id: string; role: 'user' | 'assistant' | 'notice'; text: string; nodeRefs?: Array<{ id: string; title: string }>; imageCount?: number; model?: string; effort?: string; question?: import('../../server/agent-questions.js').AgentQuestion };
 export type AgentPending = { id: string; tool: string; input: AgentProposal; revision: string; claimed: boolean };
-export type AgentState = { messages: AgentMessage[]; active: boolean; connected: boolean; pending: AgentPending | null; error: string; usage?: { inputTokens: number; outputTokens: number; cachedInputTokens: number; modelContextWindow?: number } };
+export type AgentState = { messages: AgentMessage[]; active: boolean; connected: boolean; pending: AgentPending | null; error: string; activity?: { phase: string; detail: string }; usage?: { inputTokens: number; outputTokens: number; cachedInputTokens: number; modelContextWindow?: number } };
 export const emptyAgentState = (): AgentState => ({ messages: [], active: false, connected: false, pending: null, error: '' });
 export type AgentCanvasAccess = {
   authorize?: () => Promise<void>;

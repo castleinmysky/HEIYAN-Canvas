@@ -1,0 +1,144 @@
+/* Hallmark · component: HEIYAN living Bot · genre: modern-minimal · tone: direct, observant, restrained · anchor: monochrome
+ * fingerprint: causal vector character · states: default/hover/focus/active/disabled/loading/error/success
+ * pre-emit critique: P5 H5 E5 S5 R5 V5 · slop: component pass · contrast: pass (40–41) · tokens: pass · responsive: pass
+ * Five layers: semantic state signatures · flat contrast · real node gaze · personality choreography · bounded rhythm. Stable hit target. */
+@import './living-tokens.css';
+.heiyan-bot { position: relative; display: grid; place-items: center; flex: 0 0 56px; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 50%; background: var(--bot-clear); color: var(--canvas-text); cursor: pointer; -webkit-tap-highlight-color: var(--bot-clear); }
+.heiyan-bot .heiyan-bot-avatar { display: block; width: 56px; height: 56px; overflow: visible; shape-rendering: geometricPrecision; }
+.heiyan-bot-drag,.heiyan-bot-press,.heiyan-bot-gesture,.heiyan-bot-wake,.heiyan-bot-breath { transform-origin: 32px 36px; }
+.heiyan-bot-drag { transform: rotate(var(--bot-drag-lean,0deg)); transition: transform var(--bot-dur) var(--bot-ease); }
+.heiyan-bot-press { transition: transform var(--bot-press-dur) var(--bot-ease); }
+.heiyan-bot[data-expression=idle] .heiyan-bot-breath { animation: heiyan-breathe 8s var(--bot-cycle-ease) infinite; }
+.heiyan-bot-shell { fill: var(--bot-porcelain); stroke: var(--bot-shell-rule); stroke-width: 0; vector-effect: non-scaling-stroke; }
+.heiyan-bot-shell-shade,.heiyan-bot-specular { pointer-events: none; opacity: 0; }
+.heiyan-bot-eye-left,.heiyan-bot-eye-right { vector-effect: non-scaling-stroke; }
+.heiyan-bot-eyes { fill: var(--bot-ink); transform-origin: 32px 31px; animation: heiyan-blink 9s var(--bot-cycle-ease) infinite; }
+.heiyan-bot-shell,.heiyan-bot-shell-shade,.heiyan-bot-specular,.heiyan-bot-gaze { transition: opacity 180ms var(--bot-ease); }
+.heiyan-bot-thought-cluster { opacity: 0; transform: scale(.58); transform-origin: 32px 32px; transition: opacity 160ms var(--bot-ease),transform 260ms var(--bot-ease); }
+.heiyan-bot-thought-dot circle { fill: var(--bot-porcelain); }
+.heiyan-bot-state-signature { opacity: 0; pointer-events: none; transition: opacity 150ms var(--bot-ease),transform 260ms var(--bot-ease); }
+.heiyan-bot-processing-flow { transform-origin: 32px 32px; }
+.heiyan-bot-processing-arc { fill: none; stroke: var(--bot-porcelain); stroke-width: 2.35; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.heiyan-bot-processing-arc.is-intake { opacity: .78; transform-origin: 7px 26px; }
+.heiyan-bot-processing-arc.is-release { opacity: .42; transform-origin: 57px 38px; }
+.heiyan-bot-processing-spark { fill: var(--canvas-focus); transform-box: fill-box; transform-origin: center; }
+.heiyan-bot-processing-spark.is-trace { opacity: .34; }
+.heiyan-bot-execution-trail rect,
+.heiyan-bot-wait-base rect,
+.heiyan-bot-approval-rails rect { fill: var(--bot-porcelain); }
+.heiyan-bot-reading-paper { fill: none; stroke: var(--bot-porcelain); stroke-width: 2.2; }
+.heiyan-bot-reading-mark { fill: var(--bot-porcelain); }
+.heiyan-bot-review-frame path { fill: none; stroke: var(--bot-porcelain); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.heiyan-bot-question-cue path { fill: none; stroke: var(--bot-ink); stroke-width: 2.8; stroke-linecap: round; }
+.heiyan-bot-sleep-cue path { fill: none; stroke: var(--bot-porcelain); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.heiyan-bot-sleep-cue .is-small { opacity: .58; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-processing-flow { opacity: 1; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-processing-arc.is-intake { animation: heiyan-processing-intake 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-processing-arc.is-release { animation: heiyan-processing-release 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-processing-spark.is-main { animation: heiyan-processing-spark 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-processing-spark.is-trace { animation: heiyan-processing-trace 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=reading] .heiyan-bot-reading-card,
+.heiyan-bot[data-expression=executing] .heiyan-bot-execution-trail,
+.heiyan-bot[data-expression=waiting] .heiyan-bot-wait-base,
+.heiyan-bot[data-expression=reviewing] .heiyan-bot-review-frame,
+.heiyan-bot[data-expression=question] .heiyan-bot-question-cue,
+.heiyan-bot[data-expression=approval] .heiyan-bot-approval-rails { opacity: 1; }
+.heiyan-bot[data-expression=offline] .heiyan-bot-sleep-cue { opacity: .76; animation: heiyan-sleep-cue 5.2s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=thinking] :is(.heiyan-bot-shell,.heiyan-bot-shell-shade,.heiyan-bot-specular,.heiyan-bot-gaze) { opacity: 0; }
+.heiyan-bot[data-expression=thinking] .heiyan-bot-thought-cluster { opacity: 1; transform: none; }
+.heiyan-bot-pointer,.heiyan-bot-observe { transition: transform var(--bot-gaze-dur) var(--bot-ease); }
+.heiyan-bot:is([data-expression=idle],[data-expression=done]) .heiyan-bot-pointer { transform: translate(var(--bot-look-x,0px),var(--bot-look-y,0px)); }
+.heiyan-bot[data-open=true][data-expression=idle] .heiyan-bot-observe { transform: translateY(-.7px); }
+.heiyan-bot[data-noticing][data-expression=idle] .heiyan-bot-observe { transform: translateY(-2.2px); }
+.heiyan-bot[data-waking] .heiyan-bot-wake { animation: heiyan-wake var(--bot-wake-dur) var(--bot-ease) both; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-breath { animation: heiyan-process 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-scan { animation: heiyan-process-gaze 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=processing] .heiyan-bot-eyes { animation: heiyan-process-blink 3.4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=thinking] .heiyan-bot-breath { animation: none; }
+.heiyan-bot[data-expression=thinking] .heiyan-bot-thought-dot { transform-origin: center; animation: heiyan-thought-orbit 1.8s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=thinking] .heiyan-bot-thought-dot.is-center { animation-delay: -.6s; }
+.heiyan-bot[data-expression=thinking] .heiyan-bot-thought-dot.is-right { animation-delay: -1.2s; }
+.heiyan-bot[data-expression=reading] .heiyan-bot-scan { animation: heiyan-read 5s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=reviewing] .heiyan-bot-scan { animation: heiyan-review 6s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=executing] .heiyan-bot-breath { animation: heiyan-work 4s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=executing] .heiyan-bot-execution-trail { animation: heiyan-execution-trail 1.35s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=waiting] .heiyan-bot-breath { animation: heiyan-wait 3.6s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=reviewing] .heiyan-bot-review-frame { animation: heiyan-review-frame 2.8s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=question] .heiyan-bot-question-cue { animation: heiyan-question-cue 2.8s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=approval] .heiyan-bot-approval-rails { animation: heiyan-approval-rails 2s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=offline] .heiyan-bot-breath { animation: heiyan-sleep 5.2s var(--bot-cycle-ease) infinite; }
+.heiyan-bot[data-expression=done] .heiyan-bot-breath { animation: heiyan-complete var(--bot-complete-dur) var(--bot-ease) both; animation-delay: var(--bot-done-delay,0ms); }
+.heiyan-bot:is([data-expression=error],[data-expression=offline],[data-expression=question],[data-expression=approval],[data-expression=done]) .heiyan-bot-eyes { animation: none; }
+/* Hover never overrides the current work/permission/error expression. */
+.heiyan-bot[data-expression=idle]:is(:focus-visible,.is-focus,.is-hover) .heiyan-bot-observe { transform: translateY(-1px); }
+.heiyan-bot-attention { position: absolute; right: 3px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--canvas-focus); border: 2px solid var(--cad-rail); }
+.heiyan-bot:is([data-pose=error],[data-pose=offline]) .heiyan-bot-attention { background: var(--canvas-danger); }
+.heiyan-bot:focus-visible,.heiyan-bot.is-focus { outline: 2px solid var(--bot-focus); outline-offset: 2px; }
+.heiyan-bot:not(:disabled):is(:active,.is-active) .heiyan-bot-press { transform: scale(.96); }
+.heiyan-bot[data-dragging] .heiyan-bot-press { transform: scale(.97,1.02); }
+.heiyan-bot[data-dragging] :is(.heiyan-bot-breath,.heiyan-bot-eyes,.heiyan-bot-scan) { animation: none; }
+.heiyan-bot:disabled { opacity: .5; cursor: not-allowed; }
+@media (hover:hover) { .heiyan-bot[data-expression=idle]:hover:not(:disabled) .heiyan-bot-observe { transform: translateY(-1px); } }
+@keyframes heiyan-blink { 0%,40%,43%,100% { transform: scaleY(1); } 41.5% { transform: scaleY(.12); } }
+@keyframes heiyan-breathe { 0%,100% { transform: none; } 50% { transform: translateY(-1.1px) rotate(.8deg); } }
+@keyframes heiyan-wake { 0% { transform: scale(.97,1.01) translateY(.5px); } 100% { transform: none; } }
+@keyframes heiyan-process {
+  0%,100% { transform: none; }
+  14% { transform: translateY(.35px) rotate(-.55deg) scale(1.008,.992); }
+  31% { transform: translate(-.35px,-1.15px) rotate(1.15deg) scale(.992,1.008); }
+  50% { transform: translate(.38px,-.55px) rotate(-.55deg) scale(1.01,.99); }
+  67% { transform: translate(-.2px,-1.35px) rotate(.72deg) scale(.995,1.005); }
+  82% { transform: translateY(-.35px); }
+}
+@keyframes heiyan-process-gaze {
+  0%,10%,100% { transform: none; }
+  18%,29% { transform: translate(-1.35px,-.4px) rotate(-.8deg); }
+  39%,50% { transform: translate(1.85px,-.85px) rotate(.9deg); }
+  61% { transform: translate(.3px,1px); }
+  72%,82% { transform: translate(-1.15px,-.9px) rotate(-.55deg); }
+}
+@keyframes heiyan-process-blink { 0%,45%,49%,100% { transform: scaleY(1); } 47% { transform: scaleY(.16); } }
+@keyframes heiyan-thought-orbit { 0%,100% { transform: translateY(1.2px) scale(.94,1.04); } 48% { transform: translateY(-3px) scale(1.06,.94); } }
+@keyframes heiyan-processing-intake {
+  0%,6%,72%,100% { opacity: .14; transform: translate(2.8px,2px) scale(.82); }
+  18%,34% { opacity: .92; transform: none; }
+  52% { opacity: .34; transform: translate(-1px,-1.2px) scale(1.04); }
+}
+@keyframes heiyan-processing-release {
+  0%,28%,100% { opacity: .12; transform: translate(-2px,2px) scale(.86); }
+  44%,62% { opacity: .84; transform: none; }
+  78% { opacity: .24; transform: translate(1.4px,-1.2px) scale(1.04); }
+}
+@keyframes heiyan-processing-spark {
+  0%,28%,82%,100% { opacity: 0; transform: translate(-5px,7px) scale(.55); }
+  42% { opacity: .92; transform: translate(-2px,3.5px) scale(.82); }
+  61% { opacity: 1; transform: none; }
+  74% { opacity: 0; transform: translate(3px,-3px) scale(.66); }
+}
+@keyframes heiyan-processing-trace {
+  0%,38%,88%,100% { opacity: 0; transform: translate(-4px,5px) scale(.5); }
+  54% { opacity: .6; transform: translate(-1.5px,2px) scale(.8); }
+  68% { opacity: .22; transform: none; }
+}
+@keyframes heiyan-read { 0%,12%,75%,100% { transform: none; } 30%,45% { transform: translateX(4px); } 57% { transform: translate(-1.5px,1px); } }
+@keyframes heiyan-review { 0%,20%,85%,100% { transform: none; } 40%,60% { transform: translate(-4px,-1.4px) rotate(-2deg); } }
+@keyframes heiyan-work { 0%,42%,100% { transform: none; } 20% { transform: translate(1.8px,-1px) rotate(1.5deg); } }
+@keyframes heiyan-execution-trail { 0%,100% { transform: translateX(2px) scaleX(.7); opacity: .25; } 45% { transform: none; opacity: 1; } }
+@keyframes heiyan-wait { 0%,100% { transform: translateY(-1.2px); } 50% { transform: translateY(-4px); } }
+@keyframes heiyan-review-frame { 0%,100% { transform: scale(.94); opacity: .55; } 50% { transform: none; opacity: 1; } }
+@keyframes heiyan-question-cue { 0%,55%,100% { transform: none; } 72% { transform: translateY(-2px); } }
+@keyframes heiyan-approval-rails { 0%,100% { transform: scaleY(.72); opacity: .48; } 50% { transform: none; opacity: 1; } }
+@keyframes heiyan-sleep {
+  0%,100% { transform: translate(.2px,.5px) rotate(-1.4deg) scale(1.008,.992); }
+  48% { transform: translate(-.45px,1.35px) rotate(-2.2deg) scale(.994,1.006); }
+}
+@keyframes heiyan-sleep-cue {
+  0%,18%,100% { opacity: .28; transform: translate(-1px,1.5px) scale(.9); }
+  42%,66% { opacity: .8; transform: translate(.5px,-1px); }
+  82% { opacity: .18; transform: translate(1.5px,-2.5px) scale(1.04); }
+}
+@keyframes heiyan-complete { 0%,100% { transform: none; } 32% { transform: translateY(-3px) rotate(-7deg); } 65% { transform: translateY(.8px) rotate(2deg); } }
+[data-living-visible=false] .heiyan-bot *, .heiyan-bot[data-motion-paused] * { animation: none !important; transition: none !important; }
+.heiyan-bot[data-motion-paused] :is(.heiyan-bot-pointer,.heiyan-bot-observe,.heiyan-bot-drag,.heiyan-bot-press) { transform: none !important; }
+@media (prefers-reduced-motion:reduce) { .heiyan-bot * { animation: none !important; transition: none !important; } .heiyan-bot :is(.heiyan-bot-pointer,.heiyan-bot-observe,.heiyan-bot-drag,.heiyan-bot-press) { transform: none !important; } }
+

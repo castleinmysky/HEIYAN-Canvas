@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type PointerEvent } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { type CanvasNodeKind, type PromptClipboardReference } from '../components/CanvasNodes';
 import { UiIcon } from '../components/UiIcon';
 import { resolveComposerDrag } from './composer-resize';
@@ -24,6 +25,14 @@ import { useConversationWindow } from './use-conversation-window';
 import { canvasCapability } from '../../server/agent-capabilities.js';
 import { AgentMessageBody } from './AgentMessageBody';
 import { AgentHeader, type AgentPage } from './AgentHeader';
+import { HeiyanBot } from './HeiyanBot';
+import { useBotExpression } from './use-bot-expression';
+import { useBotNodeLook, type BotTargetCue } from './use-bot-node-look';
+import { useBotDrag } from './use-bot-drag';
+import { botDockAnchorPoint, clampBotFreePoint, nearestBotDock, normalizeBotFreePosition, readBotFreePosition, resolveBotFreePoint, saveBotFreePosition, type BotDockPlacement } from './bot-docking';
+import { canExpandLivingConversation, canFoldOnCanvas, compactAgentReceiptEntry, livingBotActivation, livingStatus, livingWidth, needsAgentApproval, type LivingPanel } from './living-state';
+import { useLivingSurface } from './use-living-surface';
+import { useLivingShapeMotion } from './use-living-shape-motion';
 import './agent-navigation.css';
 import './CanvasAgentDock.css';
 import './agent-conversation-reading.css';
@@ -36,9 +45,12 @@ export function searchableAgentNodes(items: readonly CanvasAgentItem[], query: s
   const needle = query.trim().toLocaleLowerCase();
   return items.filter(item => !needle || (item.title + ' ' + item.id).toLocaleLowerCase().includes(needle));
 }
-export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, items, selectedId, ready, access, onClose, onFocus, onUpload, onViewChange, followCanvas = true, onFollowCanvas }: {
-  canvasKey: string; items: CanvasAgentItem[]; selectedId?: string | null; ready: boolean;
+export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, items, selectedId, selectedIds, ready, access, onClose, onFocus, onUpload, onViewChange, followCanvas = true, onFollowCanvas, living = false, observationKey = '', dockPlacement = 'floating', onDockPlacement, onBoundsChange }: {
+  canvasKey: string; items: CanvasAgentItem[]; selectedId?: string | null; selectedIds?: readonly string[]; ready: boolean;
   open?: boolean;
+  living?: boolean; observationKey?: string;
+  dockPlacement?: BotDockPlacement; onDockPlacement?: (placement: BotDockPlacement) => void;
+  onBoundsChange?: (bounds: Pick<DOMRectReadOnly, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height'> | null) => void;
   canvasView?: boolean;
   followCanvas?: boolean; onFollowCanvas?: (value: boolean) => void;
   access?: AgentCanvasAccess;
@@ -82,6 +94,8 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [quickEditing, setQuickEditing] = useState(false);
+  const quickInput = useRef<HTMLInputElement>(null);
   const [height, setHeight] = useState<number>();
   const [railWidth, setRailWidth] = useState<number>();
   const [railResizing, setRailResizing] = useState(false);
@@ -93,6 +107,46 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   });
   const [saveFailed, setSaveFailed] = useState(false);
   const dock = useRef<HTMLElement>(null);
+  const focusBotAfterLayout = () => requestAnimationFrame(() => dock.current?.querySelector<HTMLButtonElement>('.heiyan-bot')?.focus({ preventScroll: true }));
+  const [freePosition, setFreePosition] = useState(() => {
+    try { return typeof localStorage === 'undefined' ? null : readBotFreePosition(localStorage); }
+    catch { return null; }
+  });
+  const rememberFreePosition = useCallback((position: typeof freePosition) => {
+    setFreePosition(position);
+    try { saveBotFreePosition(localStorage, position); } catch { /* The in-memory resting point remains usable. */ }
+  }, []);
+  const botDrag = useBotDrag(living && !open && !!onDockPlacement, drop => {
+    const restoreFocus = document.activeElement === dock.current?.querySelector('.heiyan-bot');
+    if (drop.placement) {
+      rememberFreePosition(null);
+      onDockPlacement?.(drop.placement);
+    } else if (drop.point && typeof window !== 'undefined') {
+      const position = normalizeBotFreePosition(drop.point, window.innerWidth, window.innerHeight);
+      if (position) {
+        rememberFreePosition(position);
+        onDockPlacement?.('floating');
+      }
+    }
+    setCollapsed(false);
+    if (restoreFocus) focusBotAfterLayout();
+  });
+  const sideDocked = living && dockPlacement !== 'floating';
+  useEffect(() => {
+    if (living && !open && freePosition && dockPlacement !== 'floating') onDockPlacement?.('floating');
+  }, [living, open, freePosition, dockPlacement, onDockPlacement]);
+  useLayoutEffect(() => {
+    const element = dock.current;
+    if (!living || !element || !onBoundsChange) return;
+    const measure = () => {
+      const { left, right, top, bottom, width, height } = element.getBoundingClientRect();
+      element.closest<HTMLElement>('.app-shell')?.style.setProperty('--bot-corner-width', `${width}px`);
+      onBoundsChange({ left, right, top, bottom, width, height });
+    };
+    measure(); const observer = new ResizeObserver(measure); observer.observe(element);
+    window.addEventListener('resize', measure);
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); element.closest<HTMLElement>('.app-shell')?.style.removeProperty('--bot-corner-width'); onBoundsChange(null); };
+  }, [living, dockPlacement, open, onBoundsChange]);
   const composer = useRef<HTMLFormElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const popup = useRef<HTMLDivElement>(null);
@@ -105,6 +159,107 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   const sendingDraft = useRef(false);
   const conversation = useConversationWindow(agent.state.messages, messageList, canvasKey);
   const unanswered = useMemo(() => agent.state.messages.filter(message => message.question && ['pending', 'deferred'].includes(message.question.status)), [agent.state.messages]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [voiceInfo, setVoiceInfo] = useState(false);
+  const [noticing, setNoticing] = useState(false);
+  const [seenResult, setSeenResult] = useState('');
+  const [acknowledgedReceipt, setAcknowledgedReceipt] = useState('');
+  const needsApproval = needsAgentApproval(agent.state, approvalMode);
+  const bot = livingStatus({ state: agent.state, activity: agent.activity, mode: approvalMode, busy: agent.busy, restoring: false, hasConnection: !!(agent.connection || agent.api), error: agent.error, jobs: liveJobs });
+  const resultKey = `${agent.state.messages.at(-1)?.id || ''}:${liveJobs.map(job => `${job.jobId}:${job.state}`).join(',')}`;
+  const unread = !open && seenResult !== resultKey && (bot.pose === 'done' || liveJobs.some(job => job.state === 'succeeded'));
+  const panel: LivingPanel = connectionOpen && open ? 'settings' : pickerOpen ? 'references' : historyOpen ? 'history' : needsApproval ? 'approval' : agent.questions.waiting ? 'question' : 'none';
+  const compactEntry = useMemo(() => compactAgentReceiptEntry(agent.state.messages), [agent.state.messages]);
+  const compactReceipt = compactEntry?.id === acknowledgedReceipt ? '' : compactEntry?.text || '';
+  const compactVisible = !!compactReceipt || bot.active || bot.attention || unread;
+  const compactStatusVisible = !open && !quickEditing && (bot.active || bot.attention || unread);
+  const controllableRun = agent.state.active && agent.state.connected;
+  const canExpandConversation = canExpandLivingConversation({ connected: agent.state.connected, messages: agent.state.messages.length, pending: !!agent.state.pending, question: agent.questions.waiting, attention: bot.attention, jobs: liveJobs.length });
+  const requestedWidth = livingWidth(open, panel, compactVisible, quickEditing, compactReceipt, controllableRun);
+  useEffect(() => setAcknowledgedReceipt(''), [canvasKey]);
+  const moveToNearestWorkDock = useCallback(() => {
+    if (!freePosition || !onDockPlacement || typeof window === 'undefined') return;
+    const point = resolveBotFreePoint(freePosition, window.innerWidth, window.innerHeight);
+    if (point) onDockPlacement(nearestBotDock({ ...point, width: window.innerWidth, height: window.innerHeight }));
+  }, [freePosition, onDockPlacement]);
+  const closeToBot = useCallback(() => {
+    setQuickEditing(false); setHistoryOpen(false);
+    if (!bot.active && !bot.attention && compactEntry) setAcknowledgedReceipt(compactEntry.id);
+    if (freePosition) onDockPlacement?.('floating');
+    onClose();
+  }, [bot.active, bot.attention, compactEntry?.id, freePosition, onDockPlacement, onClose]);
+  const expandConversation = useCallback(() => {
+    if (!canExpandConversation) {
+      setQuickEditing(true); requestAnimationFrame(() => quickInput.current?.focus({ preventScroll: true })); return;
+    }
+    moveToNearestWorkDock();
+    setQuickEditing(false); setHistoryOpen(false); setConnectionOpen(false); setCollapsed(false); setPage('chat');
+    onViewChange(false);
+    requestAnimationFrame(() => compactEntry ? conversation.focus(compactEntry.id) : conversation.latest());
+  }, [canExpandConversation, compactEntry?.id, conversation.focus, conversation.latest, moveToNearestWorkDock, onViewChange]);
+  const [typing, setTyping] = useState(false);
+  const [heldWidth, setHeldWidth] = useState(requestedWidth);
+  useLayoutEffect(() => { if (!typing || !open) setHeldWidth(requestedWidth); }, [requestedWidth, typing, open]);
+  const width = typing && open ? heldWidth : requestedWidth;
+  const bareBot = !open && !compactVisible && !quickEditing;
+  const restingAnchor = bareBot ? 36 : 32;
+  const viewportWidth = typeof window === 'undefined' ? 0 : window.innerWidth;
+  const viewportHeight = typeof window === 'undefined' ? 0 : window.innerHeight;
+  const draggedFreePoint = botDrag.dragging && botDrag.point
+    ? botDrag.target ? botDockAnchorPoint(botDrag.target, viewportWidth, viewportHeight, bareBot ? 64 : 56) : clampBotFreePoint({ ...botDrag.point, width: viewportWidth, height: viewportHeight })
+    : null;
+  const restingFreePoint = !open && freePosition ? resolveBotFreePoint(freePosition, viewportWidth, viewportHeight) : null;
+  const freePoint = !open ? draggedFreePoint || restingFreePoint : null;
+  const freeAlign = freePoint && freePoint.x + width - restingAnchor > viewportWidth - 12 ? 'right' : 'left';
+  const livingStyle = living ? {
+    '--living-width': width + 'px',
+    ...(freePoint ? {
+      left: freePoint.x + 'px', top: freePoint.y + 'px', right: 'auto', bottom: 'auto',
+      transform: freeAlign === 'right' ? `translate(calc(-100% + ${restingAnchor}px), -${restingAnchor}px)` : `translate(-${restingAnchor}px, -${restingAnchor}px)`,
+    } : {}),
+  } as CSSProperties : undefined;
+  const showMessages = historyOpen || agent.state.messages.length > 0 || needsApproval || bot.attention;
+  const visible = useLivingSurface(dock, living && !sideDocked && !botDrag.dragging, `${open}:${panel}:${width}:${showMessages}:${collapsed}`);
+  const botMotion = useBotExpression(canvasKey, bot.pose, visible, agent.state.connected);
+  const botTarget = useMemo(() => {
+    const pendingIds = agent.state.pending?.input.nodeIds || [];
+    const activityIds = agent.activity.nodeIds || [];
+    const jobIds = liveJobs.map(job => job.nodeId), failedIds = liveJobs.filter(job => job.state === 'failed').map(job => job.nodeId), successIds = liveJobs.filter(job => job.state === 'succeeded').map(job => job.nodeId);
+    let ids: readonly string[], cue: BotTargetCue;
+    if (bot.pose === 'error' && failedIds.length) { ids = failedIds; cue = 'error'; }
+    else if ((bot.pose === 'done' || unread) && successIds.length) { ids = successIds; cue = 'result'; }
+    else if (bot.active) { ids = activityIds.length ? activityIds : pendingIds.length ? pendingIds : jobIds; cue = ['executing','waiting'].includes(bot.pose) ? 'act' : 'observe'; }
+    else { ids = selectedIds?.length ? selectedIds : selectedId ? [selectedId] : []; cue = 'selected'; }
+    return { ids: [...new Set(ids)], cue };
+  }, [agent.state.pending?.input.nodeIds, agent.activity.nodeIds, liveJobs, bot.active, bot.pose, unread, selectedIds, selectedId]);
+  const botLookTarget = useBotNodeLook(dock, botTarget.ids, living && !botDrag.dragging && (sideDocked || visible), botTarget.cue);
+  const surfaceMode = !open ? 'closed' : panel === 'history' ? 'history' : panel === 'settings' ? 'settings' : ['approval','question'].includes(panel) ? 'decision' : showMessages ? 'conversation' : 'composer';
+  useLivingShapeMotion(dock, `${dockPlacement}:${surfaceMode}:${collapsed}:${width}`, living && visible && !botDrag.dragging);
+  useEffect(() => { if (open) setSeenResult(resultKey); }, [open, resultKey]);
+  useEffect(() => {
+    if (!living || !observationKey || open || bot.active || !visible) return;
+    setNoticing(true); const timer = setTimeout(() => setNoticing(false), 1200);
+    return () => { clearTimeout(timer); setNoticing(false); };
+  }, [observationKey, living, open, bot.active, visible]);
+  useEffect(() => {
+    if (!living || !open || sideDocked) return;
+    let start: { x: number; y: number; id: number; composing: boolean } | null = null;
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
+    const canvasTarget = (target: EventTarget | null) => target instanceof Element
+      && !target.closest('button,input,textarea,select,a,[contenteditable=true],[role=dialog],[role=menu],.react-flow__handle,.canvas-agent-dock')
+      && !!target.closest('.react-flow__pane,.react-flow__node,.react-flow__edge,.react-flow__background');
+    const down = (event: globalThis.PointerEvent) => {
+      start = event.button === 0 && event.isPrimary && canvasTarget(event.target) ? { x: event.clientX, y: event.clientY, id: event.pointerId, composing: composing.current } : null;
+    };
+    const up = (event: globalThis.PointerEvent) => {
+      const point = start; start = null;
+      if (!point || event.pointerId !== point.id || !canvasTarget(event.target) || Math.hypot(event.clientX - point.x, event.clientY - point.y) > 4) return;
+      if (canFoldOnCanvas({ selecting: !!window.getSelection()?.toString(), composing: point.composing || composing.current })) closeTimer = setTimeout(closeToBot, 0);
+    };
+    const cancel = () => { start = null; };
+    document.addEventListener('pointerdown', down, true); document.addEventListener('pointerup', up, true); document.addEventListener('pointercancel', cancel, true);
+    return () => { clearTimeout(closeTimer); document.removeEventListener('pointerdown', down, true); document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', cancel, true); };
+  }, [living, open, sideDocked, closeToBot]);
   const draftRef = useRef(draft); draftRef.current = draft;
   // Keep the conversation mounted during dismissal: the slide can finish and
   // an in-flight reply is not lost just because the user looks at the canvas.
@@ -112,10 +267,12 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     if (!open) {
       setPickerOpen(false); setConnectionOpen(false); setRailResizing(false);
       setComposerResizing(false); drag.current = null; railDrag.current = null;
-      if (dock.current?.contains(document.activeElement)) document.getElementById('canvas-agent-toggle')?.focus({ preventScroll: true });
+      setTyping(false);
+      if (dock.current?.contains(document.activeElement)) (living ? dock.current.querySelector<HTMLButtonElement>('.heiyan-bot') : document.getElementById('canvas-agent-toggle'))?.focus({ preventScroll: true });
     } else if (!agent.connection && !agent.api) {
+      setQuickEditing(false);
       setConnectionOpen(true);
-    }
+    } else setQuickEditing(false);
   }, [open]);
   // A draft belongs to this canvas conversation. Selecting a node never changes it.
   const updateDraft = (next: ConversationDraft) => {
@@ -235,24 +392,57 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
+  const activateBot = () => {
+    const activation = livingBotActivation(open, compactVisible, agent.state.connected);
+    if (activation === 'close') { closeToBot(); return; }
+    if (activation === 'quick') {
+      setQuickEditing(true);
+      requestAnimationFrame(() => quickInput.current?.focus({ preventScroll: true }));
+      return;
+    }
+    expandConversation();
+  };
+  const botInComposer = living && open;
+  const botMotionKey = `${agent.state.messages.at(-1)?.id || ''}:${agent.state.messages.at(-1)?.text.length || 0}:${agent.state.pending?.id || ''}:${agent.activity.phase}:${agent.activity.detail}:${liveJobs.map(job => `${job.jobId}:${job.state}`).join(',')}`;
+  const botControl = <div className="heiyan-living-anchor"><HeiyanBot pose={bot.pose} expression={botMotion.pose} completionAt={botMotion.completionAt} motionKey={botMotionKey} lookTarget={botLookTarget} label={bot.label} open={open} attention={bot.attention || unread} noticing={noticing} dragging={botDrag.dragging} dragLean={botDrag.offset.x / 24} dragProps={onDockPlacement && !open ? botDrag.buttonProps : undefined} onClick={activateBot} /></div>;
+  const compactStopControl = controllableRun ? <button type="button" className="heiyan-living-stop" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : null;
 
-  return <aside ref={dock} id="canvas-agent-conversation" className="canvas-agent-dock" data-open={open} data-page={connectionOpen ? 'settings' : page} inert={!open} aria-hidden={!open} data-canvas-view={canvasView} data-connection-open={connectionOpen || undefined} aria-label="Agent 创作会话" onKeyDown={event => {
-    if (event.key === 'Escape' && !pickerOpen && !event.nativeEvent.isComposing) { event.stopPropagation(); onClose(); document.getElementById('canvas-agent-toggle')?.focus({ preventScroll: true }); }
+  return <aside ref={dock} id="canvas-agent-conversation" className="canvas-agent-dock" data-living={living || undefined} data-dock-placement={dockPlacement} data-free-position={freePoint ? true : undefined} data-free-align={freePoint ? freeAlign : undefined} data-magnetic-target={botDrag.target || undefined} data-bot-dragging={botDrag.dragging || undefined} data-panel={panel} data-surface-mode={surfaceMode} data-target-cue={botTarget.cue} data-has-messages={showMessages || undefined} data-bot-pose={bot.pose} data-working={bot.active || undefined} data-living-visible={visible} style={livingStyle} data-open={open} data-page={connectionOpen ? 'settings' : page} inert={!living && !open} aria-hidden={!living && !open || undefined} data-canvas-view={canvasView} data-connection-open={connectionOpen || undefined} aria-label="Agent 创作会话" onKeyDown={event => {
+    if (event.key === 'Escape' && !pickerOpen && !event.nativeEvent.isComposing) { event.stopPropagation(); closeToBot(); if (living) focusBotAfterLayout(); else document.getElementById('canvas-agent-toggle')?.focus({ preventScroll: true }); }
   }}>
+    {living && <><div className="heiyan-living-skin" aria-hidden="true" />{!botInComposer && botControl}
+      <AnimatePresence>{compactStatusVisible && <motion.div className="heiyan-living-status-float" data-pose={bot.pose} role="status" aria-live="polite" initial={{ opacity: 0, y: 5, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 3, scale: .98 }} transition={{ duration: .18 }}><i aria-hidden="true" /><span>{bot.label}</span></motion.div>}</AnimatePresence>
+      {!open && (compactVisible || quickEditing) && (quickEditing
+        ? <form className="heiyan-living-quick" aria-label="快速补充会话" onSubmit={event => { event.preventDefault(); if (!ready || !agent.memoryReady || agent.busy) return; setQuickEditing(false); void send(); }}>
+          <input ref={quickInput} value={draft.text} maxLength={CONVERSATION_LIMIT} aria-label="快速输入" placeholder={controllableRun ? '随时补充要求…' : '快速告诉 HEIYAN…'}
+            onChange={event => updateDraft({ ...draft, text: event.target.value })}
+            onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setQuickEditing(false); } }} />
+          <button type="submit" className="heiyan-living-quick-send" aria-label={agent.state.active ? '插话' : '发送'} title={agent.state.active ? '插话' : '发送'} disabled={!ready || !agent.memoryReady || agent.busy || !agent.state.connected || !draft.text.trim()}><UiIcon name="arrowUp" /></button>
+          {compactStopControl}
+          {canExpandConversation && <button type="button" className="heiyan-living-expand" aria-label="展开完整会话" title="展开完整会话" onClick={expandConversation}><UiIcon name="chevronUp" /></button>}
+        </form>
+        : <div className="heiyan-living-compact"><button type="button" className="heiyan-living-compact-main" aria-label={agent.state.connected ? '快速编辑 Agent 会话' : '查看断线会话'} title={compactReceipt || (agent.state.connected ? '快速编辑' : '查看连接状态')} onClick={() => { if (!agent.state.connected) { expandConversation(); return; } setQuickEditing(true); requestAnimationFrame(() => quickInput.current?.focus({ preventScroll: true })); }}><span>{compactReceipt || (!agent.state.connected ? '会话已保留，等待重新连接' : controllableRun ? '等待 Agent 回执…' : '快速开始会话')}</span></button>{compactStopControl}{canExpandConversation && <button type="button" className="heiyan-living-expand" aria-label="展开完整会话" title="展开完整会话" onClick={expandConversation}><UiIcon name="chevronUp" /></button>}</div>)}
+    </>}
+    <div id="heiyan-living-content" className={living ? 'heiyan-living-content' : 'heiyan-classic-content'} inert={!open} aria-hidden={!open}>
     <div role="separator" className="canvas-agent-resizer" data-dragging={railResizing || undefined} aria-label="调整会话侧栏宽度" aria-controls="canvas-agent-conversation" aria-orientation="vertical" tabIndex={0} aria-valuemin={360} aria-valuemax={railSize.max} aria-valuenow={railSize.width} aria-valuetext={`${railSize.width} 像素`}
       onPointerDown={event => { if (event.button === 0) { event.preventDefault(); railDrag.current = { x: event.clientX, width: dock.current?.getBoundingClientRect().width || railSize.width }; setRailResizing(true); event.currentTarget.setPointerCapture(event.pointerId); } }}
-      onPointerMove={event => { const start = railDrag.current; if (start && event.currentTarget.hasPointerCapture(event.pointerId)) setRailWidth(agentRailWidth(start.width + start.x - event.clientX, window.innerWidth)); }}
+      onPointerMove={event => { const start = railDrag.current; if (start && event.currentTarget.hasPointerCapture(event.pointerId)) setRailWidth(agentRailWidth(start.width + (start.x - event.clientX) * (sideDocked && dockPlacement === 'left' ? -1 : 1), window.innerWidth)); }}
       onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
       onPointerCancel={() => { railDrag.current = null; setRailResizing(false); }}
       onLostPointerCapture={() => { railDrag.current = null; setRailResizing(false); }}
       onDoubleClick={() => setRailWidth(undefined)}
       onKeyDown={event => {
         if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); setRailWidth(event.key === 'Home' ? 360 : railSize.max); }
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setRailWidth(agentRailWidth(railSize.width + (event.key === 'ArrowLeft' ? 1 : -1) * (event.shiftKey ? 32 : 8), window.innerWidth)); }
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setRailWidth(agentRailWidth(railSize.width + (event.key === 'ArrowLeft' ? 1 : -1) * (sideDocked && dockPlacement === 'left' ? -1 : 1) * (event.shiftKey ? 32 : 8), window.innerWidth)); }
       }} />
-    <AgentHeader page={connectionOpen ? 'settings' : page} connected={agent.state.connected} active={agent.state.active} waiting={!!agent.state.pending && !agent.state.pending.claimed} questioning={agent.questions.waiting}
+    {!living && <AgentHeader page={connectionOpen ? 'settings' : page} connected={agent.state.connected} active={agent.state.active} waiting={!!agent.state.pending && !agent.state.pending.claimed} questioning={agent.questions.waiting}
       onPage={next => { input.current?.blur(); setPickerOpen(false); onViewChange(false); setPage(next); setConnectionOpen(next === 'settings'); }}
-      onView={view} onClose={onClose} />
+      onView={view} onClose={onClose} />}
+    {living && <header className="heiyan-living-header"><span className="heiyan-living-status" role="status" aria-live="polite"><AnimatePresence initial={false} mode="popLayout"><motion.span key={`${bot.pose}:${bot.label}`} initial={{ opacity: 0, y: 2 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -2 }} transition={{ duration: .18, ease: [0.16, 1, 0.3, 1] }}>{bot.pose === 'idle' ? 'HEIYAN' : bot.label}</motion.span></AnimatePresence></span><nav aria-label="Agent 会话工具">
+      <button type="button" className="canvas-agent-icon" aria-label="查看会话历史" title="会话历史" aria-pressed={historyOpen && !connectionOpen} onClick={() => { setConnectionOpen(false); setHistoryOpen(value => !value); }}><UiIcon name="history" /></button>
+      <button type="button" className="canvas-agent-icon" aria-label="连接与设置" title="连接与设置" aria-pressed={connectionOpen} onClick={() => { setConnectionOpen(value => !value); setPickerOpen(false); }}><UiIcon name="settings" /></button>
+      <button type="button" className="canvas-agent-icon" aria-label="收起创作会话" title="收起会话" onClick={closeToBot}><UiIcon name="chevronDown" /></button>
+    </nav></header>}
     {connectionOpen && <section className="canvas-agent-connection-panel" aria-label="Agent 连接状态">
       <UiIcon name="link" /><h2>选择 Agent 连接方式</h2>
       <label className="agent-follow-setting"><input type="checkbox" checked={followCanvas} disabled={!onFollowCanvas} onChange={event => onFollowCanvas?.(event.target.checked)} />跟随画布变化</label>
@@ -341,7 +531,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
       {!!unanswered.length && <div className="agent-pending-reminder"><button type="button" className="agent-pending-jump" onClick={() => { view(false); conversation.focus(unanswered[0].id); }}><span>{unanswered.length} 项问题待回答</span><span>查看问题 ↑</span></button><button type="button" disabled={agent.busy} title="忽略这些问题，不会替你选择或授权" onClick={() => { void agent.questions.dismiss(unanswered.map(message => message.question!.id)).catch(error => setAttachmentError(error instanceof Error ? error.message : '清除失败，请重试')); }}>清除提醒</button></div>}
       {conversation.away && <button type="button" className="agent-chat-jump" aria-label="回到最新消息" title="回到最新消息" onClick={conversation.latest}><UiIcon name="down" /></button>}
       {agent.state.pending && !agent.state.pending.claimed && ['heiyan_canvas_action', 'heiyan_edit_canvas', 'heiyan_request_generation', 'heiyan_read_images', 'heiyan_project_checkpoint'].includes(agent.state.pending.tool) && <button type="button" className="agent-pending-jump" onClick={() => { const card = document.getElementById('agent-pending-proposal'); card?.scrollIntoView({ block: 'start', behavior: 'instant' }); card?.focus({ preventScroll: true }); }}><span>有一项操作等待你确认</span><span>查看方案 ↑</span></button>}
-      <button type="button" className="canvas-agent-grip" aria-label="拖动调整输入面板，向下滑动收起" aria-expanded={!collapsed} title="调节高度 · 双击复原"
+      {!living && <button type="button" className="canvas-agent-grip" aria-label="拖动调整输入面板，向下滑动收起" aria-expanded={!collapsed} title="调节高度 · 双击复原"
         onDoubleClick={() => { setHeight(undefined); setCollapsed(false); }}
         onPointerDown={event => {
           if (event.button !== 0) return; event.preventDefault(); dragged.current = false;
@@ -358,7 +548,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
         onKeyDown={event => {
           if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setCollapsed(true); }
           if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); setCollapsed(false); setHeight(clampHeight((height || composer.current?.offsetHeight || 180) + (event.key === 'ArrowUp' ? 1 : -1) * (event.shiftKey ? 32 : 8))); }
-        }}><i aria-hidden="true" /></button>
+        }}><i aria-hidden="true" /></button>}
       {collapsed ? <button type="button" className="canvas-agent-reopen" onClick={() => { setCollapsed(false); requestAnimationFrame(() => input.current?.focus()); }}><UiIcon name="edit" /><span>{draft.text || '继续描述你的想法…'}</span><UiIcon name="arrowUp" /></button>
         : <>
           {!!references.length && <div className="canvas-agent-context-references" aria-label="本次会话引用">
@@ -370,7 +560,8 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
             </div>)}
           </div>}
           {!!images.length && <div className="canvas-agent-image-attachments" aria-label="本轮图片附件">{images.map(image => <figure key={image.id}><img src={image.url} alt={image.name} /><button type="button" aria-label={'移除 ' + image.name} onClick={() => setImages(current => current.filter(item => item.id !== image.id))}><UiIcon name="close" /></button></figure>)}</div>}
-          <textarea ref={input} className="canvas-agent-input" aria-label="会话描述" aria-describedby="canvas-agent-send-hint" placeholder={agent.state.active ? "补充要求，Agent 会在下一次操作前处理" : "描述创作需求，@ 引用画布，也可直接粘贴图片"} value={draft.text} maxLength={CONVERSATION_LIMIT}
+          <textarea ref={input} className="canvas-agent-input" aria-label="会话描述" aria-describedby="canvas-agent-send-hint" placeholder={living ? agent.state.active ? "随时补充想法…" : "聊聊你的想法…" : agent.state.active ? "补充要求，Agent 会在下一次操作前处理" : "描述创作需求，@ 引用画布，也可直接粘贴图片"} value={draft.text} maxLength={CONVERSATION_LIMIT}
+            onFocus={() => setTyping(true)} onBlur={() => setTyping(false)}
             onPaste={event => void pasteImages(event)}
             onCompositionStart={() => { composing.current = true; }}
             onCompositionEnd={() => { composing.current = false; }}
@@ -380,6 +571,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
               if (event.key === '@' && !composing.current && !event.nativeEvent.isComposing) { event.preventDefault(); openPicker(event.currentTarget); }
             }} />
           <footer className="canvas-agent-composer-footer">
+            {botInComposer && botControl}
             <div className="canvas-agent-tools">
               <button type="button" className="canvas-agent-icon" aria-label="引用画布节点" title="引用节点 · @" aria-expanded={pickerOpen} disabled={!ready} onClick={event => openPicker(event.currentTarget)}><UiIcon name="mention" /></button>
               <button type="button" className="canvas-agent-icon" aria-label="导入素材到画布" title="导入素材" disabled={!ready} onClick={onUpload}><UiIcon name="upload" /></button>
@@ -387,13 +579,15 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
             </div>
 
             <AgentComposerOptions mode={approvalMode} onMode={chooseApprovalMode} models={agent.models} model={agent.model} effort={agent.effort} onModel={agent.setModel} onEffort={agent.setEffort} active={agent.state.active} />
-            <div className="canvas-agent-submit-actions">{agent.state.active && !!draft.text.trim() && <button type="submit" className="agent-steer-button" disabled={agent.busy || !(agent.api || agent.connection?.capabilities?.includes('steering'))}>补充要求</button>}
+            <div className="canvas-agent-submit-actions">{living && <button type="button" className="canvas-agent-icon heiyan-voice-entry" aria-label="连续语音交流（尚未接通）" aria-expanded={voiceInfo} title="连续语音交流 · 尚未接通" onClick={() => setVoiceInfo(value => !value)}><UiIcon name="mic" /></button>}{agent.state.active && !!draft.text.trim() && <button type="submit" className="agent-steer-button" disabled={agent.busy || !(agent.api || agent.connection?.capabilities?.includes('steering'))}>补充要求</button>}
             {agent.state.active ? <button type="button" className="canvas-agent-send" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : <button type="submit" className="canvas-agent-send" aria-label={agent.state.connected ? '发送消息' : '发送消息（需先连接 Agent）'} title={agent.state.connected ? '发送 · Enter，换行 · Shift+Enter' : '请先连接 Agent'} disabled={!agent.state.connected || !agent.memoryReady || !hasConversationContent(draft, images.length) || !ready || agent.busy}><UiIcon name="arrowUp" /></button>}
             </div>
           </footer>
+          {living && voiceInfo && <p className="heiyan-voice-note" role="status">连续语音交流尚未接通。后续支持边说边聊、随时打断回复；当前没有录音。</p>}
           {attachmentError && <p className="canvas-agent-attachment-error" role="alert">{attachmentError}</p>}
         </>}
     </form>
     <p className="canvas-agent-footnote" id="canvas-agent-send-hint" role={saveFailed ? 'alert' : undefined}>{saveFailed ? '无法保存草稿，请勿关闭此页面' : agent.state.connected ? approvalMode === 'full' ? '全自动 · 删除、覆盖与付费生成无需确认' : approvalMode === 'assist' ? '当前连接 · 安全操作自动批准' : '项目会话自动保存 · 修改画布前需确认' : 'Agent 未连接 · 草稿仅保存在此浏览器'}</p>
+    </div>
   </aside>;
 }
