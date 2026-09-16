@@ -1,4 +1,4 @@
-# 画布 1.3.0 · 开源连接器 1.7.0
+# 画布 1.3.0 · 开源连接器 1.7.1
 
 [项目介绍](../README.md)
 
@@ -23,15 +23,21 @@
 
 - 在画布或会话中选中文字后，可使用系统复制到外部应用。
 - 未选中文字时，原有节点、图片、连线和跨画布复制逻辑保持不变。
-- 连接器协议升级至 7；旧连接器仍可使用其原有能力，新问题卡和能力链需要 1.7.0。
+- 连接器协议升级至 7；旧连接器仍可使用其原有能力，新问题卡和能力链需要 1.7.0 或更高版本。
 - `canvas.save` 现在只执行一次持久化，不再在宿主保存后重复触发通用保存。
+
+## 画布视觉与批量能力
+
+- 白昼与黑夜画布统一为同密度细点阵；默认连线保持中性，颜色只用于节点类型、选择、执行和 Agent 操作反馈。
+- 节点读取、批量编辑、生成提交和结果回读不再设置任意数量上限；实际吞吐继续服从队列、并发、额度、审批、停止信号与稳定性保护。
+- Windows 下载文件名及压缩包内 `VERSION.txt` 均标明 1.7.1，并锁定 `heiyan-standalone` 发行标识。
 
 本次自动验证覆盖网页检索开关与引用过滤、凭据隔离、问题生命周期、能力校验、草稿恢复、会话降噪、原生文本复制、连接器协议、TypeScript 和生产构建。真实 API、付费生成、Windows 免安装包和浏览器实机仍需在发布前使用实际配置验收。
 
 ---
 
-## Canvas 1.3.0 / standalone connector 1.7.0
+## Canvas 1.3.0 / standalone connector 1.7.1
 
-This release adds opt-in public web search for Responses API connections, safe HTTP/HTTPS citations, discoverable canvas/ComfyUI/H3/job actions, cancellable question cards, quieter conversations, immediate draft clearing with failure recovery, sparse timestamps, and native text copy without replacing the existing canvas clipboard.
+This release adds opt-in public web search for Responses API connections, safe HTTP/HTTPS citations, discoverable canvas/ComfyUI/H3/job actions, cancellable question cards, quieter conversations, immediate draft clearing with failure recovery, sparse timestamps, native text copy without replacing the existing canvas clipboard, unified day/night canvas visuals, and uncapped connector-level batch contracts governed by the real queue and approval safeguards.
 
 Web content remains untrusted. Exact configured secrets are removed from provider-controlled non-streamed, streamed and compacted content before display, persistence or replay, including secrets split across SSE deltas. Citations reject userinfo and remove only credential-bearing query, fragment or title data while preserving benign routing. Tripo exposes all five real input modes with mode-specific fields. `models.inspect` reports exact adapter/workflow setting keys and legal values, and `canvas.save` performs one durable write. Browser-local model configuration and the loopback-only connector boundary remain unchanged.
