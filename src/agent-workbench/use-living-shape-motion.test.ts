@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { settleLivingShape } from './use-living-shape-motion';
 
 function animated(style: Record<string, string>) {
@@ -18,5 +19,9 @@ describe('living surface animation recovery', () => {
     expect(skin.removeProperty.mock.calls.map(([name]) => name)).toEqual(['transform', 'opacity']);
     expect(anchor.removeProperty).toHaveBeenCalledWith('transform');
   });
-});
 
+  it('never puts the real conversation controls inside the interruptible FLIP animation', () => {
+    const source = readFileSync(new URL('./use-living-shape-motion.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/animate\(content\b/);
+  });
+});

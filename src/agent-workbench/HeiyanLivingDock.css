@@ -35,6 +35,7 @@
 .canvas-agent-dock[data-living][data-open=false] .heiyan-living-anchor { bottom: 4px; left: 4px; }
 .canvas-agent-dock[data-living] .heiyan-living-content { display: flex; flex-direction: column; min-height: 0; max-height: inherit; border-radius: inherit; }
 .canvas-agent-dock[data-living][data-open=false] .heiyan-living-content { display: none; }
+.canvas-agent-dock[data-living][data-open=true] .heiyan-living-content { animation: heiyan-living-content-in .18s var(--bot-ease); }
 .canvas-agent-dock[data-living] .canvas-agent-resizer { display: none; }
 .canvas-agent-dock[data-living] .heiyan-living-compact,
 .canvas-agent-dock[data-living] .heiyan-living-quick { display: grid; grid-template-columns: minmax(0,1fr); align-items: center; gap: 4px; min-height: 64px; padding: 8px 10px 8px 68px; border: 0; background: var(--bot-clear); color: var(--canvas-text-soft); border-radius: inherit; }
@@ -218,6 +219,7 @@
   .canvas-agent-dock[data-living][data-dock-placement=floating][data-panel=settings] .heiyan-living-content { padding-bottom: 88px; }
 }
 @keyframes heiyan-edge { to { transform: translateX(500%); } }
+@keyframes heiyan-living-content-in { from { opacity: .78; } to { opacity: 1; } }
 /* The Bot points to real nodes; the node answers with a restrained, non-blocking outline. */
 .app-shell[data-agent-living] .react-flow__node::after { content: ''; position: absolute; inset: -6px; z-index: 0; pointer-events: none; border: 1px solid var(--canvas-focus); border-radius: var(--canvas-radius-panel); opacity: 0; transform: scale(.985); transition: opacity 180ms var(--bot-ease),transform 220ms var(--bot-ease); }
 .app-shell[data-agent-living] .react-flow__node[data-heiyan-bot-target]::after { opacity: .42; transform: none; }

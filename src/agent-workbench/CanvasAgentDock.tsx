@@ -29,7 +29,7 @@ import { HeiyanBot } from './HeiyanBot';
 import { useBotExpression } from './use-bot-expression';
 import { useBotNodeLook, type BotTargetCue } from './use-bot-node-look';
 import { useBotDrag } from './use-bot-drag';
-import { botDockAnchorPoint, clampBotFreePoint, nearestBotDock, normalizeBotFreePosition, readBotFreePosition, resolveBotFreePoint, saveBotFreePosition, type BotDockPlacement } from './bot-docking';
+import { botDockAnchorPoint, clampBotFreePoint, livingBotDragMode, nearestBotDock, normalizeBotFreePosition, readBotFreePosition, resolveBotFreePoint, saveBotFreePosition, type BotDockPlacement } from './bot-docking';
 import { canExpandLivingConversation, canFoldOnCanvas, compactAgentReceiptEntry, livingBotActivation, livingStatus, livingWidth, needsAgentApproval, type LivingPanel } from './living-state';
 import { useLivingSurface } from './use-living-surface';
 import { useLivingShapeMotion } from './use-living-shape-motion';
@@ -116,12 +116,13 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
     setFreePosition(position);
     try { saveBotFreePosition(localStorage, position); } catch { /* The in-memory resting point remains usable. */ }
   }, []);
-  const botDrag = useBotDrag(living && !open && !!onDockPlacement, drop => {
+  const dragMode = livingBotDragMode(living, open, !!onDockPlacement);
+  const botDrag = useBotDrag(dragMode !== 'off', drop => {
     const restoreFocus = document.activeElement === dock.current?.querySelector('.heiyan-bot');
     if (drop.placement) {
       rememberFreePosition(null);
       onDockPlacement?.(drop.placement);
-    } else if (drop.point && typeof window !== 'undefined') {
+    } else if (dragMode === 'free-or-dock' && drop.point && typeof window !== 'undefined') {
       const position = normalizeBotFreePosition(drop.point, window.innerWidth, window.innerHeight);
       if (position) {
         rememberFreePosition(position);
@@ -217,6 +218,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
       left: freePoint.x + 'px', top: freePoint.y + 'px', right: 'auto', bottom: 'auto',
       transform: freeAlign === 'right' ? `translate(calc(-100% + ${restingAnchor}px), -${restingAnchor}px)` : `translate(-${restingAnchor}px, -${restingAnchor}px)`,
     } : {}),
+    ...(open && botDrag.dragging ? { translate: `${botDrag.offset.x}px ${botDrag.offset.y}px` } : {}),
   } as CSSProperties : undefined;
   const showMessages = historyOpen || agent.state.messages.length > 0 || needsApproval || bot.attention;
   const visible = useLivingSurface(dock, living && !sideDocked && !botDrag.dragging, `${open}:${panel}:${width}:${showMessages}:${collapsed}`);
@@ -404,7 +406,7 @@ export function CanvasAgentDock({ canvasKey, open = true, canvasView = false, it
   };
   const botInComposer = living && open;
   const botMotionKey = `${agent.state.messages.at(-1)?.id || ''}:${agent.state.messages.at(-1)?.text.length || 0}:${agent.state.pending?.id || ''}:${agent.activity.phase}:${agent.activity.detail}:${liveJobs.map(job => `${job.jobId}:${job.state}`).join(',')}`;
-  const botControl = <div className="heiyan-living-anchor"><HeiyanBot pose={bot.pose} expression={botMotion.pose} completionAt={botMotion.completionAt} motionKey={botMotionKey} lookTarget={botLookTarget} label={bot.label} open={open} attention={bot.attention || unread} noticing={noticing} dragging={botDrag.dragging} dragLean={botDrag.offset.x / 24} dragProps={onDockPlacement && !open ? botDrag.buttonProps : undefined} onClick={activateBot} /></div>;
+  const botControl = <div className="heiyan-living-anchor"><HeiyanBot pose={bot.pose} expression={botMotion.pose} completionAt={botMotion.completionAt} motionKey={botMotionKey} lookTarget={botLookTarget} label={bot.label} open={open} attention={bot.attention || unread} noticing={noticing} dragging={botDrag.dragging} dragLean={botDrag.offset.x / 24} dragProps={dragMode !== 'off' ? botDrag.buttonProps : undefined} onClick={activateBot} /></div>;
   const compactStopControl = controllableRun ? <button type="button" className="heiyan-living-stop" aria-label="停止本轮会话" title="停止本轮会话" disabled={agent.busy} onClick={() => void agent.stop()}><UiIcon name="stop" /></button> : null;
 
   return <aside ref={dock} id="canvas-agent-conversation" className="canvas-agent-dock" data-living={living || undefined} data-dock-placement={dockPlacement} data-free-position={freePoint ? true : undefined} data-free-align={freePoint ? freeAlign : undefined} data-magnetic-target={botDrag.target || undefined} data-bot-dragging={botDrag.dragging || undefined} data-panel={panel} data-surface-mode={surfaceMode} data-target-cue={botTarget.cue} data-has-messages={showMessages || undefined} data-bot-pose={bot.pose} data-working={bot.active || undefined} data-living-visible={visible} style={livingStyle} data-open={open} data-page={connectionOpen ? 'settings' : page} inert={!living && !open} aria-hidden={!living && !open || undefined} data-canvas-view={canvasView} data-connection-open={connectionOpen || undefined} aria-label="Agent 创作会话" onKeyDown={event => {

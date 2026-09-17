@@ -40,8 +40,8 @@ export const HeiyanBot = memo(function HeiyanBot({ pose, expression = pose, comp
     data-motion-paused={paused || disabled || undefined} data-waking={waking || undefined} data-dragging={dragging || undefined} data-targeting={lookTarget?.active || undefined} data-open={open}
     style={{ '--bot-drag-lean': `${Math.max(-8, Math.min(8, dragLean))}deg`, '--bot-done-delay': `${doneDelay}ms` } as CSSProperties}
     aria-label={open ? '收起 HEIYAN Bot 会话' : `唤醒 HEIYAN Bot · ${label}`} aria-expanded={open}
-    aria-controls="heiyan-living-content" title={dragProps ? `${label} · 按住拖动调整位置` : label} disabled={disabled} onClick={onClick}
-    aria-description={dragProps ? '按住可在画布中下方自由移动；靠近左侧、右侧或底部中央时自动吸附。也可按 Alt 加方向键直接停靠。' : undefined}
+    aria-controls="heiyan-living-content" title={dragProps ? `${label} · ${open ? '按住拖动停靠会话' : '按住拖动调整位置'}` : label} disabled={disabled} onClick={onClick}
+    aria-description={dragProps ? open ? '按住可将完整会话停靠到左侧、右侧或底部中央。也可按 Alt 加方向键直接停靠。' : '按住可在画布中下方自由移动；靠近左侧、右侧或底部中央时自动吸附。也可按 Alt 加方向键直接停靠。' : undefined}
     aria-keyshortcuts={dragProps ? 'Alt+ArrowLeft Alt+ArrowRight Alt+ArrowDown' : undefined} {...dragProps}
     onPointerMove={event => {
       dragProps?.onPointerMove?.(event);
@@ -99,4 +99,3 @@ export const HeiyanBot = memo(function HeiyanBot({ pose, expression = pose, comp
     {attention && <span className="heiyan-bot-attention" aria-hidden="true" />}
   </button>;
 });
-

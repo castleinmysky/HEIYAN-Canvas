@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { animate } from 'motion';
 
-type SurfaceSnapshot = { rect: DOMRect; anchor: DOMRect | null; open: boolean };
+type SurfaceSnapshot = { rect: DOMRect; anchor: DOMRect | null };
 type AnimatedSurfaceElement = Pick<HTMLElement, 'getAnimations' | 'style'>;
 
 function settleElement(element: AnimatedSurfaceElement | null | undefined, properties: readonly string[]) {
@@ -42,7 +42,7 @@ export function useLivingShapeMotion(dock: RefObject<HTMLElement | null>, signat
       return;
     }
     const rect = root.getBoundingClientRect(), anchor = root.querySelector<HTMLElement>('.heiyan-living-anchor');
-    const snapshot = { rect, anchor: anchor?.getBoundingClientRect() || null, open: root.dataset.open === 'true' }, before = previous.current;
+    const snapshot = { rect, anchor: anchor?.getBoundingClientRect() || null }, before = previous.current;
     previous.current = snapshot;
     const skin = root.querySelector<HTMLElement>('.heiyan-living-skin');
     const content = root.querySelector<HTMLElement>('.heiyan-living-content');
@@ -50,15 +50,13 @@ export function useLivingShapeMotion(dock: RefObject<HTMLElement | null>, signat
     settleLivingShape({ skin, content, anchor });
     if (!before || !rect.width || !rect.height || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!skin || Math.abs(before.rect.width - rect.width) < 1 && Math.abs(before.rect.height - rect.height) < 1) return;
-    const opening = !before.open && snapshot.open;
     const side = root.dataset.dockPlacement;
     if (side !== 'floating') {
       // A side dock is a stable split pane, not a pill growing into a sheet.
       // Scaling its full height from the collapsed Bot briefly leaves a blank,
       // half-sized shell when the rail is reopened or an animation is interrupted.
       const shape = animate(skin, { opacity: [.9, 1] }, { duration: .18, ease: [0.16, 1, 0.3, 1] });
-      const reveal = opening && content ? animate(content, { opacity: [.72, 1] }, { duration: .18, ease: [0.16, 1, 0.3, 1] }) : undefined;
-      running.current = [shape,...(reveal ? [reveal] : [])]; return;
+      running.current = [shape]; return;
     }
     skin.style.transformOrigin = '0 0';
     const shape = animate(skin, {
@@ -68,8 +66,10 @@ export function useLivingShapeMotion(dock: RefObject<HTMLElement | null>, signat
     const avatar = anchor && before.anchor ? animate(anchor, {
       x: [before.anchor.x - snapshot.anchor!.x, 0], y: [before.anchor.y - snapshot.anchor!.y, 0],
     }, { duration: .44, ease: [0.16, 1, 0.3, 1] }) : undefined;
-    const reveal = opening && content ? animate(content, { opacity: [0, 1] }, { duration: .2, delay: .1, ease: [0.16, 1, 0.3, 1] }) : undefined;
-    running.current = [shape,...(avatar ? [avatar] : []),...(reveal ? [reveal] : [])];
+    // Never animate the real controls from opacity 0 here. The FLIP signature
+    // also changes for width, dock and panel updates; interrupting a delayed
+    // content animation could otherwise leave a fully expanded empty shell.
+    // CSS owns the short open-only reveal and always falls back to opacity 1.
+    running.current = [shape,...(avatar ? [avatar] : [])];
   }, [dock, signature, enabled]);
 }
-

@@ -1,5 +1,6 @@
 export type BotDockPlacement = 'floating' | 'left' | 'right';
 export type BotFreePosition = { x: number; y: number };
+export type BotDragMode = 'off' | 'free-or-dock' | 'dock-only';
 
 const botDockStorageKey = 'heiyan:bot-dock:v1';
 const botFreePositionStorageKey = 'heiyan:bot-free-position:v1';
@@ -10,6 +11,12 @@ const freePositionMargin = 40;
 const freePositionTopRatio = .42;
 
 export const BOT_DRAG_THRESHOLD = 8;
+
+/** Collapsed surfaces may rest freely; a full conversation only changes docks. */
+export function livingBotDragMode(living: boolean, open: boolean, dockable: boolean): BotDragMode {
+  if (!living || !dockable) return 'off';
+  return open ? 'dock-only' : 'free-or-dock';
+}
 
 export function readBotDockPlacement(storage: Pick<Storage, 'getItem'>): BotDockPlacement {
   try {
@@ -106,4 +113,3 @@ export function botDockTarget({ x, y, width, height }: {
   const floatingTop = Math.max(0, height - floatingDockHotzone);
   return x >= width * .25 && x <= width * .75 && y >= floatingTop ? 'floating' : null;
 }
-

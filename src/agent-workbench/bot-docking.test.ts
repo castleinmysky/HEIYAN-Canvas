@@ -5,6 +5,7 @@ import {
   botDockTarget,
   clampBotFreePoint,
   effectiveBotDockPlacement,
+  livingBotDragMode,
   nearestBotDock,
   normalizeBotFreePosition,
   readBotDockPlacement,
@@ -102,6 +103,13 @@ describe('Bot dock drag targets', () => {
     expect(BOT_DRAG_THRESHOLD).toBe(8);
   });
 
+  it('keeps full conversations draggable but dock-only', () => {
+    expect(livingBotDragMode(true, false, true)).toBe('free-or-dock');
+    expect(livingBotDragMode(true, true, true)).toBe('dock-only');
+    expect(livingBotDragMode(false, true, true)).toBe('off');
+    expect(livingBotDragMode(true, true, false)).toBe('off');
+  });
+
   it('includes the exact 72px side boundaries throughout the viewport height', () => {
     for (const y of [0, 400, 800]) {
       expect(target(0, y)).toBe('left');
@@ -166,4 +174,3 @@ describe('Bot dock drag targets', () => {
     expect(botDockTarget({ x: 0, y: 0, width, height })).toBeNull();
   });
 });
-
