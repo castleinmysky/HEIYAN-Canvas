@@ -28,7 +28,7 @@ const entries = () => transaction('readonly', (s, done) => {
 export const localRecords = { read, write, remove, entries, transaction };
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const error = (message, status = 400) => json({ error: message }, status);
-const unavailable = () => error('This Site is an interaction trial. Real generation and model connections are available in the local HEIYAN app.', 503);
+const unavailable = () => error('This browser-only session cannot submit generation. Connect a supported model service or use a full server deployment.', 503);
 const validId = value => /^[\w-]{1,128}$/.test(value || '');
 const canvasKey = (task, board) => `canvas:${task}:${board}`;
 const emptyCanvas = () => ({ nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, revision: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
@@ -144,7 +144,7 @@ export async function handleLocalRequest(request) {
       if (!suffix && method === 'GET') return json(await read(key) || emptyCanvas());
       if (!suffix && method === 'PUT') return await saveCanvas(key, await body());
     }
-    return error('This feature needs the local HEIYAN app. The current canvas is unchanged.', 501);
+    return error('This feature is unavailable in the current browser-only session. The canvas is unchanged.', 501);
   } catch (reason) {
     return error(reason?.name === 'QuotaExceededError' ? 'Browser storage is full. Export your canvas and free space before trying again.' : 'Browser storage could not complete the operation. Existing saved data is unchanged.', 500);
   }

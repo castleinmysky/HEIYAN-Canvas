@@ -22,7 +22,7 @@ npm audit
 
 `src/` 是界面与浏览器状态，`shared/` 是模型和连接协议，`server/` 是独立服务及 Codex 连接器，`local-bridge/` 是 ComfyUI 接入。发布脚本在 `scripts/`；文档配图统一放 `docs/media/`。
 
-README 使用纯 Markdown，功能图集中在多列预览表中。不要重新引入 HTML 布局标签、开发记录或作者机器路径。
+README 使用纯 Markdown，功能图集中在多列预览表中。不要重新引入 HTML 布局标签、过程记录或本地机器路径。
 
 修改 README 或快速开始时，请同步中英文版本；保留顶部语言切换，并共用相同的截图和 GIF，不重复复制媒体文件。
 

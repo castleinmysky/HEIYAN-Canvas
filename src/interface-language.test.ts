@@ -37,7 +37,8 @@ describe('canvas interface language', () => {
   it('provides exact bilingual managed connection and settings copy', () => {
     const english = JSON.stringify({ managed: managedComfyInterfaceCopy('en'), settings: settingsCenterInterfaceCopy('en') });
     expect(english).not.toMatch(/[\u3400-\u9fff]/u);
-    expect(managedComfyInterfaceCopy('zh').details['not-installed']).toContain('私有安装器');
+    expect(managedComfyInterfaceCopy('zh').details['not-installed']).toContain('安装并启动连接器');
+    expect(JSON.stringify(managedComfyInterfaceCopy('zh'))).not.toContain('私有套件');
     expect(settingsCenterInterfaceCopy('zh').advanced).toBe('自定义 ComfyUI（高级）');
   });
 });

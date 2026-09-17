@@ -6,17 +6,17 @@
 
 A node-based canvas for image, video, audio and 3D creation. Self-host it and connect your own model APIs, Codex and ComfyUI. No canvas account required.
 
-**[Self-host →](docs/QUICKSTART.en.md#self-host-the-canvas)** · [Online demo (ChatGPT-hosted)](https://heiyan.f2vfhjcckr.chatgpt.site/) · [Features](#features) · [Source and contributions](#source-and-contributions)
+**[Self-host →](docs/QUICKSTART.en.md#self-host-the-canvas)** · [Open hosted canvas](https://heiyan.cmsi.win/) · [Features](#features) · [Source and contributions](#source-and-contributions)
 
 ## Getting started
 
 | What you need | How to start |
 | --- | --- |
 | Self-host the canvas | Clone the repository, install dependencies and start the app. [Setup instructions](docs/QUICKSTART.en.md#self-host-the-canvas). |
-| Try it online | [Open the demo](https://heiyan.f2vfhjcckr.chatgpt.site/), hosted on ChatGPT Sites. Some regions or networks may require a proxy or VPN that you provide. Connect your own API to generate assets. |
+| Use the hosted canvas | [Open HEIYAN Canvas](https://heiyan.cmsi.win/) and connect your own API or Codex when you want to generate assets. |
 | Connect your Codex | Download the Windows portable connector, extract it and run the launcher. [Connection guide](docs/QUICKSTART.en.md#connect-your-own-codex). |
 
-The demo does not provide model accounts or generation credits. Self-hosting does not depend on the demo site; your model APIs and Codex still have their own network access requirements.
+The hosted canvas does not provide model accounts or generation credits. Your model APIs and Codex still have their own network access requirements.
 
 The Codex connector connects your own Codex to the canvas. It is not an installer for the entire app.
 
@@ -28,7 +28,7 @@ Text + reference images → generated assets → inputs for the next step
 
 | References and results | Model connections | Codex Agent |
 | --- | --- | --- |
-| [![Reference images and a multi-image result hand, using demo assets](docs/media/reference-hand-detail.jpg)](docs/media/reference-hand-detail.jpg) | [![Model settings with empty API key fields](docs/media/model-settings.jpg)](docs/media/model-settings.jpg) | [![Personal Codex connection panel before pairing](docs/media/agent-connect.jpg)](docs/media/agent-connect.jpg) |
+| [![Reference images and a multi-image result hand, using demo assets](docs/media/reference-hand-detail.jpg)](docs/media/reference-hand-detail.jpg) | [![Model settings with empty API key fields](docs/media/model-settings.jpg)](docs/media/model-settings.jpg) | [![Codex connection panel before pairing](docs/media/agent-connect.jpg)](docs/media/agent-connect.jpg) |
 | **Prompt assistant** | **Image splitting** | **Advanced API settings** |
 | [![Combining prompt tags](docs/media/prompt-assistant.gif)](docs/media/prompt-assistant.gif) | [![Dragging dividers to split an image](docs/media/multi-view-splitter.gif)](docs/media/multi-view-splitter.gif) | [![Configuring the protocol, model ID and endpoint](docs/media/api-advanced.jpg)](docs/media/api-advanced.jpg) |
 | **Day theme** | **Night theme** | **Node alignment** |
@@ -66,7 +66,7 @@ npm start
 
 Open [http://127.0.0.1:8792](http://127.0.0.1:8792). Canvas editing works without starting ComfyUI or Codex. Connect the services you need when you want to generate assets.
 
-1. Open your deployment or the [online demo](https://heiyan.f2vfhjcckr.chatgpt.site/). Create nodes or import assets.
+1. Open your deployment or the [hosted canvas](https://heiyan.cmsi.win/). Create nodes or import assets.
 2. Connect your own services.
 3. Select a model and settings, write a prompt, add references and submit generation.
 
@@ -97,7 +97,7 @@ See the [English quick-start guide](docs/QUICKSTART.en.md) for API configuration
 
 | Area | Details |
 | --- | --- |
-| Privacy | Cloud services receive the prompts, assets and credentials needed for each request. Configured proxies and tunnels also handle the traffic they forward. |
+| Data flow | The services you select receive the prompts, assets and credentials needed for each request. Configured proxies and tunnels also handle the traffic they forward. |
 | Model access | A successful connection does not guarantee access to every model or feature. Provider permissions, quota and deployment configuration still apply. |
 | Local services | Keep the connector and ComfyUI running during generation. Clearing browser history does not delete original files on the generation machine. |
 | Agent | Image analysis requires a vision-capable model and explicit image sharing. Audio understanding and autonomous film editing are not supported. |
@@ -108,15 +108,15 @@ See the [English quick-start guide](docs/QUICKSTART.en.md) for API configuration
 
 Repository: [castleinmysky/HEIYAN-Canvas](https://github.com/castleinmysky/HEIYAN-Canvas).
 
-You can self-host the canvas, change the interface and extend models or nodes. It uses your own services, not the author's accounts or private model package.
+You can self-host the canvas, change the interface and extend models or nodes. Runtime services are configured by the user.
 
 | Scope | Details |
 | --- | --- |
-| Included | Canvas UI and interactions, model adapters, personal Codex connector, required server code and setup documentation. |
-| Not included | Private tasks and generated outputs, account credentials, ComfyUI model weights and LoRAs. |
+| Included | Canvas UI and interactions, model adapters, Codex connector, required server code and setup documentation. |
+| Not included | Account credentials, runtime data, generated outputs, ComfyUI model weights and LoRAs. |
 | Contributions | Report issues, improve documentation and interactions, or extend models and nodes. Include usage instructions and test results with new features. |
 
-Before submitting changes, run `npm run check`, `npm test`, `npm run build` and `npm run check:release`. Use mock services for automated tests; do not submit real generation without the user's approval. Redact credentials, pairing codes and private content from screenshots and logs.
+Before submitting changes, run `npm run check`, `npm test`, `npm run build` and `npm run check:release`. Use mock services for automated tests; do not submit real generation without the user's approval. Redact credentials, pairing codes and sensitive content from screenshots and logs.
 
 Further repository policies: [Source scope](docs/OPEN-SOURCE.md), [Contributing](CONTRIBUTING.md), [Security](SECURITY.md) and [Third-party notices](THIRD_PARTY_NOTICES.md). These detailed policy documents are currently in Chinese.
 

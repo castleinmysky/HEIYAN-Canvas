@@ -4,7 +4,7 @@
 
 | 能力 | 更新 |
 | --- | --- |
-| 连接 | 个人 Codex，或自己的 Responses / Chat Completions API。 |
+| 连接 | 你的 Codex，或自己的 Responses / Chat Completions API。 |
 | 输入 | 选择模型与推理强度，附加图片，引用当前画布节点。 |
 | 会话 | 流式回复、补充要求、项目记忆、历史检索与用量记录。 |
 | 操作 | 预览节点修改、连线与排版；定位相关节点并跟随执行。 |

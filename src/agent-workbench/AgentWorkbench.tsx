@@ -127,7 +127,7 @@ export function AgentPanel(props: AgentPanelProps) {
   const canPreview = preview && !!props.onPreviewDraft && !!draft.trim() && !busy;
   const send = () => { if (sendAllowed) props.onSend?.(); else if (canPreview) props.onPreviewDraft?.(); };
   return <aside className="aw-panel" aria-label="创作助手">
-    <header className="aw-panel-header"><div><h2>创作助手</h2><button type="button" className="aw-connection" data-state={connection} onClick={props.onConnection}><AgentGlyph /><span>Codex</span><i /><span>{({ preview: '交互预览', connected: '已连接', connecting: '连接中', disconnected: '未连接', error: '连接失败' })[connection]}</span></button></div><button type="button" className="aw-icon-button aw-panel-close" onClick={props.onClose} aria-label="收起会话"><UiIcon name="close" /></button></header>
+    <header className="aw-panel-header"><div><h2>创作助手</h2><button type="button" className="aw-connection" data-state={connection} onClick={props.onConnection}><AgentGlyph /><span>Codex</span><i /><span>{({ preview: '功能演示', connected: '已连接', connecting: '连接中', disconnected: '未连接', error: '连接失败' })[connection]}</span></button></div><button type="button" className="aw-icon-button aw-panel-close" onClick={props.onClose} aria-label="收起会话"><UiIcon name="close" /></button></header>
     <div className="aw-conversation" ref={scrollRef}>
       {messages.length === 0 && <div className="aw-empty"><AgentGlyph /><h3>从一个创作想法开始</h3><p>引用素材，描述你想制作的内容。</p><button type="button" onClick={props.onAttach}><UiIcon name="upload" />添加参考素材</button></div>}
       {messages.map(message => <div key={message.id} className={`aw-message aw-message--${message.role}`}>
@@ -170,7 +170,7 @@ export function AgentWorkbench({ canvas, panel, project, theme, onTheme, onHisto
     style={{ '--aw-height': height ? `${height}px` : '100dvh', '--aw-top': `${top}px` } as CSSProperties}>
     <header className="aw-topbar">
       <a className="aw-brand" href="/" aria-label="返回黑岩画布首页"><img src="/echo-ai-canvas.svg" width="28" height="28" alt="" /><span>黑岩画布</span></a>
-      <span className="aw-project">{project}</span><span className="aw-preview-badge">交互预览</span>
+      <span className="aw-project">{project}</span><span className="aw-preview-badge">功能演示</span>
       <button type="button" className="aw-history" onClick={onHistory}><UiIcon name="history" /><span>生成历史</span></button><span className="aw-top-spacer" />
       <button type="button" className="aw-icon-button" onClick={onTheme} aria-label={theme === 'night' ? '切换白昼模式' : '切换黑夜模式'}><ThemeGlyph night={theme === 'night'} /></button>
       <button type="button" className="aw-icon-button aw-settings" onClick={onSettings} aria-label="预览设置"><UiIcon name="settings" /></button>

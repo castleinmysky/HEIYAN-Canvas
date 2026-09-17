@@ -15,7 +15,7 @@
 
 升级现有部署：保存工作，更新源码，运行 `npm ci`、`npm run build` 后重新启动。浏览器本地项目与自有模型连接不会被迁入仓库。
 
-本次更新源码与前端，不替换已发布的 Windows 二进制附件。现有 1.6.0 连接器仍可配合使用；从源码启动会使用仓库中的连接器代码。独立部署继续使用浏览器本地项目记忆与本机配对，不包含主平台的账号、局域网任务映射或手机远程连接。
+本次更新源码与前端，不替换已发布的 Windows 二进制附件。现有 1.6.0 连接器仍可配合使用；从源码启动会使用仓库中的连接器代码。项目记忆保存在浏览器，连接器使用本机配对；手机远程连接暂不支持。
 
 ## English
 
@@ -23,4 +23,4 @@ Canvas 1.2 adds compact chat bubbles, sent-image thumbnails, inline image/video/
 
 Project memory is reading-first, with per-section editing and expandable text. Continued conversations avoid repeating recent history, polling alone no longer counts as progress, and connected-node `@` references reach the Agent. Multi-image node dragging, edge layering and `gpt-image-2.5` aspect-ratio mapping are updated. Provider support must still match the configured model.
 
-Save your work, update the source, run `npm ci` and `npm run build`, then restart your deployment. This source update does not replace existing Windows release attachments; the existing 1.6.0 connector remains compatible. Browser-local storage and loopback pairing remain separate from the main platform's accounts and LAN task routing. No private tasks, assets or credentials are included.
+Save your work, update the source, run `npm ci` and `npm run build`, then restart your deployment. This source update does not replace existing Windows release attachments; the existing 1.6.0 connector remains compatible. Project memory stays in browser storage and the connector uses loopback pairing. Runtime data, assets and credentials are not included.

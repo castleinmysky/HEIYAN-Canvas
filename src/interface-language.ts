@@ -4,14 +4,14 @@ export type CanvasInterfaceLanguage = 'zh' | 'en';
 
 export const managedComfyInterfaceCopy = (language: CanvasInterfaceLanguage) => language === 'en' ? {
   title: 'Managed ComfyUI',
-  description: 'Connects only to the verified HEIYAN private bundle on this device.',
+  description: 'Connects only to a verified HEIYAN connector on this device.',
   states: {
-    'not-installed': 'Private bundle not detected', installed: 'Private bundle ready to connect',
+    'not-installed': 'Connector not detected', installed: 'Connector ready to connect',
     starting: 'Managed runtime is starting', connected: 'Managed runtime connected',
-    'repair-required': 'Private bundle requires repair',
+    'repair-required': 'Connector requires repair',
   },
   details: {
-    'not-installed': 'Run the private installer once when it is available, then recheck here.',
+    'not-installed': 'Install and start the connector, then recheck here.',
     installed: 'The verified bundle is installed. Connecting makes its capabilities available on the canvas.',
     starting: 'Waiting for the fixed local runtime to become ready.',
     connected: 'Verified local capabilities are available on the canvas.',
@@ -32,12 +32,12 @@ export const managedComfyInterfaceCopy = (language: CanvasInterfaceLanguage) => 
   cardLabel: 'Managed ComfyUI connection', previewCardLabel: 'Managed ComfyUI first-run simulation',
 } : {
   title: '托管 ComfyUI',
-  description: '仅连接这台设备上经过验证的黑岩私有套件。',
+  description: '仅连接这台设备上经过验证的黑岩连接器。',
   states: {
-    'not-installed': '未检测到私有套件', installed: '私有套件可连接', starting: '托管运行时正在启动', connected: '托管运行时已连接', 'repair-required': '私有套件需要修复',
+    'not-installed': '未检测到连接器', installed: '连接器可连接', starting: '托管运行时正在启动', connected: '托管运行时已连接', 'repair-required': '连接器需要修复',
   },
   details: {
-    'not-installed': '私有安装器可用后，请先运行一次，再回到这里重新检查。',
+    'not-installed': '请先安装并启动连接器，再回到这里重新检查。',
     installed: '已安装经过验证的套件；连接后，相应能力才会出现在画布。',
     starting: '正在等待固定的本地运行时就绪。', connected: '经过验证的本地能力已在画布中可用。',
     'repair-required': '快速验证发现托管套件的完整性或配置存在问题。',
@@ -95,7 +95,7 @@ export const settingsCenterInterfaceCopy = (language: CanvasInterfaceLanguage) =
   title: 'Settings', subtitle: 'HEIYAN LOCAL CONTROL', close: 'Close settings', navigation: 'Settings categories',
   sections: {
     api: { label: 'API & models', hint: 'Cloud services', intro: 'Find a real model and enter its API key. HEIYAN handles the remaining connection settings.' },
-    comfyui: { label: 'Remote ComfyUI Generation', hint: 'Optional module', intro: 'Connect the verified private bundle, or open advanced settings for a separately configured server.' },
+    comfyui: { label: 'Remote ComfyUI Generation', hint: 'Optional module', intro: 'Connect a verified HEIYAN connector, or open advanced settings for a separately configured server.' },
     data: { label: 'Data', hint: 'Backup & storage', intro: 'Review local storage, import or export settings, and clear rebuildable preview caches.' },
     about: { label: 'About', hint: 'Version & status', intro: 'Review the HEIYAN version, storage locations, and local service status.' },
   },
@@ -104,7 +104,7 @@ export const settingsCenterInterfaceCopy = (language: CanvasInterfaceLanguage) =
   title: '设置中心', subtitle: 'HEIYAN LOCAL CONTROL', close: '关闭设置', navigation: '设置分类',
   sections: {
     api: { label: 'API 与模型', hint: '云端服务', intro: '找到真实模型，填写密钥即可。其余连接参数由黑岩画布处理。' },
-    comfyui: { label: '远程ComfyUI生成', hint: '可选模块', intro: '连接经过验证的私有套件，或在高级设置中使用单独配置的服务器。' },
+    comfyui: { label: '远程ComfyUI生成', hint: '可选模块', intro: '连接经过验证的黑岩连接器，或在高级设置中使用单独配置的服务器。' },
     data: { label: '数据管理', hint: '备份与容量', intro: '查看本机占用，导入导出配置，并清理可重新生成的预览缓存。' },
     about: { label: '关于', hint: '版本与运行状态', intro: '查看黑岩画布的版本、存储位置与本机运行状态。' },
   },

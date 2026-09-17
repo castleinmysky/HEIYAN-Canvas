@@ -40,17 +40,17 @@ The deployment password protects access; it is not a multi-user account system. 
 
 More deployment and upgrade details are in [DEPLOYMENT.md (Chinese)](DEPLOYMENT.md).
 
-## Use the online demo
+## Use the hosted canvas
 
-The demo is hosted on ChatGPT Sites, not on an independent server operated by the author. Some regions or networks may require a proxy or VPN that you provide. Ensure you can access the hosting service before using it.
+The hosted canvas is provided through ChatGPT Sites. Ensure that your network can access the hosting service before using it.
 
-The demo does not supply model accounts or generation credits. You connect your own services. Self-hosting avoids dependence on the demo site but does not remove the network requirements of your model providers or Codex.
+The hosted canvas does not supply model accounts or generation credits. Connect your own services. Self-hosting is also available and does not remove the network requirements of your model providers or Codex.
 
-1. Open the [online demo](https://heiyan.f2vfhjcckr.chatgpt.site/).
+1. Open the [hosted canvas](https://heiyan.cmsi.win/).
 2. Create nodes or import assets.
 3. Connect a service, choose a model and settings, and submit generation when ready.
 
-Both the demo and self-hosted app use the current browser as the data boundary. A different device, browser, domain or port does not automatically inherit your canvas. Export important work before clearing website data.
+The current browser is the data boundary. A different device, browser, domain or port does not automatically inherit your canvas. Export important work before clearing website data.
 
 ## Connect your own model APIs
 
@@ -63,7 +63,7 @@ Open Settings → API & Models (`设置 → API 与模型`), find a model under 
 | Protocol, base URL and path | Follow the provider's documentation. Official and third-party endpoints may differ. |
 | Generation settings | Choose them in the node, within the selected model's supported capabilities. |
 
-Seedance and other video services also use your own API access, not the author's account or credits. Some providers require model activation, approval or a deployment endpoint ID from their console.
+Seedance and other video services use your own API access and credits. Some providers require model activation, approval or a deployment endpoint ID from their console.
 
 Cloud requests may pass through your canvas server before reaching the provider. Only enter keys on deployments you trust. A successful connection does not mean every model, permission or size is available.
 
@@ -73,7 +73,7 @@ Cloud requests may pass through your canvas server before reaching the provider.
 
 1. Download the versioned `HEIYAN-Connector-Windows-x64-v1.7.1.zip` from [Releases](https://github.com/castleinmysky/HEIYAN-Canvas/releases/latest).
 2. Extract the entire ZIP. Do not run it from inside the archive.
-3. The default canvas address is `http://127.0.0.1:8792`. For another deployment or the online demo, edit `siteUrl` in the extracted `connector.json`. You can use the full current task URL, including its query parameters. Do not include credentials in the URL.
+3. The default canvas address is `http://127.0.0.1:8792`. For another canvas address, edit `siteUrl` in the extracted `connector.json`. You can use the full current task URL, including its query parameters. Do not include credentials in the URL.
 4. Run `启动黑岩连接器.cmd` (Start HEIYAN Connector). Follow the local setup page to sign in to your own Codex.
 5. Click `打开画布并配对` (Open canvas and pair). Verify that the connector is the one you just started, then click `配对并连接` (Pair and connect) in the canvas.
 
@@ -97,7 +97,7 @@ For another canvas address, set `--origin` to its exact origin without a path. I
 
 ### Scope
 
-- Uses your own Codex login and quota. Do not send login files or pairing codes to the author or other users.
+- Uses your own Codex login and quota. Do not send login files or pairing codes to other people.
 - Supports model and reasoning controls, image input, project memory, history search, node editing, approved generation and result inspection. The current HEIYAN Canvas version is 1.4.0 and the standalone Codex connector is 1.7.1. Node reads, edits, generation submissions, and result reads no longer have arbitrary connector-level item caps; queue, concurrency, credit, approval, and stability safeguards still apply. See the [canvas 1.4.0 release notes](releases-1.4.0.md) and [connector 1.7.1 notes](connector-1.7.1.md).
 - Paid generation asks for approval by default. Explicitly enabling full access authorizes automatic operations, including paid generation, on the current canvas. You can switch back at any time. It does not autonomously complete an entire film. See the [1.2 notes](releases-1.2.md).
 - Self-hosted project requirements, conversations and execution receipts are isolated by canvas in this browser's IndexedDB. Reconnecting can load them without replaying old operations. Clearing site data removes these records. Agent API keys remain in page memory, not project records; no account or cloud storage is required.
@@ -114,7 +114,7 @@ npm run comfy:connector -- --origin http://127.0.0.1:8792 --comfy-port 8188
 
 Open the [local pairing page](http://127.0.0.1:8289/). Copy its pairing code into Settings → Remote ComfyUI Generation → This computer (`设置 → 远程 ComfyUI 生成 → 当前电脑`). Use the service address, not a model folder path.
 
-Models and LoRAs are selected inside canvas nodes. The connector exposes capabilities it can discover and that existing adapters support; it does not automatically support every custom workflow. No model weights or private model package are included.
+Models and LoRAs are selected inside canvas nodes. The connector exposes capabilities it can discover and that existing adapters support; it does not automatically support every custom workflow. No model weights are included.
 
 Optional arguments:
 
