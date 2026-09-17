@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ApiProfile } from './agent-api';
+import { apiReasoningEfforts, type ApiProfile } from './agent-api';
 import type { ProbeProgress } from './agent-capabilities';
 export function AgentApiForm({ busy, testing, progress, connect, cancel }: { busy: boolean; testing: boolean; progress?: ProbeProgress | null; connect: (profile: ApiProfile) => Promise<boolean>; cancel: () => void }) {
   const [profile, setProfile] = useState<ApiProfile>({ provider: 'official', baseUrl: 'https://api.openai.com/v1', apiKey: '', model: '', protocol: 'responses', vision: false, effort: '', contextChars: 48000, contextTokens: 128000, outputTokens: 4096, stream: true, nativeCompaction: true, tokenBudget: 250000, callLimit: 24 });
@@ -18,7 +18,8 @@ export function AgentApiForm({ busy, testing, progress, connect, cancel }: { bus
     <label>模型名称<input disabled={busy} value={profile.model} onChange={e => patch({ model: e.target.value })} placeholder="服务提供的完整模型名称" /></label>
     <div className="agent-settings-pair"><label>上下文上限 · token<input disabled={busy} type="number" min={8000} max={2000000} step={1000} value={profile.contextTokens} onChange={e => patch({ contextTokens: Number(e.target.value) })} /></label><label>单次输出预留 · token<input disabled={busy} type="number" min={512} max={128000} step={512} value={profile.outputTokens} onChange={e => patch({ outputTokens: Number(e.target.value) })} /></label></div>
     <p>上限请按所选模型的说明填写。支持时使用服务端输入计数，否则显示保守估算；图片与工具也计入预算。</p>
-    <label>思考程度<select disabled={busy} value={profile.effort} onChange={e => patch({ effort: e.target.value })}><option value="">模型默认</option>{['low', 'medium', 'high', 'xhigh', 'max'].map(v => <option key={v}>{v}</option>)}</select></label>
+    <label>思考程度<select disabled={busy} value={profile.effort} onChange={e => patch({ effort: e.target.value })}>{apiReasoningEfforts.map(value => <option key={value || 'default'} value={value}>{value || '模型默认'}</option>)}</select></label>
+    <p>{profile.provider === 'custom' ? `按 ${profile.protocol === 'responses' ? 'reasoning.effort' : 'reasoning_effort'} 发送；中转站不兼容时会在检测中明确报错。` : '可用档位以所选模型的实际能力为准。'}</p>
     <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.vision} onChange={e => patch({ vision: e.target.checked })} />启用图片输入并检测实际看图能力</label>
     {profile.protocol === 'responses' && <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.webSearch === true} onChange={e => patch({ webSearch: e.target.checked })} />允许 Agent 按需查找公开网页并附来源</label>}
     <label className="agent-api-check"><input disabled={busy} type="checkbox" checked={profile.stream} onChange={e => patch({ stream: e.target.checked })} />逐步显示回复</label>

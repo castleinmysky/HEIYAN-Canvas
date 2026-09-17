@@ -10,6 +10,14 @@ export type ApiProfile = {
   helperModel?: string; embeddingModel?: string; tokenBudget?: number; callLimit?: number;
   prices?: { input?: number; output?: number; cached?: number; helperInput?: number; helperOutput?: number };
 };
+export const apiReasoningEfforts = ['', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'] as const;
+export type ApiReasoningEffort = typeof apiReasoningEfforts[number];
+export function apiReasoningModel(profile: Pick<ApiProfile, 'model' | 'provider' | 'protocol'>) {
+  return { id: 'api-current', model: profile.model, name: profile.model, efforts: apiReasoningEfforts.map(value => ({ value })), api: true,
+    effortHint: profile.provider === 'custom'
+      ? `${profile.protocol === 'responses' ? 'Responses reasoning.effort' : 'Chat reasoning_effort'} 兼容档位；中转站不支持时会明确报错，不会静默降级。`
+      : '可用档位取决于当前模型；不支持时会明确报错。' };
+}
 export type ToolCall = { id: string; name: string; arguments: string };
 export type ApiMessage = { role: 'user' | 'assistant' | 'tool'; content: string; images?: string[]; toolCalls?: ToolCall[]; callId?: string; responseItems?: object[] };
 export type Capability = { key: string; label: string; status: 'passed' | 'unavailable' | 'untested'; detail: string };
@@ -36,6 +44,7 @@ export function strictSchema(value: any): any {
 }
 export function validateApiProfile(profile: ApiProfile) {
   apiEndpoint(profile);
+  if (!apiReasoningEfforts.includes(profile.effort as ApiReasoningEffort)) throw Error('思考程度不受支持，请选择模型默认或列表中的兼容档位。');
   const window = profile.contextTokens || 48000, output = profile.outputTokens || 4096;
   if (!Number.isInteger(window) || window < 8000 || window > 2000000 || !Number.isInteger(output) || output < 512 || output > window / 3) throw Error('请填写有效的上下文上限与输出预留，输出不超过上下文的三分之一。');
   if (!Number.isInteger(profile.tokenBudget || 250000) || (profile.tokenBudget || 250000) < 10000 || (profile.tokenBudget || 250000) > 10000000 || !Number.isInteger(profile.callLimit || 24) || (profile.callLimit || 24) < 1 || (profile.callLimit || 24) > 48) throw Error('请检查本轮 token 预算与模型调用上限。');

@@ -5,7 +5,7 @@ import { validateAgentTool, type AgentProposal } from '../../server/agent-contra
 import { emptyProject, mergeMessages, projectRequest, searchProjectHistory, type AgentProject, type ExecutionReceipt } from './agent-memory';
 import { writeMessageImages } from './message-images';
 import { progressSignature } from './agent-progress';
-import { validateApiProfile, type ApiMessage, type ApiProfile, type Capability, type UsageRecord } from './agent-api';
+import { apiReasoningEfforts, apiReasoningModel, validateApiProfile, type ApiMessage, type ApiProfile, type ApiReasoningEffort, type Capability, type UsageRecord } from './agent-api';
 import { probeApi, type ProbeProgress } from './agent-capabilities';
 import { buildProjectContext, contextLimits, promptReferenceContext } from './agent-context';
 import { runApiAgent, toolLabels, type AgentActivity } from './agent-runner';
@@ -47,6 +47,7 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
   const mounted = useRef(true), actionLock = useRef(false), polling = useRef(false), refs = useRef<string[]>([]);
   const stateRef = useRef(state); stateRef.current = state;
   const apiRef = useRef(api); apiRef.current = api;
+  const capabilitiesRef = useRef(capabilities); capabilitiesRef.current = capabilities;
   const controller = useRef<AbortController | null>(null);
   const apiDecision = useRef<((value: { success: boolean; result: string; images?: string[] }) => void) | null>(null);
   const pendingDelivery = useRef<{ id: string; claim: string; success: boolean; result: string; images?: string[]; revision?: string } | null>(null);
@@ -308,6 +309,18 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
         draft: (id, text) => { if (controller.current === abort && mounted.current) updateState({ messages: mergeMessages(stateRef.current.messages, [{ id, role: 'assistant', text, model: profile.model }]) }); },
         usage: recordUsage, summary: async summary => { await commit(p => ({ ...p, summary })); }, activity: setProgress,
       });
+      const accepted: Capability[] = [];
+      if (profile.effort && profile.effort === apiRef.current?.effort) {
+        accepted.push({ key: 'effort', label: '思考参数', status: 'passed', detail: `接口已接受 ${profile.effort}；模型内部执行程度仍以服务商实现为准` });
+      }
+      if (profile.stream && profile.stream === apiRef.current?.stream) {
+        accepted.push({ key: 'stream', label: '流式回复', status: 'passed', detail: '本轮已收到并完整校验流式响应' });
+      }
+      if (accepted.length) {
+        const acceptedKeys = new Set(accepted.map(item => item.key));
+        const nextCapabilities = [...capabilitiesRef.current.filter(item => !acceptedKeys.has(item.key)), ...accepted];
+        capabilitiesRef.current = nextCapabilities; setCapabilities(nextCapabilities);
+      }
       await receipt(turnId, 'model_turn', 'succeeded', '本轮对话已完成');
     } catch (e) {
       apiHistory.current = [];
@@ -317,9 +330,20 @@ export function useCanvasAgent(canvasKey: string, access?: AgentCanvasAccess, ap
       }
     } finally { if (controller.current === abort) { controller.current = null; apiDecision.current = null; task.current.imageGrants.clear(); updateState({ active: false, pending: null }); } }
   };
+  const chooseEffort = (value: string) => {
+    if (!apiRef.current) { setEffort(value); return; }
+    if (stateRef.current.active || actionLock.current) return;
+    try {
+      if (!apiReasoningEfforts.includes(value as ApiReasoningEffort)) throw Error('思考程度不受支持');
+      const next = { ...apiRef.current, effort: value }; validateApiProfile(next);
+      const capability: Capability = { key: 'effort', label: '思考参数', status: 'untested', detail: value ? `已切换为 ${value}；将在下一次模型请求中验证` : '使用模型默认值，不发送思考强度参数' };
+      const nextCapabilities = [...capabilitiesRef.current.filter(item => item.key !== 'effort'), capability];
+      apiRef.current = next; setApi(next); capabilitiesRef.current = nextCapabilities; setCapabilities(nextCapabilities);
+    } catch (reason) { report(reason); }
+  };
   return {
     connection: api ? { url: api.baseUrl, token: '', capabilities: api.vision ? ['image_input'] : [], device: api.provider === 'official' ? '官方 API' : '自定义 API' } : connection,
-    state, busy, error, activity, trace, capabilities, runUsage, indexState, models: api ? [] : models, model, effort, setModel, setEffort,
+    state, busy, error, activity, trace, capabilities, runUsage, indexState, models: api ? [apiReasoningModel(api)] : models, model: api?.model || model, effort: api?.effort || effort, setModel, setEffort: chooseEffort,
     questions: { ...questions, reply: async (id: string, answers?: import('../../server/agent-questions.js').QuestionAnswers) => {
       let failure: unknown;
       const ok = await lock(async () => { try { await questions.reply(id, answers); } catch (error) { failure = error; throw error; } });
